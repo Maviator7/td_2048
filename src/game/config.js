@@ -12,7 +12,6 @@ export const ENEMY_BALANCE = {
   baseHpFactor: 18,
   hpRollMin: 0.7,
   hpRollRange: 0.6,
-  bossChance: 0.15,
   armor: {
     startWave: 4,
     growthOffset: 2,
@@ -43,8 +42,8 @@ export const ENEMY_TYPE_DEFS = {
     isBoss: false,
   },
   [ENEMY_TYPES.BOSS]: {
-    hpMultiplier: 3,
-    armorMultiplier: 2,
+    hpMultiplier: 1.4,
+    armorMultiplier: 1,
     rewardMultiplier: SCORE_RULES.bossKillMultiplier,
     isBoss: true,
   },
@@ -64,12 +63,8 @@ export function getRolledEnemyHp(waveNumber) {
   return Math.floor(baseHp * hpMultiplier);
 }
 
-export function shouldSpawnBoss(waveNumber) {
-  return waveNumber > 0 && Math.random() < ENEMY_BALANCE.bossChance;
-}
-
-export function getEnemyType(waveNumber) {
-  return shouldSpawnBoss(waveNumber) ? ENEMY_TYPES.BOSS : ENEMY_TYPES.NORMAL;
+export function getEnemyType({ isLastEnemyInWave }) {
+  return isLastEnemyInWave ? ENEMY_TYPES.BOSS : ENEMY_TYPES.NORMAL;
 }
 
 export function getEnemyTypeDef(enemyType) {
@@ -98,6 +93,10 @@ export function isArmorUnlocked(waveNumber) {
 }
 
 export function getWaveStartMessage(waveNumber) {
-  const suffix = isArmorUnlocked(waveNumber) ? "装甲敵が登場！" : "";
-  return `⚔️ Wave ${waveNumber} 開始！${suffix}`;
+  const suffixes = ["最後にボス出現！"];
+  if (isArmorUnlocked(waveNumber)) {
+    suffixes.push("装甲敵が登場！");
+  }
+
+  return `⚔️ Wave ${waveNumber} 開始！${suffixes.join(" ")}`;
 }

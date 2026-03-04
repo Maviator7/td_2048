@@ -50,6 +50,7 @@ function LaneEnemy({ enemy, laneColor, hitBurst }) {
   const top = Math.min(1, enemy.step / ENEMY_MAX_STEPS) * 72;
   const hpRatio = enemy.hp / enemy.maxHp;
   const isHit = Boolean(hitBurst);
+  const size = enemy.isBoss ? 36 : 30;
 
   return (
     <div
@@ -58,28 +59,51 @@ function LaneEnemy({ enemy, laneColor, hitBurst }) {
         top: `${top}%`,
         left: "50%",
         transform: "translateX(-50%)",
-        width: 34,
+        width: enemy.isBoss ? 42 : 34,
         transition: "top 0.35s ease",
       }}
     >
+      {enemy.isBoss && (
+        <div
+          style={{
+            position: "absolute",
+            top: -11,
+            left: "50%",
+            transform: "translateX(-50%)",
+            fontSize: 11,
+            zIndex: 8,
+            textShadow: "0 0 8px rgba(255,220,120,0.95)",
+          }}
+        >
+          👑
+        </div>
+      )}
       <div
-        className={isHit ? "enemy-hit-flash" : undefined}
+        className={`${isHit ? "enemy-hit-flash" : ""}${enemy.isBoss ? " boss-enemy-core" : ""}`}
         style={{
-          width: 30,
-          height: 30,
+          width: size,
+          height: size,
           margin: "0 auto",
           borderRadius: enemy.isBoss ? 6 : "50%",
-          background: enemy.isBoss ? "#8e44ad" : laneColor,
+          background: enemy.isBoss
+            ? "radial-gradient(circle at 30% 30%, #b37feb 0%, #8e44ad 45%, #4a235a 100%)"
+            : laneColor,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 9,
+          fontSize: enemy.isBoss ? 10 : 9,
           color: "#fff",
           fontWeight: "bold",
-          border: enemy.armor ? "2px solid #f1c40f" : "2px solid transparent",
+          border: enemy.isBoss
+            ? "2px solid #f1c40f"
+            : enemy.armor
+              ? "2px solid #f1c40f"
+              : "2px solid transparent",
           boxShadow: isHit
             ? `0 0 18px rgba(255,255,255,0.8), 0 0 24px ${laneColor}cc`
-            : `0 0 6px ${laneColor}88`,
+            : enemy.isBoss
+              ? "0 0 14px rgba(241,196,15,0.65), 0 0 20px rgba(142,68,173,0.55)"
+              : `0 0 6px ${laneColor}88`,
           animationDelay: isHit ? `${hitBurst.delayMs}ms` : undefined,
         }}
       >
@@ -199,7 +223,7 @@ function EnemyLane({
             color: "#444",
           }}
         >
-          +{queuedCount}待機
+          +{queuedCount}待機{enemies.some((enemy) => enemy.lane === laneIndex && enemy.step <= 0 && enemy.isBoss) ? " 👑" : ""}
         </div>
       )}
     </div>

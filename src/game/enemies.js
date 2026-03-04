@@ -10,12 +10,12 @@ import {
 
 let enemyIdCounter = 0;
 
-function createEnemy(lane, waveNumber) {
+function createEnemy(lane, waveNumber, isLastEnemyInWave) {
   const rolledHp = getRolledEnemyHp(waveNumber);
   const baseArmor = getBaseArmor(waveNumber);
-  const type = getEnemyType(waveNumber);
+  const type = getEnemyType({ isLastEnemyInWave });
   const typeDef = getEnemyTypeDef(type);
-  const maxHp = rolledHp * typeDef.hpMultiplier;
+  const maxHp = Math.max(1, Math.floor(rolledHp * typeDef.hpMultiplier));
 
   return {
     id: `e${enemyIdCounter++}`,
@@ -33,7 +33,8 @@ export function spawnWave(waveNumber) {
   const enemyCount = getWaveEnemyCount(waveNumber);
 
   return Array.from({ length: enemyCount }, (_, index) => {
-    const enemy = createEnemy(Math.floor(Math.random() * COLS), waveNumber);
+    const isLastEnemyInWave = index === enemyCount - 1;
+    const enemy = createEnemy(Math.floor(Math.random() * COLS), waveNumber, isLastEnemyInWave);
     enemy.step = getEnemySpawnOffset(index);
     return enemy;
   });
