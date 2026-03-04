@@ -157,6 +157,21 @@ export function resolveCombatTurn({ grid, enemies, lives }) {
   }
   nextEnemies = nextEnemies.filter((enemy) => enemy.step < ENEMY_MAX_STEPS);
 
+  const remainingLaneThreats = Array(COLS).fill(null);
+  for (let lane = 0; lane < COLS; lane += 1) {
+    const laneEnemies = nextEnemies
+      .filter((enemy) => enemy.lane === lane && enemy.step > 0)
+      .sort((left, right) => right.step - left.step);
+
+    if (laneEnemies.length) {
+      remainingLaneThreats[lane] = {
+        lane,
+        laneName: LANE_NAMES[lane],
+        damage: laneEnemies[0].hp,
+      };
+    }
+  }
+
   return {
     nextEnemies,
     nextLives,
@@ -167,6 +182,7 @@ export function resolveCombatTurn({ grid, enemies, lives }) {
     damageBursts,
     shotTraces,
     logMessages,
+    remainingLaneThreats,
     effectDuration: Math.max(650, shotOrder * SHOT_ANIMATION_STAGGER + 420),
   };
 }

@@ -22,6 +22,7 @@ export default function MergeTowerDefense() {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const {
     grid,
+    tileDamage,
     enemies,
     lives,
     wave,
@@ -115,6 +116,7 @@ export default function MergeTowerDefense() {
 
             <TowerGrid
               grid={grid}
+              tileDamage={tileDamage}
               mergeHighlights={mergeHL}
               tileHeight={tileHeight}
               isDesktop={isDesktop}

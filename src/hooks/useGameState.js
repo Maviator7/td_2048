@@ -8,9 +8,11 @@ import {
 import { GAME_PHASES, getWaveStartMessage } from "../game/config";
 import {
   addRandomTile,
+  applyLaneDamage,
   canMove,
+  createEmptyDamageGrid,
   createEmptyGrid,
-  findMergedCells,
+  getEffectiveGrid,
   getColumnPowers,
   slideGrid,
 } from "../game/grid";
@@ -22,11 +24,14 @@ import {
 import { resolveCombatTurn } from "../game/combat";
 
 function createInitialGrid() {
-  return addRandomTile(addRandomTile(createEmptyGrid()));
+  const emptyGrid = createEmptyGrid();
+  const emptyDamage = createEmptyDamageGrid();
+  const firstTile = addRandomTile(emptyGrid, emptyDamage);
+  return addRandomTile(firstTile.grid, firstTile.tileDamage);
 }
 
 export function useGameState() {
-  const [grid, setGrid] = useState(createInitialGrid);
+  const [boardState, setBoardState] = useState(createInitialGrid);
   const [enemies, setEnemies] = useState(() => spawnWave(0));
   const [lives, setLives] = useState(INIT_LIVES);
   const [wave, setWave] = useState(1);
@@ -43,6 +48,7 @@ export function useGameState() {
 
   const touchStartRef = useRef(null);
   const timeoutIdsRef = useRef([]);
+  const { grid, tileDamage } = boardState;
 
   const scheduleTimeout = useCallback((callback, delayMs) => {
     const timeoutId = window.setTimeout(() => {
@@ -79,12 +85,36 @@ export function useGameState() {
     setShotTraces([]);
   }, []);
 
-  const resolveTurn = useCallback((currentGrid, currentEnemies, currentLives, currentWave) => {
+  const setBoard = useCallback((nextGrid, nextTileDamage) => {
+    setBoardState({ grid: nextGrid, tileDamage: nextTileDamage });
+  }, []);
+
+  const resolveTurn = useCallback((baseGrid, currentTileDamage, currentEnemies, currentLives, currentWave) => {
+    const attackGrid = getEffectiveGrid(baseGrid, currentTileDamage);
     const result = resolveCombatTurn({
-      grid: currentGrid,
+      grid: attackGrid,
       enemies: currentEnemies,
       lives: currentLives,
     });
+
+    let nextGrid = baseGrid;
+    let nextTileDamage = currentTileDamage;
+    const retaliationLogs = [];
+
+    for (let lane = 0; lane < result.remainingLaneThreats.length; lane += 1) {
+      const laneThreat = result.remainingLaneThreats[lane];
+      if (!laneThreat) {
+        continue;
+      }
+
+      const laneDamageResult = applyLaneDamage(nextGrid, nextTileDamage, lane, laneThreat.damage);
+      nextGrid = laneDamageResult.grid;
+      nextTileDamage = laneDamageResult.tileDamage;
+
+      if (laneDamageResult.damageTaken > 0) {
+        retaliationLogs.push(`💥 レーン${laneThreat.laneName}: 反撃${laneDamageResult.damageTaken}`);
+      }
+    }
 
     setAtkCols(result.attackColumns);
     setDmgMap(result.damageByLane);
@@ -93,10 +123,11 @@ export function useGameState() {
     setShotTraces(result.shotTraces);
     scheduleTimeout(clearCombatEffects, result.effectDuration);
 
+    setBoard(nextGrid, nextTileDamage);
     setEnemies(result.nextEnemies);
     setLives(result.nextLives);
     setScore((currentScore) => currentScore + result.scoreGained);
-    pushLogs(result.logMessages);
+    pushLogs([...result.logMessages, ...retaliationLogs]);
 
     if (result.nextLives <= 0) {
       setPhase(GAME_PHASES.GAMEOVER);
@@ -115,22 +146,29 @@ export function useGameState() {
       setPhase(GAME_PHASES.PLAYER);
       pushLog(`🔄 新ターン！残り${MOVES_PER_TURN}手`);
     }, 600);
-  }, [clearCombatEffects, pushLog, pushLogs, scheduleTimeout]);
+  }, [clearCombatEffects, pushLog, pushLogs, scheduleTimeout, setBoard]);
 
   const handleSlide = useCallback((direction) => {
     if (phase !== GAME_PHASES.PLAYER) {
       return;
     }
 
-    const { grid: nextGrid, score: gainedScore, moved } = slideGrid(grid, direction);
+    const {
+      grid: nextGrid,
+      tileDamage: nextTileDamage,
+      score: gainedScore,
+      moved,
+      mergedCells,
+    } = slideGrid(grid, tileDamage, direction);
     if (!moved) {
       return;
     }
 
-    const mergedCells = findMergedCells(grid, nextGrid);
-    const gridWithNewTile = addRandomTile(nextGrid);
+    const nextState = addRandomTile(nextGrid, nextTileDamage);
+    const gridWithNewTile = nextState.grid;
+    const gridWithNewTileDamage = nextState.tileDamage;
 
-    setGrid(gridWithNewTile);
+    setBoard(gridWithNewTile, gridWithNewTileDamage);
     if (gainedScore) {
       setScore((currentScore) => currentScore + gainedScore);
       pushLog(`🔀 合体！+${gainedScore}pts`);
@@ -153,12 +191,12 @@ export function useGameState() {
     if (nextMovesLeft <= 0) {
       pushLog("⚔️ 手数終了 → 攻撃！");
       setPhase(GAME_PHASES.RESOLVING);
-      scheduleTimeout(() => resolveTurn(gridWithNewTile, enemies, lives, wave), 200);
+      scheduleTimeout(() => resolveTurn(gridWithNewTile, gridWithNewTileDamage, enemies, lives, wave), 200);
       return;
     }
 
     pushLog(`残り${nextMovesLeft}手`);
-  }, [enemies, grid, lives, movesLeft, phase, pushLog, resolveTurn, scheduleTimeout, wave]);
+  }, [enemies, grid, lives, movesLeft, phase, pushLog, resolveTurn, scheduleTimeout, setBoard, tileDamage, wave]);
 
   const handleTouchStart = useCallback((event) => {
     const touch = event.touches?.[0];
@@ -212,7 +250,8 @@ export function useGameState() {
   const restart = useCallback(() => {
     clearScheduledTimeouts();
     resetEnemyIds();
-    setGrid(createInitialGrid());
+    const initialState = createInitialGrid();
+    setBoard(initialState.grid, initialState.tileDamage);
     setEnemies(spawnWave(0));
     setLives(INIT_LIVES);
     setWave(1);
@@ -222,7 +261,7 @@ export function useGameState() {
     setLog([INITIAL_LOG]);
     clearCombatEffects();
     setMergeHL([]);
-  }, [clearCombatEffects, clearScheduledTimeouts]);
+  }, [clearCombatEffects, clearScheduledTimeouts, setBoard]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -250,6 +289,7 @@ export function useGameState() {
 
   return {
     grid,
+    tileDamage,
     enemies,
     lives,
     wave,
@@ -263,7 +303,7 @@ export function useGameState() {
     damageBursts,
     shotTraces,
     mergeHL,
-    colPower: getColumnPowers(grid),
+    colPower: getColumnPowers(grid, tileDamage),
     nextSpawnEnemy: getNextSpawnEnemy(enemies),
     handleTouchStart,
     handleTouchEnd,
