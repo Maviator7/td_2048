@@ -82,12 +82,19 @@ export default function MergeTowerDefense() {
     let newLives = currentLives, gainedScore = 0;
     const atkSet=[], dmg={};
 
-    cur = cur.map(e=>({...e,step:e.step+1}));
+    const newlyDeployedIds = new Set();
+    cur = cur.map(e => {
+      const nextStep = e.step + 1;
+      if (e.step <= 0 && nextStep > 0) newlyDeployedIds.add(e.id);
+      return {...e, step: nextStep};
+    });
 
     for(let c=0;c<COLS;c++){
       let power=0; for(let r=0;r<ROWS;r++) power+=currentGrid[r][c];
       if(!power) continue;
-      const targets=cur.filter(e=>e.lane===c&&e.step>0).sort((a,b)=>b.step-a.step);
+      const targets=cur
+        .filter(e => e.lane===c && e.step>0 && !newlyDeployedIds.has(e.id))
+        .sort((a,b)=>b.step-a.step);
       if(!targets.length) continue;
       const t=targets[0];
       if(power<=t.armor){pushLog(`🛡️ レーン${LANE_NAMES[c]}: 装甲${t.armor}に弾かれた！`);continue;}
@@ -175,6 +182,10 @@ export default function MergeTowerDefense() {
   }, []);
 
   const colPower=Array(COLS).fill(0).map((_,c)=>{let p=0;for(let r=0;r<ROWS;r++)p+=grid[r][c];return p;});
+  const queuedEnemies = enemies.filter(e => e.step <= 0);
+  const nextSpawnEnemy = queuedEnemies.length
+    ? [...queuedEnemies].sort((a, b) => b.step - a.step)[0]
+    : null;
   const isPlayer = phase==="player";
   const isDesktop = viewportWidth >= 768;
   const isWideDesktop = viewportWidth >= 1200;
@@ -207,12 +218,57 @@ export default function MergeTowerDefense() {
           {phase==="resolving"&&<span style={{fontSize:11,color:"#e74c3c",marginLeft:4}}>⚔️ 攻撃中...</span>}
         </div>
 
+        <div
+          className={nextSpawnEnemy ? "next-spawn-panel" : undefined}
+          style={{
+            display:"flex",
+            justifyContent:"center",
+            alignItems:"center",
+            gap:8,
+            marginBottom:10,
+            padding:"8px 10px",
+            background:"#0d1117",
+            border:"1px solid #1e2a3a",
+            borderRadius:10,
+            ...(nextSpawnEnemy ? {"--next-glow-color": LANE_COLORS[nextSpawnEnemy.lane]} : {}),
+          }}
+        >
+          <span style={{fontSize:11,color:"#888"}}>次の出現列</span>
+          {nextSpawnEnemy ? (
+            <>
+              <div className="next-spawn-dot" style={{width:12,height:12,borderRadius:"50%",background:LANE_COLORS[nextSpawnEnemy.lane],boxShadow:`0 0 10px ${LANE_COLORS[nextSpawnEnemy.lane]}88`}} />
+              <span style={{fontSize:14,fontWeight:"bold",color:LANE_COLORS[nextSpawnEnemy.lane],textShadow:`0 0 10px ${LANE_COLORS[nextSpawnEnemy.lane]}66`}}>
+                レーン {LANE_NAMES[nextSpawnEnemy.lane]}
+              </span>
+            </>
+          ) : (
+            <span style={{fontSize:12,color:"#555"}}>待機中の敵なし</span>
+          )}
+        </div>
+
         <div style={{display:"grid",gridTemplateColumns:isDesktop?"minmax(0,1fr) minmax(280px,360px)":"1fr",gap:12,alignItems:"start"}}>
           <div style={{width:"100%"}}>
             {/* Column power labels */}
             <div style={{display:"flex",gap:4,marginBottom:3}}>
               {Array(COLS).fill(0).map((_,c)=>(
-                <div key={c} style={{flex:1,textAlign:"center",fontSize:isDesktop?12:10,color:LANE_COLORS[c],fontWeight:"bold"}}>{LANE_NAMES[c]} 砲:{colPower[c]}</div>
+                <div
+                  key={c}
+                  style={{
+                    flex:1,
+                    textAlign:"center",
+                    fontSize:isDesktop?12:10,
+                    color:LANE_COLORS[c],
+                    fontWeight:"bold",
+                    borderRadius:999,
+                    padding:"2px 0",
+                    background:nextSpawnEnemy?.lane===c ? `${LANE_COLORS[c]}22` : "transparent",
+                    boxShadow:nextSpawnEnemy?.lane===c ? `0 0 12px ${LANE_COLORS[c]}33` : "none",
+                    textShadow:nextSpawnEnemy?.lane===c ? `0 0 8px ${LANE_COLORS[c]}66` : "none",
+                    transition:"all 0.2s",
+                  }}
+                >
+                  {LANE_NAMES[c]} 砲:{colPower[c]}{nextSpawnEnemy?.lane===c?"  NEXT":""}
+                </div>
               ))}
             </div>
 
@@ -222,8 +278,24 @@ export default function MergeTowerDefense() {
                 const laneEnemies=enemies.filter(e=>e.lane===c&&e.step>0).sort((a,b)=>b.step-a.step);
                 const queued=enemies.filter(e=>e.lane===c&&e.step<=0).length;
                 const isAtk=atkCols.includes(c);
+                const isNextSpawnLane = nextSpawnEnemy?.lane === c;
                 return (
-                  <div key={c} style={{flex:1,position:"relative",background:isAtk?"#1a1000":"#0d1117",border:`2px solid ${isAtk?"#f1c40f":LANE_COLORS[c]+"44"}`,borderRadius:8,overflow:"hidden",transition:"all 0.2s"}}>
+                  <div
+                    key={c}
+                    className={isNextSpawnLane ? "next-lane-pulse" : undefined}
+                    style={{
+                      flex:1,
+                      position:"relative",
+                      background:isAtk?"#1a1000":isNextSpawnLane?`${LANE_COLORS[c]}14`:"#0d1117",
+                      border:`2px solid ${isAtk?"#f1c40f":isNextSpawnLane?LANE_COLORS[c]:LANE_COLORS[c]+"44"}`,
+                      borderRadius:8,
+                      overflow:"hidden",
+                      transition:"all 0.2s",
+                      ...(isNextSpawnLane ? {"--next-glow-color": LANE_COLORS[c]} : {}),
+                    }}
+                  >
+                    {isNextSpawnLane&&<div style={{position:"absolute",top:4,right:4,padding:"2px 5px",borderRadius:999,fontSize:8,fontWeight:"bold",letterSpacing:0.6,color:"#fff",background:LANE_COLORS[c],boxShadow:`0 0 10px ${LANE_COLORS[c]}88`,zIndex:4}}>NEXT</div>}
+                    {isNextSpawnLane&&<div style={{position:"absolute",inset:0,background:`linear-gradient(180deg, ${LANE_COLORS[c]}20 0%, transparent 38%, ${LANE_COLORS[c]}16 100%)`,zIndex:1,pointerEvents:"none"}}/>}
                     {isAtk&&<div style={{position:"absolute",inset:0,background:LANE_COLORS[c]+"22",zIndex:2}}/>}
                     {dmgMap[c]&&<div style={{position:"absolute",top:4,left:"50%",transform:"translateX(-50%)",color:"#ffdd00",fontSize:13,fontWeight:"bold",zIndex:3,textShadow:"0 0 6px #ff0"}}>-{dmgMap[c]}</div>}
                     {laneEnemies.map(e=>{
