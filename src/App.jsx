@@ -145,15 +145,6 @@ export default function MergeTowerDefense() {
     }
   }, [grid, phase, movesLeft, enemies, lives, wave, pushLog, resolveTurn]);
 
-  // ── Skip (use remaining moves) ────────────────────────────────────
-  const skipTurn = useCallback(()=>{
-    if(phase !== "player") return;
-    pushLog("⏭️ スキップ → 攻撃！");
-    setMovesLeft(0);
-    setPhase("resolving");
-    setTimeout(()=>resolveTurn(grid, enemies, lives, wave), 200);
-  }, [phase, grid, enemies, lives, wave, pushLog, resolveTurn]);
-
   const nextWave = useCallback(()=>{
     const nw=wave+1; setWave(nw); setEnemies(spawnWave(nw-1));
     setMovesLeft(MOVES_PER_TURN); setPhase("player");
@@ -172,11 +163,10 @@ export default function MergeTowerDefense() {
     const h=e=>{
       const m={ArrowLeft:"left",ArrowRight:"right",ArrowUp:"up",ArrowDown:"down"};
       if(m[e.key]){e.preventDefault();handleSlide(m[e.key]);}
-      if((e.key==="Enter"||e.key===" ")&&phase==="player"){e.preventDefault();skipTurn();}
     };
     window.addEventListener("keydown",h);
     return()=>window.removeEventListener("keydown",h);
-  },[handleSlide,skipTurn,phase]);
+  },[handleSlide]);
 
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
@@ -288,11 +278,6 @@ export default function MergeTowerDefense() {
 
             {/* Action buttons */}
             <div style={{marginBottom:isDesktop?0:8}}>
-              {isPlayer&&(
-                <button onClick={skipTurn} style={{...btnS("#e67e22",false),width:"100%",fontSize:14,padding:"10px 0"}}>
-                  ⏭️ 手数を使い切らず攻撃（残り{movesLeft}手をスキップ）
-                </button>
-              )}
               {phase==="resolving"&&(
                 <div style={{textAlign:"center",padding:"12px 0",color:"#e74c3c",fontSize:15,fontWeight:"bold"}}>⚔️ 攻撃解決中...</div>
               )}
@@ -331,14 +316,14 @@ export default function MergeTowerDefense() {
 
             {/* Guide */}
             <div style={{display:"grid",gridTemplateColumns:isDesktop?"1fr":"1fr 1fr",gap:4}}>
-              {[["🟡 手数マス","3マス分スライドしたら自動攻撃"],["⏭️ スキップ","手数を残して即攻撃も可能"],["🛡️ 装甲敵","Wave4〜 砲塔値>装甲値が必要"],["💀 敗北条件","ライフ0 or グリッド満杯"]].map(([t,d])=>(
+              {[["🟡 手数マス","3マス分スライドしたら自動攻撃"],["🛡️ 装甲敵","Wave4〜 砲塔値>装甲値が必要"],["💀 敗北条件","ライフ0 or グリッド満杯"]].map(([t,d])=>(
                 <div key={t} style={{background:"#0d1117",border:"1px solid #1e2a3a",borderRadius:8,padding:"6px 8px"}}>
                   <div style={{fontSize:11,color:"#aaa",fontWeight:"bold"}}>{t}</div>
                   <div style={{fontSize:10,color:"#555",marginTop:2}}>{d}</div>
                 </div>
               ))}
             </div>
-            <div style={{textAlign:"center",color:"#333",fontSize:10,marginTop:2}}>矢印キー: スライド ｜ Enter/Space: スキップ</div>
+            <div style={{textAlign:"center",color:"#333",fontSize:10,marginTop:2}}>矢印キー: スライド</div>
           </div>
         </div>
       </div>
