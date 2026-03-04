@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const COLS = 4, ROWS = 6, INIT_LIVES = 5, ENEMY_MAX_STEPS = 9;
 const MOVES_PER_TURN = 3; // ← 1ターンに動かせる回数
+const SWIPE_THRESHOLD = 24;
 const LANE_COLORS = ["#e74c3c","#3498db","#27ae60","#9b59b6"];
 const LANE_NAMES = ["A","B","C","D"];
 
@@ -74,6 +75,7 @@ export default function MergeTowerDefense() {
   const [damageBursts, setDamageBursts] = useState([]);
   const [mergeHL, setMergeHL] = useState([]);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+  const touchStartRef = useRef(null);
 
   const pushLog = useCallback(msg => setLog(l=>[msg,...l].slice(0,8)), []);
 
@@ -161,6 +163,31 @@ export default function MergeTowerDefense() {
       pushLog(`残り${next}手`);
     }
   }, [grid, phase, movesLeft, enemies, lives, wave, pushLog, resolveTurn]);
+
+  const handleTouchStart = useCallback((e) => {
+    const touch = e.touches?.[0];
+    if (!touch) return;
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  }, []);
+
+  const handleTouchEnd = useCallback((e) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start || phase !== "player") return;
+
+    const touch = e.changedTouches?.[0];
+    if (!touch) return;
+
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    if (Math.max(absX, absY) < SWIPE_THRESHOLD) return;
+
+    if (absX > absY) handleSlide(dx > 0 ? "right" : "left");
+    else handleSlide(dy > 0 ? "down" : "up");
+  }, [handleSlide, phase]);
 
   const nextWave = useCallback(()=>{
     const nw=wave+1; setWave(nw); setEnemies(spawnWave(nw-1));
@@ -257,7 +284,11 @@ export default function MergeTowerDefense() {
         </div>
 
         <div style={{display:"grid",gridTemplateColumns:isDesktop?"minmax(0,1fr) minmax(280px,360px)":"1fr",gap:12,alignItems:"start"}}>
-          <div style={{width:"100%"}}>
+          <div
+            style={{width:"100%",touchAction:isDesktop?"auto":"none"}}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             {/* Column power labels */}
             <div style={{display:"flex",gap:4,marginBottom:3}}>
               {Array(COLS).fill(0).map((_,c)=>(
@@ -389,17 +420,6 @@ export default function MergeTowerDefense() {
               }))}
             </div>
 
-            {!isDesktop && (
-              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4,marginBottom:6}}>
-                <div/>
-                <button onClick={()=>handleSlide("up")}    disabled={!isPlayer} style={btnS("#3498db",!isPlayer)}>↑</button>
-                <div/>
-                <button onClick={()=>handleSlide("left")}  disabled={!isPlayer} style={btnS("#3498db",!isPlayer)}>←</button>
-                <button onClick={()=>handleSlide("down")}  disabled={!isPlayer} style={btnS("#3498db",!isPlayer)}>↓</button>
-                <button onClick={()=>handleSlide("right")} disabled={!isPlayer} style={btnS("#3498db",!isPlayer)}>→</button>
-              </div>
-            )}
-
             {/* Action buttons */}
             <div style={{marginBottom:isDesktop?0:8}}>
               {phase==="resolving"&&(
@@ -419,20 +439,6 @@ export default function MergeTowerDefense() {
           </div>
 
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {isDesktop && (
-              <div style={{background:"#0d1117",border:"1px solid #1e2a3a",borderRadius:10,padding:"10px"}}>
-                <div style={{fontSize:11,color:"#888",marginBottom:6,textAlign:"center"}}>操作ボタン</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4}}>
-                  <div/>
-                  <button onClick={()=>handleSlide("up")}    disabled={!isPlayer} style={btnS("#3498db",!isPlayer)}>↑</button>
-                  <div/>
-                  <button onClick={()=>handleSlide("left")}  disabled={!isPlayer} style={btnS("#3498db",!isPlayer)}>←</button>
-                  <button onClick={()=>handleSlide("down")}  disabled={!isPlayer} style={btnS("#3498db",!isPlayer)}>↓</button>
-                  <button onClick={()=>handleSlide("right")} disabled={!isPlayer} style={btnS("#3498db",!isPlayer)}>→</button>
-                </div>
-              </div>
-            )}
-
             {/* Log */}
             <div style={{background:"#0d1117",border:"1px solid #1e2a3a",borderRadius:10,padding:"8px 10px",maxHeight:isDesktop?220:90,overflowY:"auto"}}>
               {log.map((msg,i)=><div key={i} style={{fontSize:isDesktop?12:11,color:i===0?"#ddd":"#444",marginBottom:2,lineHeight:1.4}}>{msg}</div>)}
