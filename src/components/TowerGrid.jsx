@@ -31,20 +31,25 @@ function getTileLevel(value) {
   return Math.log2(value);
 }
 
-export const TowerGrid = memo(function TowerGrid({ grid, tileDamage, mergeHighlights, tileHeight, isDesktop }) {
+export const TowerGrid = memo(function TowerGrid({ grid, tileDamage, retaliationHits, mergeHighlights, tileHeight, isDesktop }) {
+  const retaliationHitMap = new Map(retaliationHits.map((hit) => [hit.key, hit.damage]));
+
   return (
     <div style={{ display: "grid", gridTemplateColumns: `repeat(${COLS},1fr)`, gap: 4, marginBottom: 8 }}>
       {grid.map((row, rowIndex) => row.map((value, columnIndex) => {
+        const cellKey = `${rowIndex}-${columnIndex}`;
         const damage = tileDamage[rowIndex][columnIndex];
         const effectiveValue = getEffectiveTileValue(value, damage);
         const [background, color] = value ? getTileColors(value) : ["#1c1c2e", "#1c1c2e"];
-        const isMerged = mergeHighlights.includes(`${rowIndex}-${columnIndex}`);
+        const isMerged = mergeHighlights.includes(cellKey);
+        const retaliationDamage = retaliationHitMap.get(cellKey);
         const isDamaged = value > 0 && damage > 0;
         const tileLevel = getTileLevel(value);
 
         return (
           <div
             key={`${rowIndex}-${columnIndex}`}
+            className={retaliationDamage ? "tile-retaliation-flash" : undefined}
             style={{
               background: isMerged ? "#fff3b0" : background,
               color: isDamaged && !isMerged ? "#2b2b2b" : color,
@@ -58,10 +63,17 @@ export const TowerGrid = memo(function TowerGrid({ grid, tileDamage, mergeHighli
               fontWeight: "bold",
               fontSize: getTileFontSize(effectiveValue || value, isDesktop),
               boxShadow: value ? `0 3px 8px ${background}66` : "none",
-              border: isMerged ? "2px solid #f1c40f" : isDamaged ? "2px solid rgba(231, 76, 60, 0.4)" : "2px solid transparent",
+              border: retaliationDamage
+                ? "2px solid rgba(231, 76, 60, 0.7)"
+                : isMerged
+                  ? "2px solid #f1c40f"
+                  : isDamaged
+                    ? "2px solid rgba(231, 76, 60, 0.4)"
+                    : "2px solid transparent",
               transition: "all 0.15s",
               transform: isMerged ? "scale(1.08)" : "scale(1)",
               opacity: value && !effectiveValue ? 0.5 : 1,
+              animationDelay: retaliationDamage ? "40ms" : undefined,
             }}
           >
             {tileLevel && (
@@ -83,6 +95,21 @@ export const TowerGrid = memo(function TowerGrid({ grid, tileDamage, mergeHighli
             {isDamaged && effectiveValue > 0 && (
               <div style={{ fontSize: isDesktop ? 9 : 8, color: "#a94442", lineHeight: 1 }}>
                 -{damage}
+              </div>
+            )}
+            {retaliationDamage && (
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 3,
+                  right: 4,
+                  fontSize: isDesktop ? 9 : 8,
+                  fontWeight: "700",
+                  color: "#c0392b",
+                  lineHeight: 1,
+                }}
+              >
+                HIT {retaliationDamage}
               </div>
             )}
           </div>

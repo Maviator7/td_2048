@@ -182,13 +182,14 @@ export function getColumnPowers(grid, tileDamage) {
 
 export function applyLaneDamage(grid, tileDamage, lane, damageAmount) {
   if (damageAmount <= 0) {
-    return { grid, tileDamage, damageTaken: 0 };
+    return { grid, tileDamage, damageTaken: 0, affectedCells: [] };
   }
 
   const nextGrid = grid.map((row) => [...row]);
   const nextDamage = tileDamage.map((row) => [...row]);
   let remainingDamage = damageAmount;
   let damageTaken = 0;
+  const affectedCells = [];
 
   for (let rowIndex = 0; rowIndex < ROWS && remainingDamage > 0; rowIndex += 1) {
     const baseValue = nextGrid[rowIndex][lane];
@@ -205,9 +206,15 @@ export function applyLaneDamage(grid, tileDamage, lane, damageAmount) {
     nextDamage[rowIndex][lane] = Math.min(baseValue, nextDamage[rowIndex][lane] + absorbedDamage);
     remainingDamage -= absorbedDamage;
     damageTaken += absorbedDamage;
+    affectedCells.push({
+      key: `${rowIndex}-${lane}`,
+      row: rowIndex,
+      col: lane,
+      damage: absorbedDamage,
+    });
   }
 
-  return { grid: nextGrid, tileDamage: nextDamage, damageTaken };
+  return { grid: nextGrid, tileDamage: nextDamage, damageTaken, affectedCells };
 }
 
 export function getTileColors(value) {

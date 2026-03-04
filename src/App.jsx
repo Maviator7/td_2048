@@ -35,6 +35,8 @@ export default function MergeTowerDefense() {
     hitEffects,
     damageBursts,
     shotTraces,
+    retaliationCols,
+    retaliationHits,
     mergeHL,
     colPower,
     nextSpawnEnemy,
@@ -103,6 +105,7 @@ export default function MergeTowerDefense() {
               damageByLane={dmgMap}
               damageBursts={damageBursts}
               shotTraces={shotTraces}
+              retaliationCols={retaliationCols}
               laneHeight={laneHeight}
               laneColors={LANE_COLORS}
             />
@@ -117,6 +120,7 @@ export default function MergeTowerDefense() {
             <TowerGrid
               grid={grid}
               tileDamage={tileDamage}
+              retaliationHits={retaliationHits}
               mergeHighlights={mergeHL}
               tileHeight={tileHeight}
               isDesktop={isDesktop}

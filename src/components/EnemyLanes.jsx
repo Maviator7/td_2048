@@ -166,6 +166,7 @@ function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces) {
 function EnemyLane({
   laneIndex,
   atkCols,
+  retaliationCols,
   nextSpawnEnemy,
   damageByLane,
   laneColors,
@@ -177,6 +178,7 @@ function EnemyLane({
   laneTraces,
 }) {
   const isAttacking = atkCols.includes(laneIndex);
+  const isCounterAttacking = retaliationCols.includes(laneIndex);
   const isNextSpawnLane = nextSpawnEnemy?.lane === laneIndex;
   const laneColor = laneColors[laneIndex];
 
@@ -225,6 +227,18 @@ function EnemyLane({
         />
       )}
       {isAttacking && <div style={{ position: "absolute", inset: 0, background: `${laneColor}18`, zIndex: 2 }} />}
+      {isCounterAttacking && (
+        <div
+          className="retaliation-lane-flash"
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(231, 76, 60, 0.14)",
+            zIndex: 3,
+            pointerEvents: "none",
+          }}
+        />
+      )}
       {laneTraces.map((trace) => <ShotTrace key={trace.key} trace={trace} />)}
       {damageByLane[laneIndex] && (
         <div
@@ -265,6 +279,24 @@ function EnemyLane({
           +{queuedCount}待機{hasQueuedBoss ? " 👑" : ""}
         </div>
       )}
+      {isCounterAttacking && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 4,
+            right: 4,
+            padding: "2px 4px",
+            borderRadius: 999,
+            fontSize: 7,
+            fontWeight: "bold",
+            color: "#fff",
+            background: "rgba(231, 76, 60, 0.78)",
+            zIndex: 8,
+          }}
+        >
+          HIT
+        </div>
+      )}
     </div>
   );
 }
@@ -272,6 +304,7 @@ function EnemyLane({
 export const EnemyLanes = memo(function EnemyLanes({
   enemies,
   atkCols,
+  retaliationCols,
   nextSpawnEnemy,
   hitEffects,
   damageByLane,
@@ -289,6 +322,7 @@ export const EnemyLanes = memo(function EnemyLanes({
           key={laneIndex}
           laneIndex={laneIndex}
           atkCols={atkCols}
+          retaliationCols={retaliationCols}
           nextSpawnEnemy={nextSpawnEnemy}
           damageByLane={damageByLane}
           laneColors={laneColors}

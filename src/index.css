@@ -88,6 +88,14 @@ button:focus-visible {
   animation: enemy-hit-flash 0.28s ease-out;
 }
 
+.retaliation-lane-flash {
+  animation: retaliation-lane-flash 0.28s ease-out;
+}
+
+.tile-retaliation-flash {
+  animation: tile-retaliation-flash 0.3s ease-out;
+}
+
 .wave-clear-panel {
   position: relative;
   overflow: hidden;
@@ -252,6 +260,33 @@ button:focus-visible {
   50% {
     transform: scale(1.06);
     opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes retaliation-lane-flash {
+  0% {
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes tile-retaliation-flash {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  45% {
+    transform: scale(0.97);
+    opacity: 0.8;
   }
   100% {
     transform: scale(1);

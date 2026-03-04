@@ -160,7 +160,7 @@ export function resolveCombatTurn({ grid, enemies, lives }) {
   const remainingLaneThreats = Array(COLS).fill(null);
   for (let lane = 0; lane < COLS; lane += 1) {
     const laneEnemies = nextEnemies
-      .filter((enemy) => enemy.lane === lane && enemy.step > 0)
+      .filter((enemy) => enemy.lane === lane && enemy.step > 0 && !newlyDeployedIds.has(enemy.id))
       .sort((left, right) => right.step - left.step);
 
     if (laneEnemies.length) {
