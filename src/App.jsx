@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-const COLS = 4, ROWS = 6, INIT_LIVES = 10, ENEMY_MAX_STEPS = 9;
+const COLS = 4, ROWS = 6, INIT_LIVES = 5, ENEMY_MAX_STEPS = 9;
 const MOVES_PER_TURN = 3; // ← 1ターンに動かせる回数
 const LANE_COLORS = ["#e74c3c","#3498db","#27ae60","#9b59b6"];
 const LANE_NAMES = ["A","B","C","D"];
