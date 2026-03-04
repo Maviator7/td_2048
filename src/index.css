@@ -88,6 +88,107 @@ button:focus-visible {
   animation: enemy-hit-flash 0.45s ease-out;
 }
 
+.wave-clear-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #2f5a3b;
+  border-radius: 14px;
+  background: radial-gradient(circle at 50% -30%, rgba(241, 196, 15, 0.2), rgba(39, 174, 96, 0.15) 40%, rgba(13, 17, 23, 0.96) 76%);
+  padding: 14px 12px 12px;
+  text-align: center;
+  box-shadow:
+    0 0 0 1px rgba(46, 204, 113, 0.18) inset,
+    0 0 24px rgba(46, 204, 113, 0.2),
+    0 0 36px rgba(241, 196, 15, 0.12);
+  animation: wave-clear-panel-glow 1.2s ease-in-out infinite;
+}
+
+.waveclear-top-cta {
+  position: sticky;
+  top: 8px;
+  z-index: 14;
+  margin-bottom: 10px;
+}
+
+.wave-clear-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.wave-clear-spark {
+  position: absolute;
+  top: 12%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #f1c40f, #fff2a6);
+  box-shadow: 0 0 10px rgba(255, 230, 120, 0.9);
+  opacity: 0;
+  animation: wave-clear-spark-rise ease-out forwards;
+}
+
+.wave-next-btn {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 10px;
+  background: linear-gradient(90deg, #1f9b4b, #2ecc71 50%, #1f9b4b);
+  color: #f6fff8;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.16) inset,
+    0 8px 20px rgba(46, 204, 113, 0.36);
+  animation: wave-next-btn-attention 0.95s ease-in-out infinite;
+}
+
+.wave-next-btn:hover {
+  filter: brightness(1.08);
+}
+
+@keyframes wave-clear-panel-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(46, 204, 113, 0.16) inset,
+      0 0 20px rgba(46, 204, 113, 0.15),
+      0 0 30px rgba(241, 196, 15, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(46, 204, 113, 0.3) inset,
+      0 0 30px rgba(46, 204, 113, 0.35),
+      0 0 42px rgba(241, 196, 15, 0.22);
+  }
+}
+
+@keyframes wave-clear-spark-rise {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-72px) scale(1.1);
+    opacity: 0;
+  }
+}
+
+@keyframes wave-next-btn-attention {
+  0%, 100% {
+    transform: scale(1);
+    filter: saturate(1);
+  }
+  50% {
+    transform: scale(1.02);
+    filter: saturate(1.18);
+  }
+}
+
 @keyframes next-panel-sheen {
   0%, 100% {
     transform: translateX(-40%);

@@ -74,6 +74,7 @@ export default function MergeTowerDefense() {
   const [dmgMap, setDmgMap]   = useState({});
   const [damageBursts, setDamageBursts] = useState([]);
   const [mergeHL, setMergeHL] = useState([]);
+  const [waveClearFxKey, setWaveClearFxKey] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const touchStartRef = useRef(null);
 
@@ -218,6 +219,10 @@ export default function MergeTowerDefense() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  useEffect(() => {
+    if (phase === "waveclear") setWaveClearFxKey(k => k + 1);
+  }, [phase]);
+
   const colPower=Array(COLS).fill(0).map((_,c)=>{let p=0;for(let r=0;r<ROWS;r++)p+=grid[r][c];return p;});
   const queuedEnemies = enemies.filter(e => e.step <= 0);
   const nextSpawnEnemy = queuedEnemies.length
@@ -254,6 +259,33 @@ export default function MergeTowerDefense() {
           ))}
           {phase==="resolving"&&<span style={{fontSize:11,color:"#e74c3c",marginLeft:4}}>⚔️ 攻撃中...</span>}
         </div>
+
+        {phase==="waveclear"&&(
+          <div className="waveclear-top-cta wave-clear-panel" key={`wave-clear-${waveClearFxKey}`}>
+            <div className="wave-clear-confetti" aria-hidden="true">
+              {Array.from({length: 14}).map((_, i) => (
+                <span
+                  key={`spark-${i}`}
+                  className="wave-clear-spark"
+                  style={{
+                    left: `${6 + (i * 7) % 88}%`,
+                    animationDelay: `${(i % 7) * 0.1}s`,
+                    animationDuration: `${1.2 + (i % 4) * 0.2}s`,
+                  }}
+                />
+              ))}
+            </div>
+            <div style={{fontSize:16,fontWeight:"bold",color:"#ffe082",textShadow:"0 0 12px #f1c40f88"}}>
+              🎉 Wave {wave} クリア！
+            </div>
+            <div style={{fontSize:12,color:"#d5e9da",marginTop:3,marginBottom:8}}>
+              次のウェーブへ進めます
+            </div>
+            <button className="wave-next-btn" onClick={nextWave}>
+              ▶ 次のウェーブへ進む (Wave {wave+1})
+            </button>
+          </div>
+        )}
 
         <div
           className={nextSpawnEnemy ? "next-spawn-panel" : undefined}
@@ -424,9 +456,6 @@ export default function MergeTowerDefense() {
             <div style={{marginBottom:isDesktop?0:8}}>
               {phase==="resolving"&&(
                 <div style={{textAlign:"center",padding:"12px 0",color:"#e74c3c",fontSize:15,fontWeight:"bold"}}>⚔️ 攻撃解決中...</div>
-              )}
-              {phase==="waveclear"&&(
-                <button onClick={nextWave} style={{...btnS("#27ae60",false),width:"100%",fontSize:15,padding:"12px 0"}}>🎉 次のウェーブへ！(Wave {wave+1})</button>
               )}
               {phase==="gameover"&&(
                 <div>
