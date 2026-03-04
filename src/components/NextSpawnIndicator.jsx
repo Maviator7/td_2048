@@ -1,4 +1,6 @@
-export function NextSpawnIndicator({ nextSpawnEnemy, laneColors, laneNames }) {
+import { memo } from "react";
+
+export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEnemy, laneColors, laneNames }) {
   const isBossNext = Boolean(nextSpawnEnemy?.isBoss);
   const nextLaneColor = nextSpawnEnemy ? laneColors[nextSpawnEnemy.lane] : "#1e2a3a";
 
@@ -51,4 +53,4 @@ export function NextSpawnIndicator({ nextSpawnEnemy, laneColors, laneNames }) {
       )}
     </div>
   );
-}
+});

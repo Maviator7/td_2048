@@ -36,6 +36,7 @@ export function useGameState() {
   const [log, setLog] = useState([INITIAL_LOG]);
   const [atkCols, setAtkCols] = useState([]);
   const [dmgMap, setDmgMap] = useState({});
+  const [hitEffects, setHitEffects] = useState([]);
   const [damageBursts, setDamageBursts] = useState([]);
   const [shotTraces, setShotTraces] = useState([]);
   const [mergeHL, setMergeHL] = useState([]);
@@ -62,9 +63,18 @@ export function useGameState() {
     setLog((currentLog) => [message, ...currentLog].slice(0, 8));
   }, []);
 
+  const pushLogs = useCallback((messages) => {
+    if (!messages.length) {
+      return;
+    }
+
+    setLog((currentLog) => [...messages].reverse().concat(currentLog).slice(0, 8));
+  }, []);
+
   const clearCombatEffects = useCallback(() => {
     setAtkCols([]);
     setDmgMap({});
+    setHitEffects([]);
     setDamageBursts([]);
     setShotTraces([]);
   }, []);
@@ -78,6 +88,7 @@ export function useGameState() {
 
     setAtkCols(result.attackColumns);
     setDmgMap(result.damageByLane);
+    setHitEffects(result.hitEffects);
     setDamageBursts(result.damageBursts);
     setShotTraces(result.shotTraces);
     scheduleTimeout(clearCombatEffects, result.effectDuration);
@@ -85,7 +96,7 @@ export function useGameState() {
     setEnemies(result.nextEnemies);
     setLives(result.nextLives);
     setScore((currentScore) => currentScore + result.scoreGained);
-    result.logMessages.forEach(pushLog);
+    pushLogs(result.logMessages);
 
     if (result.nextLives <= 0) {
       setPhase(GAME_PHASES.GAMEOVER);
@@ -104,7 +115,7 @@ export function useGameState() {
       setPhase(GAME_PHASES.PLAYER);
       pushLog(`🔄 新ターン！残り${MOVES_PER_TURN}手`);
     }, 600);
-  }, [clearCombatEffects, pushLog, scheduleTimeout]);
+  }, [clearCombatEffects, pushLog, pushLogs, scheduleTimeout]);
 
   const handleSlide = useCallback((direction) => {
     if (phase !== GAME_PHASES.PLAYER) {
@@ -248,6 +259,7 @@ export function useGameState() {
     log,
     atkCols,
     dmgMap,
+    hitEffects,
     damageBursts,
     shotTraces,
     mergeHL,

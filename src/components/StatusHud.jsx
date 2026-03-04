@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 function formatLives(lives) {
   if (lives <= 0) {
     return "💀";
@@ -6,7 +8,7 @@ function formatLives(lives) {
   return "❤️".repeat(Math.min(lives, 5)) + (lives > 5 ? `+${lives - 5}` : "");
 }
 
-export function StatusHud({ lives, wave, score }) {
+export const StatusHud = memo(function StatusHud({ lives, wave, score }) {
   return (
     <div
       style={{
@@ -33,4 +35,4 @@ export function StatusHud({ lives, wave, score }) {
       </div>
     </div>
   );
-}
+});

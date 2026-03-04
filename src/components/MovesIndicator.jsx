@@ -1,4 +1,6 @@
-export function MovesIndicator({ movesLeft, totalMoves, isResolving }) {
+import { memo } from "react";
+
+export const MovesIndicator = memo(function MovesIndicator({ movesLeft, totalMoves, isResolving }) {
   return (
     <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 8, alignItems: "center" }}>
       <span style={{ fontSize: 11, color: "#888" }}>残り手数：</span>
@@ -22,4 +24,4 @@ export function MovesIndicator({ movesLeft, totalMoves, isResolving }) {
       {isResolving && <span style={{ fontSize: 11, color: "#e74c3c", marginLeft: 4 }}>⚔️ 攻撃中...</span>}
     </div>
   );
-}
+});

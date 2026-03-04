@@ -1,5 +1,6 @@
+import { memo } from "react";
+
 import { COLS, ENEMY_MAX_STEPS } from "../game/constants";
-import { countQueuedEnemiesInLane, getLaneEnemies } from "../game/enemies";
 
 function ShotTrace({ trace }) {
   return (
@@ -7,14 +8,14 @@ function ShotTrace({ trace }) {
       className={trace.blocked ? "shot-trace shot-trace-blocked" : "shot-trace"}
       style={{
         position: "absolute",
-        top: `${trace.top + 8}%`,
-        bottom: 4,
+        top: `${trace.top + 10}%`,
+        bottom: 6,
         left: "50%",
         width: trace.width,
         transform: "translateX(-50%)",
         borderRadius: 999,
-        background: `linear-gradient(180deg, ${trace.color} 0%, rgba(255,255,255,0.92) 28%, ${trace.color}88 72%, transparent 100%)`,
-        boxShadow: `0 0 12px ${trace.color}, 0 0 22px ${trace.color}66`,
+        background: trace.color,
+        opacity: trace.blocked ? 0.7 : 0.9,
         zIndex: 5,
         pointerEvents: "none",
         animationDelay: `${trace.delayMs}ms`,
@@ -36,7 +37,6 @@ function DamageBurst({ burst }) {
         fontSize: burst.fontSize,
         fontWeight: "bold",
         zIndex: 6,
-        textShadow: "0 0 10px rgba(255, 208, 84, 0.95), 0 0 18px rgba(255, 98, 0, 0.65)",
         pointerEvents: "none",
         animationDelay: `${burst.delayMs}ms`,
       }}
@@ -46,10 +46,10 @@ function DamageBurst({ burst }) {
   );
 }
 
-function LaneEnemy({ enemy, laneColor, hitBurst }) {
+function LaneEnemy({ enemy, laneColor, hitEffect }) {
   const top = Math.min(1, enemy.step / ENEMY_MAX_STEPS) * 72;
   const hpRatio = enemy.hp / enemy.maxHp;
-  const isHit = Boolean(hitBurst);
+  const isHit = Boolean(hitEffect);
   const size = enemy.isBoss ? 36 : 30;
 
   return (
@@ -72,14 +72,13 @@ function LaneEnemy({ enemy, laneColor, hitBurst }) {
             transform: "translateX(-50%)",
             fontSize: 11,
             zIndex: 8,
-            textShadow: "0 0 8px rgba(255,220,120,0.95)",
           }}
         >
           👑
         </div>
       )}
       <div
-        className={`${isHit ? "enemy-hit-flash" : ""}${enemy.isBoss ? " boss-enemy-core" : ""}`}
+        className={isHit ? "enemy-hit-flash" : undefined}
         style={{
           width: size,
           height: size,
@@ -94,17 +93,9 @@ function LaneEnemy({ enemy, laneColor, hitBurst }) {
           fontSize: enemy.isBoss ? 10 : 9,
           color: "#fff",
           fontWeight: "bold",
-          border: enemy.isBoss
-            ? "2px solid #f1c40f"
-            : enemy.armor
-              ? "2px solid #f1c40f"
-              : "2px solid transparent",
-          boxShadow: isHit
-            ? `0 0 18px rgba(255,255,255,0.8), 0 0 24px ${laneColor}cc`
-            : enemy.isBoss
-              ? "0 0 14px rgba(241,196,15,0.65), 0 0 20px rgba(142,68,173,0.55)"
-              : `0 0 6px ${laneColor}88`,
-          animationDelay: isHit ? `${hitBurst.delayMs}ms` : undefined,
+          border: enemy.armor ? "2px solid #f1c40f" : "2px solid transparent",
+          opacity: isHit ? 0.82 : 1,
+          animationDelay: isHit ? `${hitEffect.delayMs}ms` : undefined,
         }}
       >
         {enemy.hp}
@@ -125,23 +116,69 @@ function LaneEnemy({ enemy, laneColor, hitBurst }) {
   );
 }
 
+function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces) {
+  const laneEnemies = Array.from({ length: COLS }, () => []);
+  const queuedCounts = Array(COLS).fill(0);
+  const queuedBossFlags = Array(COLS).fill(false);
+  const hitEffectByEnemyId = new Map();
+  const burstsByLane = Array.from({ length: COLS }, () => []);
+  const tracesByLane = Array.from({ length: COLS }, () => []);
+
+  for (const enemy of enemies) {
+    if (enemy.step > 0) {
+      laneEnemies[enemy.lane].push(enemy);
+    } else {
+      queuedCounts[enemy.lane] += 1;
+      if (enemy.isBoss) {
+        queuedBossFlags[enemy.lane] = true;
+      }
+    }
+  }
+
+  for (const lane of laneEnemies) {
+    lane.sort((left, right) => right.step - left.step);
+  }
+
+  for (const hitEffect of hitEffects) {
+    if (!hitEffectByEnemyId.has(hitEffect.targetId)) {
+      hitEffectByEnemyId.set(hitEffect.targetId, hitEffect);
+    }
+  }
+
+  for (const burst of damageBursts) {
+    burstsByLane[burst.lane].push(burst);
+  }
+
+  for (const trace of shotTraces) {
+    tracesByLane[trace.lane].push(trace);
+  }
+
+  return {
+    laneEnemies,
+    queuedCounts,
+    queuedBossFlags,
+    hitEffectByEnemyId,
+    burstsByLane,
+    tracesByLane,
+  };
+}
+
 function EnemyLane({
   laneIndex,
-  enemies,
   atkCols,
   nextSpawnEnemy,
-  shotTraces,
   damageByLane,
-  damageBursts,
   laneColors,
+  laneEnemies,
+  queuedCount,
+  hasQueuedBoss,
+  hitEffectByEnemyId,
+  laneBursts,
+  laneTraces,
 }) {
-  const laneEnemies = getLaneEnemies(enemies, laneIndex);
-  const queuedCount = countQueuedEnemiesInLane(enemies, laneIndex);
   const isAttacking = atkCols.includes(laneIndex);
   const isNextSpawnLane = nextSpawnEnemy?.lane === laneIndex;
   const laneColor = laneColors[laneIndex];
-  const laneTraces = shotTraces.filter((trace) => trace.lane === laneIndex);
-  const laneBursts = damageBursts.filter((burst) => burst.lane === laneIndex);
 
   return (
     <div
@@ -170,7 +207,6 @@ function EnemyLane({
             letterSpacing: 0.6,
             color: "#fff",
             background: laneColor,
-            boxShadow: `0 0 10px ${laneColor}88`,
             zIndex: 4,
           }}
         >
@@ -182,13 +218,13 @@ function EnemyLane({
           style={{
             position: "absolute",
             inset: 0,
-            background: `linear-gradient(180deg, ${laneColor}20 0%, transparent 38%, ${laneColor}16 100%)`,
+            background: `linear-gradient(180deg, ${laneColor}14 0%, transparent 42%, ${laneColor}12 100%)`,
             zIndex: 1,
             pointerEvents: "none",
           }}
         />
       )}
-      {isAttacking && <div style={{ position: "absolute", inset: 0, background: `${laneColor}22`, zIndex: 2 }} />}
+      {isAttacking && <div style={{ position: "absolute", inset: 0, background: `${laneColor}18`, zIndex: 2 }} />}
       {laneTraces.map((trace) => <ShotTrace key={trace.key} trace={trace} />)}
       {damageByLane[laneIndex] && (
         <div
@@ -197,21 +233,24 @@ function EnemyLane({
             top: 4,
             left: "50%",
             transform: "translateX(-50%)",
-            color: "#ffdd00",
-            fontSize: 13,
+            color: "#ffd54f",
+            fontSize: 12,
             fontWeight: "bold",
             zIndex: 3,
-            textShadow: "0 0 6px #ff0",
           }}
         >
           -{damageByLane[laneIndex]}
         </div>
       )}
       {laneBursts.map((burst) => <DamageBurst key={burst.key} burst={burst} />)}
-      {laneEnemies.map((enemy) => {
-        const hitBurst = damageBursts.find((burst) => burst.targetId === enemy.id);
-        return <LaneEnemy key={enemy.id} enemy={enemy} laneColor={laneColor} hitBurst={hitBurst} />;
-      })}
+      {laneEnemies.map((enemy) => (
+        <LaneEnemy
+          key={enemy.id}
+          enemy={enemy}
+          laneColor={laneColor}
+          hitEffect={hitEffectByEnemyId.get(enemy.id)}
+        />
+      ))}
       {queuedCount > 0 && (
         <div
           style={{
@@ -223,38 +262,44 @@ function EnemyLane({
             color: "#444",
           }}
         >
-          +{queuedCount}待機{enemies.some((enemy) => enemy.lane === laneIndex && enemy.step <= 0 && enemy.isBoss) ? " 👑" : ""}
+          +{queuedCount}待機{hasQueuedBoss ? " 👑" : ""}
         </div>
       )}
     </div>
   );
 }
 
-export function EnemyLanes({
+export const EnemyLanes = memo(function EnemyLanes({
   enemies,
   atkCols,
   nextSpawnEnemy,
-  shotTraces,
+  hitEffects,
   damageByLane,
   damageBursts,
+  shotTraces,
   laneHeight,
   laneColors,
 }) {
+  const laneRenderData = buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces);
+
   return (
     <div style={{ display: "flex", gap: 4, height: laneHeight, marginBottom: 6 }}>
       {Array.from({ length: COLS }).map((_, laneIndex) => (
         <EnemyLane
           key={laneIndex}
           laneIndex={laneIndex}
-          enemies={enemies}
           atkCols={atkCols}
           nextSpawnEnemy={nextSpawnEnemy}
-          shotTraces={shotTraces}
           damageByLane={damageByLane}
-          damageBursts={damageBursts}
           laneColors={laneColors}
+          laneEnemies={laneRenderData.laneEnemies[laneIndex]}
+          queuedCount={laneRenderData.queuedCounts[laneIndex]}
+          hasQueuedBoss={laneRenderData.queuedBossFlags[laneIndex]}
+          hitEffectByEnemyId={laneRenderData.hitEffectByEnemyId}
+          laneBursts={laneRenderData.burstsByLane[laneIndex]}
+          laneTraces={laneRenderData.tracesByLane[laneIndex]}
         />
       ))}
     </div>
   );
-}
+});

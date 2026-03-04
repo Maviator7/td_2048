@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 import { GAME_PHASES } from "../game/config";
 
 function createButtonStyle(color, disabled) {
@@ -16,7 +18,7 @@ function createButtonStyle(color, disabled) {
   };
 }
 
-export function ActionPanel({ phase, isDesktop, score, onRestart }) {
+export const ActionPanel = memo(function ActionPanel({ phase, isDesktop, score, onRestart }) {
   return (
     <div style={{ marginBottom: isDesktop ? 0 : 8 }}>
       {phase === GAME_PHASES.RESOLVING && (
@@ -42,4 +44,4 @@ export function ActionPanel({ phase, isDesktop, score, onRestart }) {
       )}
     </div>
   );
-}
+});

@@ -8,31 +8,37 @@ import {
 } from "./constants";
 import { getEnemyReward } from "./config";
 
-function buildEffectKey(prefix, enemyId, lane, row, effectIndex) {
-  return `${prefix}-${enemyId}-${lane}-${row}-${effectIndex}`;
-}
+const MAX_VISUAL_EFFECTS = 10;
 
-function buildBurst(damage, enemy, lane, row, delayMs, effectIndex) {
+function buildHitEffect(enemy, lane, row, delayMs, effectIndex) {
   return {
-    key: buildEffectKey("burst", enemy.id, lane, row, effectIndex),
+    key: `hit-${enemy.id}-${lane}-${row}-${effectIndex}`,
     targetId: enemy.id,
     lane,
     top: Math.min(1, enemy.step / ENEMY_MAX_STEPS) * 72,
-    damage,
-    fontSize: Math.min(30, 16 + Math.floor(Math.log2(Math.max(damage, 1))) * 2),
     delayMs,
   };
 }
 
-function buildTrace(shotPower, enemy, lane, row, delayMs, blocked, effectIndex) {
-  const color = blocked ? "#f1c40f" : LANE_COLORS[lane];
-
+function buildDamageBurst(enemy, lane, row, damage, delayMs, effectIndex) {
   return {
-    key: buildEffectKey("trace", enemy.id, lane, row, effectIndex),
+    key: `burst-${enemy.id}-${lane}-${row}-${effectIndex}`,
+    targetId: enemy.id,
     lane,
     top: Math.min(1, enemy.step / ENEMY_MAX_STEPS) * 72,
-    width: Math.min(10, 3 + Math.floor(Math.log2(Math.max(shotPower, 1))) * 0.75),
-    color,
+    damage,
+    fontSize: Math.min(24, 14 + Math.floor(Math.log2(Math.max(damage, 1))) * 2),
+    delayMs,
+  };
+}
+
+function buildShotTrace(enemy, lane, row, delayMs, blocked, effectIndex) {
+  return {
+    key: `trace-${enemy.id}-${lane}-${row}-${effectIndex}`,
+    lane,
+    top: Math.min(1, enemy.step / ENEMY_MAX_STEPS) * 72,
+    width: blocked ? 3 : 2,
+    color: blocked ? "#f1c40f" : LANE_COLORS[lane],
     blocked,
     delayMs,
   };
@@ -52,9 +58,27 @@ function advanceEnemies(enemies) {
   return { advancedEnemies, newlyDeployedIds };
 }
 
+function buildLaneTargets(enemies, newlyDeployedIds) {
+  const laneTargets = Array.from({ length: COLS }, () => []);
+
+  for (const enemy of enemies) {
+    if (enemy.step > 0 && !newlyDeployedIds.has(enemy.id)) {
+      laneTargets[enemy.lane].push(enemy);
+    }
+  }
+
+  for (const lane of laneTargets) {
+    lane.sort((left, right) => right.step - left.step);
+  }
+
+  return laneTargets;
+}
+
 export function resolveCombatTurn({ grid, enemies, lives }) {
   const { advancedEnemies, newlyDeployedIds } = advanceEnemies(enemies);
   let nextEnemies = advancedEnemies.map((enemy) => ({ ...enemy }));
+  const laneTargets = buildLaneTargets(nextEnemies, newlyDeployedIds);
+  const laneTargetIndexes = Array(COLS).fill(0);
   let nextLives = lives;
   let scoreGained = 0;
   let shotOrder = 0;
@@ -62,12 +86,14 @@ export function resolveCombatTurn({ grid, enemies, lives }) {
 
   const attackColumns = [];
   const damageByLane = {};
+  const hitEffects = [];
   const damageBursts = [];
   const shotTraces = [];
   const logMessages = [];
 
   for (let lane = 0; lane < COLS; lane += 1) {
     let laneDidAttack = false;
+    const targets = laneTargets[lane];
 
     for (let row = 0; row < ROWS; row += 1) {
       const shotPower = grid[row][lane];
@@ -75,20 +101,22 @@ export function resolveCombatTurn({ grid, enemies, lives }) {
         continue;
       }
 
-      const targets = nextEnemies
-        .filter((enemy) => enemy.lane === lane && enemy.step > 0 && !newlyDeployedIds.has(enemy.id))
-        .sort((left, right) => right.step - left.step);
+      while (laneTargetIndexes[lane] < targets.length && targets[laneTargetIndexes[lane]].hp <= 0) {
+        laneTargetIndexes[lane] += 1;
+      }
 
-      if (!targets.length) {
+      if (laneTargetIndexes[lane] >= targets.length) {
         break;
       }
 
-      const target = targets[0];
+      const target = targets[laneTargetIndexes[lane]];
       const delayMs = shotOrder * SHOT_ANIMATION_STAGGER;
       shotOrder += 1;
 
       if (shotPower <= target.armor) {
-        shotTraces.push(buildTrace(shotPower, target, lane, row, delayMs, true, effectIndex));
+        if (shotTraces.length < MAX_VISUAL_EFFECTS) {
+          shotTraces.push(buildShotTrace(target, lane, row, delayMs, true, effectIndex));
+        }
         effectIndex += 1;
         logMessages.push(`🛡️ レーン${LANE_NAMES[lane]}: ${shotPower}砲撃が装甲${target.armor}に弾かれた！`);
         continue;
@@ -98,15 +126,15 @@ export function resolveCombatTurn({ grid, enemies, lives }) {
       damageByLane[lane] = (damageByLane[lane] ?? 0) + damage;
       laneDidAttack = true;
 
-      damageBursts.push(buildBurst(damage, target, lane, row, delayMs, effectIndex));
-      shotTraces.push(buildTrace(shotPower, target, lane, row, delayMs, false, effectIndex));
+      hitEffects.push(buildHitEffect(target, lane, row, delayMs, effectIndex));
+      if (damageBursts.length < MAX_VISUAL_EFFECTS) {
+        damageBursts.push(buildDamageBurst(target, lane, row, damage, delayMs, effectIndex));
+      }
+      if (shotTraces.length < MAX_VISUAL_EFFECTS) {
+        shotTraces.push(buildShotTrace(target, lane, row, delayMs, false, effectIndex));
+      }
       effectIndex += 1;
-
-      nextEnemies = nextEnemies.map((enemy) => (
-        enemy.id === target.id
-          ? { ...enemy, hp: enemy.hp - damage }
-          : enemy
-      ));
+      target.hp -= damage;
     }
 
     if (laneDidAttack) {
@@ -135,6 +163,7 @@ export function resolveCombatTurn({ grid, enemies, lives }) {
     scoreGained,
     attackColumns,
     damageByLane,
+    hitEffects,
     damageBursts,
     shotTraces,
     logMessages,
