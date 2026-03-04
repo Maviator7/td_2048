@@ -1,260 +1,46 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-
-const COLS = 4, ROWS = 6, INIT_LIVES = 5, ENEMY_MAX_STEPS = 9;
-const MOVES_PER_TURN = 3; // ← 1ターンに動かせる回数
-const SWIPE_THRESHOLD = 24;
-const SHOT_ANIMATION_STAGGER = 140;
-const LANE_COLORS = ["#e74c3c","#3498db","#27ae60","#9b59b6"];
-const LANE_NAMES = ["A","B","C","D"];
-
-function slideLine(line) {
-  const nums = line.filter(Boolean); const result = []; let score = 0, i = 0;
-  while (i < nums.length) {
-    if (i+1 < nums.length && nums[i]===nums[i+1]) { const v=nums[i]*2; result.push(v); score+=v; i+=2; }
-    else { result.push(nums[i]); i++; }
-  }
-  while (result.length < line.length) result.push(0);
-  return { line: result, score };
-}
-
-function slideGrid(grid, dir) {
-  const g = grid.map(r=>[...r]); let score=0, moved=false;
-  const proc = line => {
-    const b=line.join(); const {line:a,score:s}=slideLine(line);
-    if(a.join()!==b) moved=true; score+=s; return a;
-  };
-  if(dir==="left")       for(let r=0;r<ROWS;r++) g[r]=proc(g[r]);
-  else if(dir==="right") for(let r=0;r<ROWS;r++) g[r]=proc([...g[r]].reverse()).reverse();
-  else if(dir==="up")    for(let c=0;c<COLS;c++){const col=proc(g.map(r=>r[c]));col.forEach((v,r)=>g[r][c]=v);}
-  else if(dir==="down")  for(let c=0;c<COLS;c++){const col=proc(g.map(r=>r[c]).reverse()).reverse();col.forEach((v,r)=>g[r][c]=v);}
-  return {grid:g,score,moved};
-}
-
-const emptyGrid = () => Array(ROWS).fill(null).map(()=>Array(COLS).fill(0));
-function addTile(grid) {
-  const empty=[]; for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(!grid[r][c]) empty.push([r,c]);
-  if(!empty.length) return grid;
-  const [r,c]=empty[Math.floor(Math.random()*empty.length)];
-  const ng=grid.map(row=>[...row]); ng[r][c]=Math.random()<0.85?2:4; return ng;
-}
-function canMove(grid) {
-  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-    if(!grid[r][c]) return true;
-    if(c+1<COLS&&grid[r][c]===grid[r][c+1]) return true;
-    if(r+1<ROWS&&grid[r][c]===grid[r+1][c]) return true;
-  } return false;
-}
-
-let eid=0;
-function makeEnemy(lane, waveNum) {
-  const base=(waveNum+1)*18, hp=Math.floor(base*(0.7+Math.random()*0.6));
-  const armor=waveNum>=4?Math.pow(2,Math.min(Math.floor((waveNum-2)/2),7)):0;
-  const isBoss=waveNum>0&&Math.random()<0.15;
-  return {id:`e${eid++}`,lane,hp:isBoss?hp*3:hp,maxHp:isBoss?hp*3:hp,armor:isBoss?armor*2:armor,step:0,isBoss};
-}
-function spawnWave(waveNum) {
-  const count=4+waveNum*2;
-  return Array.from({length:count},(_,i)=>{const e=makeEnemy(Math.floor(Math.random()*COLS),waveNum);e.step=-(i*1.5);return e;});
-}
-
-function tileColor(val) {
-  const map={2:["#eee4da","#776e65"],4:["#ede0c8","#776e65"],8:["#f2b179","#fff"],16:["#f59563","#fff"],32:["#f67c5f","#fff"],64:["#f65e3b","#fff"],128:["#edcf72","#f9f6f2"],256:["#edcc61","#f9f6f2"],512:["#edc850","#f9f6f2"],1024:["#edc53f","#f9f6f2"],2048:["#edc22e","#f9f6f2"]};
-  return map[val]||["#3c3a32","#f9f6f2"];
-}
+import { useEffect, useState } from "react";
+import {
+  MOVES_PER_TURN,
+  LANE_COLORS,
+  LANE_NAMES,
+  COLS,
+} from "./game/constants";
+import { GAME_PHASES } from "./game/config";
+import { StatusHud } from "./components/StatusHud";
+import { MovesIndicator } from "./components/MovesIndicator";
+import { WaveClearBanner } from "./components/WaveClearBanner";
+import { NextSpawnIndicator } from "./components/NextSpawnIndicator";
+import { EventLog } from "./components/EventLog";
+import { GuideCards } from "./components/GuideCards";
+import { ColumnPowerLabels } from "./components/ColumnPowerLabels";
+import { EnemyLanes } from "./components/EnemyLanes";
+import { TowerGrid } from "./components/TowerGrid";
+import { ActionPanel } from "./components/ActionPanel";
+import { useGameState } from "./hooks/useGameState";
 
 export default function MergeTowerDefense() {
-  const [grid, setGrid]       = useState(()=>addTile(addTile(emptyGrid())));
-  const [enemies, setEnemies] = useState(()=>spawnWave(0));
-  const [lives, setLives]     = useState(INIT_LIVES);
-  const [wave, setWave]       = useState(1);
-  const [score, setScore]     = useState(0);
-  const [phase, setPhase]     = useState("player"); // "player" | "resolving" | "waveclear" | "gameover"
-  const [movesLeft, setMovesLeft] = useState(MOVES_PER_TURN);
-  const [log, setLog]         = useState(["⚔️ Wave 1 開始！3回スライドして備えよ！"]);
-  const [atkCols, setAtkCols] = useState([]);
-  const [dmgMap, setDmgMap]   = useState({});
-  const [damageBursts, setDamageBursts] = useState([]);
-  const [shotTraces, setShotTraces] = useState([]);
-  const [mergeHL, setMergeHL] = useState([]);
-  const [waveClearFxKey, setWaveClearFxKey] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
-  const touchStartRef = useRef(null);
-
-  const pushLog = useCallback(msg => setLog(l=>[msg,...l].slice(0,8)), []);
-
-  // ── Battle resolution (called when movesLeft hits 0) ──────────────
-  const resolveTurn = useCallback((currentGrid, currentEnemies, currentLives, currentWave) => {
-    let cur = currentEnemies.map(e=>({...e}));
-    let newLives = currentLives, gainedScore = 0;
-    const atkSet=[], dmg={};
-    const bursts = [];
-    const traces = [];
-    let shotOrder = 0;
-
-    const newlyDeployedIds = new Set();
-    cur = cur.map(e => {
-      const nextStep = e.step + 1;
-      if (e.step <= 0 && nextStep > 0) newlyDeployedIds.add(e.id);
-      return {...e, step: nextStep};
-    });
-
-    for(let c=0;c<COLS;c++){
-      let laneDidAttack = false;
-
-      for (let r = 0; r < ROWS; r++) {
-        const shotPower = currentGrid[r][c];
-        if (!shotPower) continue;
-
-        const targets = cur
-          .filter(e => e.lane===c && e.step>0 && !newlyDeployedIds.has(e.id))
-          .sort((a,b)=>b.step-a.step);
-        if(!targets.length) break;
-
-        const t = targets[0];
-        const targetTop = Math.min(1, t.step / ENEMY_MAX_STEPS) * 72;
-        const beamColor = shotPower<=t.armor ? "#f1c40f" : LANE_COLORS[c];
-        const beamWidth = Math.min(10, 3 + Math.floor(Math.log2(Math.max(shotPower, 1))) * 0.75);
-        const delayMs = shotOrder * SHOT_ANIMATION_STAGGER;
-        shotOrder += 1;
-        if(shotPower<=t.armor){
-          traces.push({
-            key: `trace-${t.id}-${Date.now()}-${c}-${r}`,
-            lane: c,
-            top: targetTop,
-            width: beamWidth,
-            color: beamColor,
-            blocked: true,
-            delayMs,
-          });
-          pushLog(`🛡️ レーン${LANE_NAMES[c]}: ${shotPower}砲撃が装甲${t.armor}に弾かれた！`);
-          continue;
-        }
-
-        const d = shotPower - t.armor;
-        dmg[c] = (dmg[c] ?? 0) + d;
-        laneDidAttack = true;
-        bursts.push({
-          key: `${t.id}-${Date.now()}-${c}-${r}`,
-          targetId: t.id,
-          lane: c,
-          top: targetTop,
-          damage: d,
-          fontSize: Math.min(30, 16 + Math.floor(Math.log2(Math.max(d, 1))) * 2),
-          delayMs,
-        });
-        traces.push({
-          key: `trace-${t.id}-${Date.now()}-${c}-${r}`,
-          lane: c,
-          top: targetTop,
-          width: beamWidth,
-          color: beamColor,
-          blocked: false,
-          delayMs,
-        });
-        cur = cur.map(e=>e.id===t.id?{...e,hp:e.hp-d}:e);
-      }
-
-      if (laneDidAttack) atkSet.push(c);
-    }
-
-    const killed=cur.filter(e=>e.hp<=0);
-    killed.forEach(e=>{const s=e.maxHp*(e.isBoss?5:2);gainedScore+=s;pushLog(`${e.isBoss?"💥ボス":"✅"}撃破！+${s}pts`);});
-    cur=cur.filter(e=>e.hp>0);
-
-    const reached=cur.filter(e=>e.step>=ENEMY_MAX_STEPS);
-    if(reached.length){newLives=Math.max(0,newLives-reached.length);pushLog(`⚠️ ${reached.length}体突破！-${reached.length}ライフ`);}
-    cur=cur.filter(e=>e.step<ENEMY_MAX_STEPS);
-
-    const effectDuration = Math.max(650, shotOrder * SHOT_ANIMATION_STAGGER + 420);
-    setAtkCols(atkSet); setDmgMap(dmg); setDamageBursts(bursts); setShotTraces(traces);
-    setTimeout(()=>{setAtkCols([]);setDmgMap({});setDamageBursts([]);setShotTraces([]);}, effectDuration);
-
-    setEnemies(cur); setLives(newLives); setScore(s=>s+gainedScore);
-
-    if(newLives<=0){ setPhase("gameover"); pushLog("💀 ライフ0！ゲームオーバー！"); return; }
-    if(cur.length===0){ setPhase("waveclear"); pushLog(`🎉 Wave ${currentWave} クリア！`); return; }
-
-    // Next player turn
-    setTimeout(()=>{
-      setMovesLeft(MOVES_PER_TURN);
-      setPhase("player");
-      pushLog(`🔄 新ターン！残り${MOVES_PER_TURN}手`);
-    }, 600);
-  }, [pushLog]);
-
-  // ── Slide ─────────────────────────────────────────────────────────
-  const handleSlide = useCallback(dir => {
-    if(phase !== "player") return;
-    const {grid:ng, score:gained, moved} = slideGrid(grid, dir);
-    if(!moved) return;
-
-    const merged=[];
-    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(ng[r][c]!==grid[r][c]&&ng[r][c]>0) merged.push(`${r}-${c}`);
-    const wt = addTile(ng);
-    setGrid(wt);
-    if(gained){ setScore(s=>s+gained); pushLog(`🔀 合体！+${gained}pts`); }
-    if(merged.length){ setMergeHL(merged); setTimeout(()=>setMergeHL([]),400); }
-
-    if(!canMove(wt)){ setPhase("gameover"); pushLog("💀 グリッド満杯！ゲームオーバー！"); return; }
-
-    const next = movesLeft - 1;
-    setMovesLeft(next);
-    if(next <= 0){
-      pushLog("⚔️ 手数終了 → 攻撃！");
-      setPhase("resolving");
-      setTimeout(()=>resolveTurn(wt, enemies, lives, wave), 200);
-    } else {
-      pushLog(`残り${next}手`);
-    }
-  }, [grid, phase, movesLeft, enemies, lives, wave, pushLog, resolveTurn]);
-
-  const handleTouchStart = useCallback((e) => {
-    const touch = e.touches?.[0];
-    if (!touch) return;
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-  }, []);
-
-  const handleTouchEnd = useCallback((e) => {
-    const start = touchStartRef.current;
-    touchStartRef.current = null;
-    if (!start || phase !== "player") return;
-
-    const touch = e.changedTouches?.[0];
-    if (!touch) return;
-
-    const dx = touch.clientX - start.x;
-    const dy = touch.clientY - start.y;
-    const absX = Math.abs(dx);
-    const absY = Math.abs(dy);
-
-    if (Math.max(absX, absY) < SWIPE_THRESHOLD) return;
-
-    if (absX > absY) handleSlide(dx > 0 ? "right" : "left");
-    else handleSlide(dy > 0 ? "down" : "up");
-  }, [handleSlide, phase]);
-
-  const nextWave = useCallback(()=>{
-    const nw=wave+1; setWave(nw); setEnemies(spawnWave(nw-1));
-    setMovesLeft(MOVES_PER_TURN); setPhase("player");
-    pushLog(`⚔️ Wave ${nw} 開始！${nw>=4?"装甲敵が登場！":""}`);
-  },[wave,pushLog]);
-
-  const restart = ()=>{
-    eid=0; setGrid(addTile(addTile(emptyGrid()))); setEnemies(spawnWave(0));
-    setLives(INIT_LIVES); setWave(1); setScore(0);
-    setMovesLeft(MOVES_PER_TURN); setPhase("player");
-    setLog(["⚔️ Wave 1 開始！3回スライドして備えよ！"]);
-  };
-
-  // Keyboard
-  useEffect(()=>{
-    const h=e=>{
-      const m={ArrowLeft:"left",ArrowRight:"right",ArrowUp:"up",ArrowDown:"down"};
-      if(m[e.key]){e.preventDefault();handleSlide(m[e.key]);}
-    };
-    window.addEventListener("keydown",h);
-    return()=>window.removeEventListener("keydown",h);
-  },[handleSlide]);
+  const {
+    grid,
+    enemies,
+    lives,
+    wave,
+    score,
+    phase,
+    movesLeft,
+    log,
+    atkCols,
+    dmgMap,
+    damageBursts,
+    shotTraces,
+    mergeHL,
+    colPower,
+    nextSpawnEnemy,
+    handleTouchStart,
+    handleTouchEnd,
+    nextWave,
+    restart,
+  } = useGameState();
 
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
@@ -262,16 +48,6 @@ export default function MergeTowerDefense() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  useEffect(() => {
-    if (phase === "waveclear") setWaveClearFxKey(k => k + 1);
-  }, [phase]);
-
-  const colPower=Array(COLS).fill(0).map((_,c)=>{let p=0;for(let r=0;r<ROWS;r++)p+=grid[r][c];return p;});
-  const queuedEnemies = enemies.filter(e => e.step <= 0);
-  const nextSpawnEnemy = queuedEnemies.length
-    ? [...queuedEnemies].sort((a, b) => b.step - a.step)[0]
-    : null;
-  const isPlayer = phase==="player";
   const isDesktop = viewportWidth >= 768;
   const isWideDesktop = viewportWidth >= 1200;
   const tileHeight = isWideDesktop ? 62 : isDesktop ? 56 : 54;
@@ -287,76 +63,22 @@ export default function MergeTowerDefense() {
           <div style={{fontSize:11,color:"#555",marginTop:2}}>スライドで砲塔合体 → 敵を撃退せよ</div>
         </div>
 
-        {/* HUD */}
-        <div style={{display:"flex",justifyContent:"space-between",background:"#16213e",borderRadius:12,padding:"10px 16px",marginBottom:10,border:"1px solid #2a2a4a"}}>
-          <div style={{textAlign:"center"}}><div style={{fontSize:9,color:"#555"}}>LIVES</div><div style={{fontSize:15,color:"#e74c3c"}}>{lives>0?("❤️".repeat(Math.min(lives,5))+(lives>5?`+${lives-5}`:"")):"💀"}</div></div>
-          <div style={{textAlign:"center"}}><div style={{fontSize:9,color:"#555"}}>WAVE</div><div style={{fontSize:26,fontWeight:"bold",color:"#f1c40f",lineHeight:1.1}}>{wave}</div></div>
-          <div style={{textAlign:"center"}}><div style={{fontSize:9,color:"#555"}}>SCORE</div><div style={{fontSize:15,color:"#2ecc71"}}>{score.toLocaleString()}</div></div>
-        </div>
+        <StatusHud lives={lives} wave={wave} score={score} />
+        <MovesIndicator
+          movesLeft={movesLeft}
+          totalMoves={MOVES_PER_TURN}
+          isResolving={phase === GAME_PHASES.RESOLVING}
+        />
 
-        {/* Moves indicator */}
-        <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:8,alignItems:"center"}}>
-          <span style={{fontSize:11,color:"#888"}}>残り手数：</span>
-          {Array(MOVES_PER_TURN).fill(0).map((_,i)=>(
-            <div key={i} style={{width:22,height:22,borderRadius:6,background:i<movesLeft?"#f1c40f":"#1e2a3a",border:`2px solid ${i<movesLeft?"#f1c40f":"#2a3a4a"}`,transition:"all 0.2s",boxShadow:i<movesLeft?"0 0 8px #f1c40f88":"none"}}/>
-          ))}
-          {phase==="resolving"&&<span style={{fontSize:11,color:"#e74c3c",marginLeft:4}}>⚔️ 攻撃中...</span>}
-        </div>
-
-        {phase==="waveclear"&&(
-          <div className="waveclear-top-cta wave-clear-panel" key={`wave-clear-${waveClearFxKey}`}>
-            <div className="wave-clear-confetti" aria-hidden="true">
-              {Array.from({length: 14}).map((_, i) => (
-                <span
-                  key={`spark-${i}`}
-                  className="wave-clear-spark"
-                  style={{
-                    left: `${6 + (i * 7) % 88}%`,
-                    animationDelay: `${(i % 7) * 0.1}s`,
-                    animationDuration: `${1.2 + (i % 4) * 0.2}s`,
-                  }}
-                />
-              ))}
-            </div>
-            <div style={{fontSize:16,fontWeight:"bold",color:"#ffe082",textShadow:"0 0 12px #f1c40f88"}}>
-              🎉 Wave {wave} クリア！
-            </div>
-            <div style={{fontSize:12,color:"#d5e9da",marginTop:3,marginBottom:8}}>
-              次のウェーブへ進めます
-            </div>
-            <button className="wave-next-btn" onClick={nextWave}>
-              ▶ 次のウェーブへ進む (Wave {wave+1})
-            </button>
-          </div>
+        {phase===GAME_PHASES.WAVECLEAR&&(
+          <WaveClearBanner wave={wave} onNextWave={nextWave} />
         )}
 
-        <div
-          className={nextSpawnEnemy ? "next-spawn-panel" : undefined}
-          style={{
-            display:"flex",
-            justifyContent:"center",
-            alignItems:"center",
-            gap:8,
-            marginBottom:10,
-            padding:"8px 10px",
-            background:"#0d1117",
-            border:"1px solid #1e2a3a",
-            borderRadius:10,
-            ...(nextSpawnEnemy ? {"--next-glow-color": LANE_COLORS[nextSpawnEnemy.lane]} : {}),
-          }}
-        >
-          <span style={{fontSize:11,color:"#888"}}>次の出現列</span>
-          {nextSpawnEnemy ? (
-            <>
-              <div className="next-spawn-dot" style={{width:12,height:12,borderRadius:"50%",background:LANE_COLORS[nextSpawnEnemy.lane],boxShadow:`0 0 10px ${LANE_COLORS[nextSpawnEnemy.lane]}88`}} />
-              <span style={{fontSize:14,fontWeight:"bold",color:LANE_COLORS[nextSpawnEnemy.lane],textShadow:`0 0 10px ${LANE_COLORS[nextSpawnEnemy.lane]}66`}}>
-                レーン {LANE_NAMES[nextSpawnEnemy.lane]}
-              </span>
-            </>
-          ) : (
-            <span style={{fontSize:12,color:"#555"}}>待機中の敵なし</span>
-          )}
-        </div>
+        <NextSpawnIndicator
+          nextSpawnEnemy={nextSpawnEnemy}
+          laneColors={LANE_COLORS}
+          laneNames={LANE_NAMES}
+        />
 
         <div style={{display:"grid",gridTemplateColumns:isDesktop?"minmax(0,1fr) minmax(280px,360px)":"1fr",gap:12,alignItems:"start"}}>
           <div
@@ -364,138 +86,23 @@ export default function MergeTowerDefense() {
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
-            {/* Column power labels */}
-            <div style={{display:"flex",gap:4,marginBottom:3}}>
-              {Array(COLS).fill(0).map((_,c)=>(
-                <div
-                  key={c}
-                  style={{
-                    flex:1,
-                    textAlign:"center",
-                    fontSize:isDesktop?12:10,
-                    color:LANE_COLORS[c],
-                    fontWeight:"bold",
-                    borderRadius:999,
-                    padding:"2px 0",
-                    background:nextSpawnEnemy?.lane===c ? `${LANE_COLORS[c]}22` : "transparent",
-                    boxShadow:nextSpawnEnemy?.lane===c ? `0 0 12px ${LANE_COLORS[c]}33` : "none",
-                    textShadow:nextSpawnEnemy?.lane===c ? `0 0 8px ${LANE_COLORS[c]}66` : "none",
-                    transition:"all 0.2s",
-                  }}
-                >
-                  {LANE_NAMES[c]} 砲:{colPower[c]}{nextSpawnEnemy?.lane===c?"  NEXT":""}
-                </div>
-              ))}
-            </div>
-
-            {/* Enemy Lanes */}
-            <div style={{display:"flex",gap:4,height:laneHeight,marginBottom:6}}>
-              {Array(COLS).fill(0).map((_,c)=>{
-                const laneEnemies=enemies.filter(e=>e.lane===c&&e.step>0).sort((a,b)=>b.step-a.step);
-                const queued=enemies.filter(e=>e.lane===c&&e.step<=0).length;
-                const isAtk=atkCols.includes(c);
-                const isNextSpawnLane = nextSpawnEnemy?.lane === c;
-                return (
-                  <div
-                    key={c}
-                    className={isNextSpawnLane ? "next-lane-pulse" : undefined}
-                    style={{
-                      flex:1,
-                      position:"relative",
-                      background:isAtk?"#1a1000":isNextSpawnLane?`${LANE_COLORS[c]}14`:"#0d1117",
-                      border:`2px solid ${isAtk?"#f1c40f":isNextSpawnLane?LANE_COLORS[c]:LANE_COLORS[c]+"44"}`,
-                      borderRadius:8,
-                      overflow:"hidden",
-                      transition:"all 0.2s",
-                      ...(isNextSpawnLane ? {"--next-glow-color": LANE_COLORS[c]} : {}),
-                    }}
-                  >
-                    {isNextSpawnLane&&<div style={{position:"absolute",top:4,right:4,padding:"2px 5px",borderRadius:999,fontSize:8,fontWeight:"bold",letterSpacing:0.6,color:"#fff",background:LANE_COLORS[c],boxShadow:`0 0 10px ${LANE_COLORS[c]}88`,zIndex:4}}>NEXT</div>}
-                    {isNextSpawnLane&&<div style={{position:"absolute",inset:0,background:`linear-gradient(180deg, ${LANE_COLORS[c]}20 0%, transparent 38%, ${LANE_COLORS[c]}16 100%)`,zIndex:1,pointerEvents:"none"}}/>}
-                    {isAtk&&<div style={{position:"absolute",inset:0,background:LANE_COLORS[c]+"22",zIndex:2}}/>}
-                    {shotTraces.filter(trace=>trace.lane===c).map(trace=>(
-                      <div
-                        key={trace.key}
-                        className={trace.blocked ? "shot-trace shot-trace-blocked" : "shot-trace"}
-                        style={{
-                          position:"absolute",
-                          top:`${trace.top + 8}%`,
-                          bottom:4,
-                          left:"50%",
-                          width:trace.width,
-                          transform:"translateX(-50%)",
-                          borderRadius:999,
-                          background:`linear-gradient(180deg, ${trace.color} 0%, rgba(255,255,255,0.92) 28%, ${trace.color}88 72%, transparent 100%)`,
-                          boxShadow:`0 0 12px ${trace.color}, 0 0 22px ${trace.color}66`,
-                          zIndex:5,
-                          pointerEvents:"none",
-                          animationDelay:`${trace.delayMs}ms`,
-                        }}
-                      />
-                    ))}
-                    {dmgMap[c]&&<div style={{position:"absolute",top:4,left:"50%",transform:"translateX(-50%)",color:"#ffdd00",fontSize:13,fontWeight:"bold",zIndex:3,textShadow:"0 0 6px #ff0"}}>-{dmgMap[c]}</div>}
-                    {damageBursts.filter(b=>b.lane===c).map(burst=>(
-                      <div
-                        key={burst.key}
-                        className="damage-burst"
-                        style={{
-                          position:"absolute",
-                          top:`${burst.top}%`,
-                          left:"50%",
-                          transform:"translate(-50%, -50%)",
-                          color:"#ffe082",
-                          fontSize:burst.fontSize,
-                          fontWeight:"bold",
-                          zIndex:6,
-                          textShadow:"0 0 10px rgba(255, 208, 84, 0.95), 0 0 18px rgba(255, 98, 0, 0.65)",
-                          pointerEvents:"none",
-                          animationDelay:`${burst.delayMs}ms`,
-                        }}
-                      >
-                        -{burst.damage}
-                      </div>
-                    ))}
-                    {laneEnemies.map(e=>{
-                      const pct=Math.min(1,e.step/ENEMY_MAX_STEPS),top=pct*72,hp=e.hp/e.maxHp;
-                      const hitBurst = damageBursts.find(burst => burst.targetId === e.id);
-                      const isHit = Boolean(hitBurst);
-                      return (
-                        <div key={e.id} style={{position:"absolute",top:`${top}%`,left:"50%",transform:"translateX(-50%)",width:34,transition:"top 0.35s ease"}}>
-                          <div
-                            className={isHit ? "enemy-hit-flash" : undefined}
-                            style={{
-                              width:30,
-                              height:30,
-                              margin:"0 auto",
-                              borderRadius:e.isBoss?6:"50%",
-                              background:e.isBoss?"#8e44ad":LANE_COLORS[c],
-                              display:"flex",
-                              alignItems:"center",
-                              justifyContent:"center",
-                              fontSize:9,
-                              color:"#fff",
-                              fontWeight:"bold",
-                              border:e.armor?"2px solid #f1c40f":"2px solid transparent",
-                              boxShadow:isHit
-                                ? `0 0 18px rgba(255,255,255,0.8), 0 0 24px ${LANE_COLORS[c]}cc`
-                                : `0 0 6px ${LANE_COLORS[c]}88`,
-                              animationDelay:isHit ? `${hitBurst.delayMs}ms` : undefined,
-                            }}
-                          >
-                            {e.hp}
-                          </div>
-                          <div style={{height:3,background:"#222",borderRadius:2,marginTop:1}}>
-                            <div style={{width:`${hp*100}%`,height:"100%",background:hp>0.5?"#2ecc71":hp>0.25?"#f39c12":"#e74c3c",borderRadius:2,transition:"width 0.2s"}}/>
-                          </div>
-                          {e.armor>0&&<div style={{fontSize:7,color:"#f1c40f",textAlign:"center"}}>🛡{e.armor}</div>}
-                        </div>
-                      );
-                    })}
-                    {queued>0&&<div style={{position:"absolute",bottom:3,left:"50%",transform:"translateX(-50%)",fontSize:9,color:"#444"}}>+{queued}待機</div>}
-                  </div>
-                );
-              })}
-            </div>
+            <ColumnPowerLabels
+              columnPowers={colPower}
+              nextSpawnEnemy={nextSpawnEnemy}
+              isDesktop={isDesktop}
+              laneColors={LANE_COLORS}
+              laneNames={LANE_NAMES}
+            />
+            <EnemyLanes
+              enemies={enemies}
+              atkCols={atkCols}
+              nextSpawnEnemy={nextSpawnEnemy}
+              shotTraces={shotTraces}
+              damageByLane={dmgMap}
+              damageBursts={damageBursts}
+              laneHeight={laneHeight}
+              laneColors={LANE_COLORS}
+            />
 
             {/* Defense Line */}
             <div style={{display:"flex",alignItems:"center",gap:6,margin:"6px 0"}}>
@@ -504,58 +111,27 @@ export default function MergeTowerDefense() {
               <div style={{flex:1,height:2,background:"#e74c3c"}}/>
             </div>
 
-            {/* Tower Grid */}
-            <div style={{display:"grid",gridTemplateColumns:`repeat(${COLS},1fr)`,gap:4,marginBottom:8}}>
-              {grid.map((row,r)=>row.map((val,c)=>{
-                const [bg,clr]=val?tileColor(val):["#1c1c2e","#1c1c2e"];
-                const isMerged=mergeHL.includes(`${r}-${c}`);
-                const isAtk=atkCols.includes(c)&&val>0;
-                return (
-                  <div key={`${r}-${c}`} style={{background:isAtk?"#fffbe6":isMerged?"#fff3b0":bg,color:clr,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",height:tileHeight,fontWeight:"bold",fontSize:isDesktop?(val>=1024?16:val>=128?19:22):(val>=1024?13:val>=128?15:18),boxShadow:val?`0 3px 8px ${bg}88`:"none",border:isMerged||isAtk?"2px solid #f1c40f":"2px solid transparent",transition:"all 0.15s",transform:isMerged?"scale(1.08)":"scale(1)"}}>
-                    {val||""}
-                  </div>
-                );
-              }))}
-            </div>
-
-            {/* Action buttons */}
-            <div style={{marginBottom:isDesktop?0:8}}>
-              {phase==="resolving"&&(
-                <div style={{textAlign:"center",padding:"12px 0",color:"#e74c3c",fontSize:15,fontWeight:"bold"}}>⚔️ 攻撃解決中...</div>
-              )}
-              {phase==="gameover"&&(
-                <div>
-                  <div style={{textAlign:"center",color:"#e74c3c",fontSize:20,fontWeight:"bold",marginBottom:6}}>💀 GAME OVER</div>
-                  <div style={{textAlign:"center",color:"#888",fontSize:13,marginBottom:8}}>最終スコア: <span style={{color:"#f1c40f"}}>{score.toLocaleString()}</span></div>
-                  <button onClick={restart} style={{...btnS("#3498db",false),width:"100%",fontSize:15,padding:"12px 0"}}>🔄 もう一度プレイ</button>
-                </div>
-              )}
-            </div>
+            <TowerGrid
+              grid={grid}
+              mergeHighlights={mergeHL}
+              attackColumns={atkCols}
+              tileHeight={tileHeight}
+              isDesktop={isDesktop}
+            />
+            <ActionPanel
+              phase={phase}
+              isDesktop={isDesktop}
+              score={score}
+              onRestart={restart}
+            />
           </div>
 
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {/* Log */}
-            <div style={{background:"#0d1117",border:"1px solid #1e2a3a",borderRadius:10,padding:"8px 10px",maxHeight:isDesktop?220:90,overflowY:"auto"}}>
-              {log.map((msg,i)=><div key={i} style={{fontSize:isDesktop?12:11,color:i===0?"#ddd":"#444",marginBottom:2,lineHeight:1.4}}>{msg}</div>)}
-            </div>
-
-            {/* Guide */}
-            <div style={{display:"grid",gridTemplateColumns:isDesktop?"1fr":"1fr 1fr",gap:4}}>
-              {[["🟡 手数マス","3マス分スライドしたら自動攻撃"],["🛡️ 装甲敵","Wave4〜 砲塔値>装甲値が必要"],["💀 敗北条件","ライフ0 or グリッド満杯"]].map(([t,d])=>(
-                <div key={t} style={{background:"#0d1117",border:"1px solid #1e2a3a",borderRadius:8,padding:"6px 8px"}}>
-                  <div style={{fontSize:11,color:"#aaa",fontWeight:"bold"}}>{t}</div>
-                  <div style={{fontSize:10,color:"#555",marginTop:2}}>{d}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{textAlign:"center",color:"#333",fontSize:10,marginTop:2}}>矢印キー: スライド</div>
+            <EventLog log={log} isDesktop={isDesktop} />
+            <GuideCards isDesktop={isDesktop} />
           </div>
         </div>
       </div>
     </div>
   );
-}
-
-function btnS(color, disabled){
-  return {background:disabled?"#1a1a2e":color,color:disabled?"#333":"#fff",border:"none",borderRadius:10,padding:"10px 0",fontSize:20,fontWeight:"bold",cursor:disabled?"default":"pointer",width:"100%",transition:"all 0.1s",boxShadow:disabled?"none":`0 4px 12px ${color}66`};
 }
