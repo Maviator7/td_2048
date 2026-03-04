@@ -71,6 +71,7 @@ export default function MergeTowerDefense() {
   const [log, setLog]         = useState(["⚔️ Wave 1 開始！3回スライドして備えよ！"]);
   const [atkCols, setAtkCols] = useState([]);
   const [dmgMap, setDmgMap]   = useState({});
+  const [damageBursts, setDamageBursts] = useState([]);
   const [mergeHL, setMergeHL] = useState([]);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
 
@@ -81,6 +82,7 @@ export default function MergeTowerDefense() {
     let cur = currentEnemies.map(e=>({...e}));
     let newLives = currentLives, gainedScore = 0;
     const atkSet=[], dmg={};
+    const bursts = [];
 
     const newlyDeployedIds = new Set();
     cur = cur.map(e => {
@@ -99,6 +101,14 @@ export default function MergeTowerDefense() {
       const t=targets[0];
       if(power<=t.armor){pushLog(`🛡️ レーン${LANE_NAMES[c]}: 装甲${t.armor}に弾かれた！`);continue;}
       const d=power-t.armor; dmg[c]=d; atkSet.push(c);
+      bursts.push({
+        key: `${t.id}-${Date.now()}-${c}`,
+        targetId: t.id,
+        lane: c,
+        top: Math.min(1, t.step / ENEMY_MAX_STEPS) * 72,
+        damage: d,
+        fontSize: Math.min(30, 16 + Math.floor(Math.log2(Math.max(d, 1))) * 2),
+      });
       cur=cur.map(e=>e.id===t.id?{...e,hp:e.hp-d}:e);
     }
 
@@ -110,8 +120,8 @@ export default function MergeTowerDefense() {
     if(reached.length){newLives=Math.max(0,newLives-reached.length);pushLog(`⚠️ ${reached.length}体突破！-${reached.length}ライフ`);}
     cur=cur.filter(e=>e.step<ENEMY_MAX_STEPS);
 
-    setAtkCols(atkSet); setDmgMap(dmg);
-    setTimeout(()=>{setAtkCols([]);setDmgMap({});},500);
+    setAtkCols(atkSet); setDmgMap(dmg); setDamageBursts(bursts);
+    setTimeout(()=>{setAtkCols([]);setDmgMap({});setDamageBursts([]);},650);
 
     setEnemies(cur); setLives(newLives); setScore(s=>s+gainedScore);
 
@@ -298,11 +308,53 @@ export default function MergeTowerDefense() {
                     {isNextSpawnLane&&<div style={{position:"absolute",inset:0,background:`linear-gradient(180deg, ${LANE_COLORS[c]}20 0%, transparent 38%, ${LANE_COLORS[c]}16 100%)`,zIndex:1,pointerEvents:"none"}}/>}
                     {isAtk&&<div style={{position:"absolute",inset:0,background:LANE_COLORS[c]+"22",zIndex:2}}/>}
                     {dmgMap[c]&&<div style={{position:"absolute",top:4,left:"50%",transform:"translateX(-50%)",color:"#ffdd00",fontSize:13,fontWeight:"bold",zIndex:3,textShadow:"0 0 6px #ff0"}}>-{dmgMap[c]}</div>}
+                    {damageBursts.filter(b=>b.lane===c).map(burst=>(
+                      <div
+                        key={burst.key}
+                        className="damage-burst"
+                        style={{
+                          position:"absolute",
+                          top:`${burst.top}%`,
+                          left:"50%",
+                          transform:"translate(-50%, -50%)",
+                          color:"#ffe082",
+                          fontSize:burst.fontSize,
+                          fontWeight:"bold",
+                          zIndex:6,
+                          textShadow:"0 0 10px rgba(255, 208, 84, 0.95), 0 0 18px rgba(255, 98, 0, 0.65)",
+                          pointerEvents:"none",
+                        }}
+                      >
+                        -{burst.damage}
+                      </div>
+                    ))}
                     {laneEnemies.map(e=>{
                       const pct=Math.min(1,e.step/ENEMY_MAX_STEPS),top=pct*72,hp=e.hp/e.maxHp;
+                      const isHit = damageBursts.some(burst => burst.targetId === e.id);
                       return (
                         <div key={e.id} style={{position:"absolute",top:`${top}%`,left:"50%",transform:"translateX(-50%)",width:34,transition:"top 0.35s ease"}}>
-                          <div style={{width:30,height:30,margin:"0 auto",borderRadius:e.isBoss?6:"50%",background:e.isBoss?"#8e44ad":LANE_COLORS[c],display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:"bold",border:e.armor?"2px solid #f1c40f":"2px solid transparent",boxShadow:`0 0 6px ${LANE_COLORS[c]}88`}}>{e.hp}</div>
+                          <div
+                            className={isHit ? "enemy-hit-flash" : undefined}
+                            style={{
+                              width:30,
+                              height:30,
+                              margin:"0 auto",
+                              borderRadius:e.isBoss?6:"50%",
+                              background:e.isBoss?"#8e44ad":LANE_COLORS[c],
+                              display:"flex",
+                              alignItems:"center",
+                              justifyContent:"center",
+                              fontSize:9,
+                              color:"#fff",
+                              fontWeight:"bold",
+                              border:e.armor?"2px solid #f1c40f":"2px solid transparent",
+                              boxShadow:isHit
+                                ? `0 0 18px rgba(255,255,255,0.8), 0 0 24px ${LANE_COLORS[c]}cc`
+                                : `0 0 6px ${LANE_COLORS[c]}88`,
+                            }}
+                          >
+                            {e.hp}
+                          </div>
                           <div style={{height:3,background:"#222",borderRadius:2,marginTop:1}}>
                             <div style={{width:`${hp*100}%`,height:"100%",background:hp>0.5?"#2ecc71":hp>0.25?"#f39c12":"#e74c3c",borderRadius:2,transition:"width 0.2s"}}/>
                           </div>

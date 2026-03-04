@@ -80,6 +80,14 @@ button:focus-visible {
   animation: next-lane-pulse 1.4s ease-in-out infinite;
 }
 
+.damage-burst {
+  animation: damage-burst-rise 0.65s ease-out forwards;
+}
+
+.enemy-hit-flash {
+  animation: enemy-hit-flash 0.45s ease-out;
+}
+
 @keyframes next-panel-sheen {
   0%, 100% {
     transform: translateX(-40%);
@@ -113,6 +121,36 @@ button:focus-visible {
       inset 0 0 18px color-mix(in srgb, var(--next-glow-color) 20%, transparent),
       0 0 18px color-mix(in srgb, var(--next-glow-color) 55%, transparent),
       0 0 34px color-mix(in srgb, var(--next-glow-color) 18%, transparent);
+  }
+}
+
+@keyframes damage-burst-rise {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -25%) scale(0.75);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -55%) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -140%) scale(0.92);
+  }
+}
+
+@keyframes enemy-hit-flash {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  25% {
+    transform: scale(1.14);
+    filter: brightness(1.8) saturate(0.7);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
   }
 }
 
