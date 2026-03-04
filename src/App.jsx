@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 const COLS = 4, ROWS = 6, INIT_LIVES = 5, ENEMY_MAX_STEPS = 9;
 const MOVES_PER_TURN = 3; // ← 1ターンに動かせる回数
 const SWIPE_THRESHOLD = 24;
+const SHOT_ANIMATION_STAGGER = 140;
 const LANE_COLORS = ["#e74c3c","#3498db","#27ae60","#9b59b6"];
 const LANE_NAMES = ["A","B","C","D"];
 
@@ -73,6 +74,7 @@ export default function MergeTowerDefense() {
   const [atkCols, setAtkCols] = useState([]);
   const [dmgMap, setDmgMap]   = useState({});
   const [damageBursts, setDamageBursts] = useState([]);
+  const [shotTraces, setShotTraces] = useState([]);
   const [mergeHL, setMergeHL] = useState([]);
   const [waveClearFxKey, setWaveClearFxKey] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
@@ -86,6 +88,8 @@ export default function MergeTowerDefense() {
     let newLives = currentLives, gainedScore = 0;
     const atkSet=[], dmg={};
     const bursts = [];
+    const traces = [];
+    let shotOrder = 0;
 
     const newlyDeployedIds = new Set();
     cur = cur.map(e => {
@@ -95,24 +99,62 @@ export default function MergeTowerDefense() {
     });
 
     for(let c=0;c<COLS;c++){
-      let power=0; for(let r=0;r<ROWS;r++) power+=currentGrid[r][c];
-      if(!power) continue;
-      const targets=cur
-        .filter(e => e.lane===c && e.step>0 && !newlyDeployedIds.has(e.id))
-        .sort((a,b)=>b.step-a.step);
-      if(!targets.length) continue;
-      const t=targets[0];
-      if(power<=t.armor){pushLog(`🛡️ レーン${LANE_NAMES[c]}: 装甲${t.armor}に弾かれた！`);continue;}
-      const d=power-t.armor; dmg[c]=d; atkSet.push(c);
-      bursts.push({
-        key: `${t.id}-${Date.now()}-${c}`,
-        targetId: t.id,
-        lane: c,
-        top: Math.min(1, t.step / ENEMY_MAX_STEPS) * 72,
-        damage: d,
-        fontSize: Math.min(30, 16 + Math.floor(Math.log2(Math.max(d, 1))) * 2),
-      });
-      cur=cur.map(e=>e.id===t.id?{...e,hp:e.hp-d}:e);
+      let laneDidAttack = false;
+
+      for (let r = 0; r < ROWS; r++) {
+        const shotPower = currentGrid[r][c];
+        if (!shotPower) continue;
+
+        const targets = cur
+          .filter(e => e.lane===c && e.step>0 && !newlyDeployedIds.has(e.id))
+          .sort((a,b)=>b.step-a.step);
+        if(!targets.length) break;
+
+        const t = targets[0];
+        const targetTop = Math.min(1, t.step / ENEMY_MAX_STEPS) * 72;
+        const beamColor = shotPower<=t.armor ? "#f1c40f" : LANE_COLORS[c];
+        const beamWidth = Math.min(10, 3 + Math.floor(Math.log2(Math.max(shotPower, 1))) * 0.75);
+        const delayMs = shotOrder * SHOT_ANIMATION_STAGGER;
+        shotOrder += 1;
+        if(shotPower<=t.armor){
+          traces.push({
+            key: `trace-${t.id}-${Date.now()}-${c}-${r}`,
+            lane: c,
+            top: targetTop,
+            width: beamWidth,
+            color: beamColor,
+            blocked: true,
+            delayMs,
+          });
+          pushLog(`🛡️ レーン${LANE_NAMES[c]}: ${shotPower}砲撃が装甲${t.armor}に弾かれた！`);
+          continue;
+        }
+
+        const d = shotPower - t.armor;
+        dmg[c] = (dmg[c] ?? 0) + d;
+        laneDidAttack = true;
+        bursts.push({
+          key: `${t.id}-${Date.now()}-${c}-${r}`,
+          targetId: t.id,
+          lane: c,
+          top: targetTop,
+          damage: d,
+          fontSize: Math.min(30, 16 + Math.floor(Math.log2(Math.max(d, 1))) * 2),
+          delayMs,
+        });
+        traces.push({
+          key: `trace-${t.id}-${Date.now()}-${c}-${r}`,
+          lane: c,
+          top: targetTop,
+          width: beamWidth,
+          color: beamColor,
+          blocked: false,
+          delayMs,
+        });
+        cur = cur.map(e=>e.id===t.id?{...e,hp:e.hp-d}:e);
+      }
+
+      if (laneDidAttack) atkSet.push(c);
     }
 
     const killed=cur.filter(e=>e.hp<=0);
@@ -123,8 +165,9 @@ export default function MergeTowerDefense() {
     if(reached.length){newLives=Math.max(0,newLives-reached.length);pushLog(`⚠️ ${reached.length}体突破！-${reached.length}ライフ`);}
     cur=cur.filter(e=>e.step<ENEMY_MAX_STEPS);
 
-    setAtkCols(atkSet); setDmgMap(dmg); setDamageBursts(bursts);
-    setTimeout(()=>{setAtkCols([]);setDmgMap({});setDamageBursts([]);},650);
+    const effectDuration = Math.max(650, shotOrder * SHOT_ANIMATION_STAGGER + 420);
+    setAtkCols(atkSet); setDmgMap(dmg); setDamageBursts(bursts); setShotTraces(traces);
+    setTimeout(()=>{setAtkCols([]);setDmgMap({});setDamageBursts([]);setShotTraces([]);}, effectDuration);
 
     setEnemies(cur); setLives(newLives); setScore(s=>s+gainedScore);
 
@@ -370,6 +413,26 @@ export default function MergeTowerDefense() {
                     {isNextSpawnLane&&<div style={{position:"absolute",top:4,right:4,padding:"2px 5px",borderRadius:999,fontSize:8,fontWeight:"bold",letterSpacing:0.6,color:"#fff",background:LANE_COLORS[c],boxShadow:`0 0 10px ${LANE_COLORS[c]}88`,zIndex:4}}>NEXT</div>}
                     {isNextSpawnLane&&<div style={{position:"absolute",inset:0,background:`linear-gradient(180deg, ${LANE_COLORS[c]}20 0%, transparent 38%, ${LANE_COLORS[c]}16 100%)`,zIndex:1,pointerEvents:"none"}}/>}
                     {isAtk&&<div style={{position:"absolute",inset:0,background:LANE_COLORS[c]+"22",zIndex:2}}/>}
+                    {shotTraces.filter(trace=>trace.lane===c).map(trace=>(
+                      <div
+                        key={trace.key}
+                        className={trace.blocked ? "shot-trace shot-trace-blocked" : "shot-trace"}
+                        style={{
+                          position:"absolute",
+                          top:`${trace.top + 8}%`,
+                          bottom:4,
+                          left:"50%",
+                          width:trace.width,
+                          transform:"translateX(-50%)",
+                          borderRadius:999,
+                          background:`linear-gradient(180deg, ${trace.color} 0%, rgba(255,255,255,0.92) 28%, ${trace.color}88 72%, transparent 100%)`,
+                          boxShadow:`0 0 12px ${trace.color}, 0 0 22px ${trace.color}66`,
+                          zIndex:5,
+                          pointerEvents:"none",
+                          animationDelay:`${trace.delayMs}ms`,
+                        }}
+                      />
+                    ))}
                     {dmgMap[c]&&<div style={{position:"absolute",top:4,left:"50%",transform:"translateX(-50%)",color:"#ffdd00",fontSize:13,fontWeight:"bold",zIndex:3,textShadow:"0 0 6px #ff0"}}>-{dmgMap[c]}</div>}
                     {damageBursts.filter(b=>b.lane===c).map(burst=>(
                       <div
@@ -386,6 +449,7 @@ export default function MergeTowerDefense() {
                           zIndex:6,
                           textShadow:"0 0 10px rgba(255, 208, 84, 0.95), 0 0 18px rgba(255, 98, 0, 0.65)",
                           pointerEvents:"none",
+                          animationDelay:`${burst.delayMs}ms`,
                         }}
                       >
                         -{burst.damage}
@@ -393,7 +457,8 @@ export default function MergeTowerDefense() {
                     ))}
                     {laneEnemies.map(e=>{
                       const pct=Math.min(1,e.step/ENEMY_MAX_STEPS),top=pct*72,hp=e.hp/e.maxHp;
-                      const isHit = damageBursts.some(burst => burst.targetId === e.id);
+                      const hitBurst = damageBursts.find(burst => burst.targetId === e.id);
+                      const isHit = Boolean(hitBurst);
                       return (
                         <div key={e.id} style={{position:"absolute",top:`${top}%`,left:"50%",transform:"translateX(-50%)",width:34,transition:"top 0.35s ease"}}>
                           <div
@@ -414,6 +479,7 @@ export default function MergeTowerDefense() {
                               boxShadow:isHit
                                 ? `0 0 18px rgba(255,255,255,0.8), 0 0 24px ${LANE_COLORS[c]}cc`
                                 : `0 0 6px ${LANE_COLORS[c]}88`,
+                              animationDelay:isHit ? `${hitBurst.delayMs}ms` : undefined,
                             }}
                           >
                             {e.hp}

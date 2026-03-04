@@ -189,6 +189,15 @@ button:focus-visible {
   }
 }
 
+.shot-trace {
+  transform-origin: center bottom;
+  animation: shot-trace-fire 0.32s ease-out forwards;
+}
+
+.shot-trace-blocked {
+  animation: shot-trace-blocked 0.38s ease-out forwards;
+}
+
 @keyframes next-panel-sheen {
   0%, 100% {
     transform: translateX(-40%);
@@ -252,6 +261,36 @@ button:focus-visible {
   100% {
     transform: scale(1);
     filter: brightness(1);
+  }
+}
+
+@keyframes shot-trace-fire {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scaleY(0.15);
+  }
+  35% {
+    opacity: 1;
+    transform: translateX(-50%) scaleY(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scaleY(0.85);
+  }
+}
+
+@keyframes shot-trace-blocked {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scaleY(0.15);
+  }
+  30% {
+    opacity: 1;
+    transform: translateX(-50%) scaleY(0.7);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scaleY(0.35);
   }
 }
 
