@@ -198,8 +198,6 @@ export function applyLaneDamage(grid, tileDamage, lane, damageAmount) {
 
     const effectiveValue = getEffectiveTileValue(baseValue, nextDamage[rowIndex][lane]);
     if (!effectiveValue) {
-      nextGrid[rowIndex][lane] = 0;
-      nextDamage[rowIndex][lane] = 0;
       continue;
     }
 
