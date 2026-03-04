@@ -23,7 +23,7 @@ function createEnemy(lane, waveNumber, isLastEnemyInWave) {
     lane,
     hp: maxHp,
     maxHp,
-    armor: baseArmor * typeDef.armorMultiplier,
+    armor: baseArmor * typeDef.armorMultiplier + (typeDef.armorFlatBonus ?? 0),
     step: 0,
     isBoss: typeDef.isBoss,
   };

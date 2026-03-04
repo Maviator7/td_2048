@@ -38,12 +38,14 @@ export const ENEMY_TYPE_DEFS = {
   [ENEMY_TYPES.NORMAL]: {
     hpMultiplier: 1,
     armorMultiplier: 1,
+    armorFlatBonus: 0,
     rewardMultiplier: SCORE_RULES.normalKillMultiplier,
     isBoss: false,
   },
   [ENEMY_TYPES.BOSS]: {
-    hpMultiplier: 1.4,
+    hpMultiplier: 2.2,
     armorMultiplier: 1,
+    armorFlatBonus: 6,
     rewardMultiplier: SCORE_RULES.bossKillMultiplier,
     isBoss: true,
   },
