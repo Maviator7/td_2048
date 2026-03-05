@@ -7,7 +7,6 @@ import {
   FORMATION_BONUSES,
   ROW_ROLES,
   TILE_ROLES,
-  getAutoTileRoleForValue,
 } from "./config";
 
 const TILE_COLOR_MAP = {
@@ -71,20 +70,12 @@ function canMergeCells(leftCell, rightCell) {
   return true;
 }
 
-function resolveMergedRole(leftCell, rightCell, mergedValue) {
-  if (mergedValue < 256) {
-    return null;
+function resolveMergedRole(leftCell, rightCell) {
+  if (leftCell.role && rightCell.role && leftCell.role === rightCell.role) {
+    return leftCell.role;
   }
 
-  if (leftCell.role && rightCell.role) {
-    return leftCell.role === rightCell.role ? leftCell.role : getAutoTileRoleForValue(mergedValue);
-  }
-
-  if (leftCell.role || rightCell.role) {
-    return leftCell.role ?? rightCell.role;
-  }
-
-  return getAutoTileRoleForValue(mergedValue);
+  return null;
 }
 
 function createCellGrid(grid, tileDamage, tileRoles) {
