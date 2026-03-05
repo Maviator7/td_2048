@@ -115,7 +115,7 @@ export const TowerGrid = memo(function TowerGrid({
               const tileLevel = getTileLevel(value);
               const displayedAttackValue = getDisplayedAttackValue(effectiveValue, rowIndex);
               const rowBonusIcons = getRowBonusIcons(rowIndex);
-              const isRoleSelectable = canSelectRoleByTileValue(value) && Boolean(onTileClick);
+              const isRoleSelectable = canSelectRoleByTileValue(value) && !tileRole && Boolean(onTileClick);
               const tileClassName = [
                 retaliationDamage ? "tile-retaliation-flash" : null,
                 repairAmount ? "tile-repair-flash" : null,

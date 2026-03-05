@@ -8,6 +8,7 @@ import {
 import {
   canSelectRoleByTileValue,
   GAME_PHASES,
+  TILE_ROLE_ORDER,
   getTileRoleDef,
   getWaveStartMessage,
 } from "../game/config";
@@ -39,6 +40,50 @@ function createInitialGrid() {
   return addRandomTile(firstTile.grid, firstTile.tileDamage, firstTile.tileRoles);
 }
 
+function createRoleMetricsState() {
+  return Object.fromEntries(
+    TILE_ROLE_ORDER.map((roleKey) => [roleKey, { dealt: 0, taken: 0, repair: 0 }]),
+  );
+}
+
+function buildRoleMetricDeltaFromAmountMap(amountMap, metricKey) {
+  const delta = {};
+  Object.entries(amountMap ?? {}).forEach(([roleKey, amount]) => {
+    if (!amount) {
+      return;
+    }
+
+    delta[roleKey] = {
+      dealt: 0,
+      taken: 0,
+      repair: 0,
+      [metricKey]: amount,
+    };
+  });
+  return delta;
+}
+
+function buildRoleMetricDeltaFromCells(cells, metricKey, fallbackRolesGrid) {
+  const delta = {};
+  (cells ?? []).forEach((cell) => {
+    const roleKey = cell.role ?? fallbackRolesGrid?.[cell.row]?.[cell.col] ?? null;
+    if (!roleKey) {
+      return;
+    }
+
+    const amount = cell[metricKey] ?? 0;
+    if (!amount) {
+      return;
+    }
+
+    if (!delta[roleKey]) {
+      delta[roleKey] = { dealt: 0, taken: 0, repair: 0 };
+    }
+    delta[roleKey][metricKey] += amount;
+  });
+  return delta;
+}
+
 export function useGameState() {
   const [boardState, setBoardState] = useState(createInitialGrid);
   const [enemies, setEnemies] = useState(() => spawnWave(0));
@@ -53,10 +98,12 @@ export function useGameState() {
   const [hitEffects, setHitEffects] = useState([]);
   const [damageBursts, setDamageBursts] = useState([]);
   const [shotTraces, setShotTraces] = useState([]);
+  const [chainTraces, setChainTraces] = useState([]);
   const [retaliationCols, setRetaliationCols] = useState([]);
   const [retaliationHits, setRetaliationHits] = useState([]);
   const [repairHighlights, setRepairHighlights] = useState([]);
   const [mergeHL, setMergeHL] = useState([]);
+  const [roleMetrics, setRoleMetrics] = useState(createRoleMetricsState);
 
   const touchStartRef = useRef(null);
   const timeoutIdsRef = useRef([]);
@@ -95,6 +142,7 @@ export function useGameState() {
     setHitEffects([]);
     setDamageBursts([]);
     setShotTraces([]);
+    setChainTraces([]);
   }, []);
 
   const clearRetaliationEffects = useCallback(() => {
@@ -104,6 +152,25 @@ export function useGameState() {
 
   const clearRepairEffects = useCallback(() => {
     setRepairHighlights([]);
+  }, []);
+
+  const addRoleMetrics = useCallback((delta) => {
+    if (!delta || !Object.keys(delta).length) {
+      return;
+    }
+
+    setRoleMetrics((currentMetrics) => {
+      const nextMetrics = { ...currentMetrics };
+      Object.entries(delta).forEach(([roleKey, updates]) => {
+        const current = nextMetrics[roleKey] ?? { dealt: 0, taken: 0, repair: 0 };
+        nextMetrics[roleKey] = {
+          dealt: current.dealt + (updates.dealt ?? 0),
+          taken: current.taken + (updates.taken ?? 0),
+          repair: current.repair + (updates.repair ?? 0),
+        };
+      });
+      return nextMetrics;
+    });
   }, []);
 
   const setBoard = useCallback((nextGrid, nextTileDamage, nextTileRoles) => {
@@ -117,6 +184,7 @@ export function useGameState() {
     const retaliationLogs = [];
     const nextRetaliationCols = [];
     const nextRetaliationHits = [];
+    const roleTakenByRole = {};
 
     for (let lane = 0; lane < laneThreats.length; lane += 1) {
       const laneThreat = laneThreats[lane];
@@ -131,6 +199,12 @@ export function useGameState() {
       if (laneDamageResult.damageTaken > 0) {
         nextRetaliationCols.push(lane);
         nextRetaliationHits.push(...laneDamageResult.affectedCells);
+        laneDamageResult.affectedCells.forEach((cell) => {
+          if (!cell.role) {
+            return;
+          }
+          roleTakenByRole[cell.role] = (roleTakenByRole[cell.role] ?? 0) + cell.damage;
+        });
         retaliationLogs.push(`💥 レーン${laneThreat.laneName}: 反撃${laneDamageResult.damageTaken}`);
       }
     }
@@ -142,6 +216,7 @@ export function useGameState() {
       retaliationLogs,
       nextRetaliationCols,
       nextRetaliationHits,
+      roleTakenByRole,
       hadRetaliation: nextRetaliationCols.length > 0,
     };
   }, []);
@@ -160,11 +235,13 @@ export function useGameState() {
     setHitEffects(result.hitEffects);
     setDamageBursts(result.damageBursts);
     setShotTraces(result.shotTraces);
+    setChainTraces(result.chainTraces);
     scheduleTimeout(clearCombatEffects, result.effectDuration);
 
     setEnemies(result.nextEnemies);
     setLives(result.nextLives);
     setScore((currentScore) => currentScore + result.scoreGained);
+    addRoleMetrics(buildRoleMetricDeltaFromAmountMap(result.roleDamageByRole, "dealt"));
     pushLogs(result.logMessages);
 
     if (result.nextLives <= 0) {
@@ -177,6 +254,7 @@ export function useGameState() {
       const engineerRepairResult = applyEngineerTurnRepair(baseGrid, currentTileDamage, currentTileRoles);
       if (engineerRepairResult.repairedAmount > 0) {
         setBoard(engineerRepairResult.grid, engineerRepairResult.tileDamage, engineerRepairResult.tileRoles);
+        addRoleMetrics(buildRoleMetricDeltaFromCells(engineerRepairResult.repairedCells, "repair"));
         pushLog(`🛠️ 整備士修復 +${engineerRepairResult.repairedAmount}`);
       }
       setPhase(GAME_PHASES.WAVECLEAR);
@@ -196,6 +274,9 @@ export function useGameState() {
       if (engineerRepairResult.repairedAmount > 0) {
         turnEndLogs.push(`🛠️ 整備士修復 +${engineerRepairResult.repairedAmount}`);
       }
+
+      addRoleMetrics(buildRoleMetricDeltaFromAmountMap(retaliationResult.roleTakenByRole, "taken"));
+      addRoleMetrics(buildRoleMetricDeltaFromCells(engineerRepairResult.repairedCells, "repair"));
 
       if (retaliationResult.hadRetaliation) {
         setRetaliationCols(retaliationResult.nextRetaliationCols);
@@ -217,7 +298,7 @@ export function useGameState() {
         pushLog(`🔄 新ターン！残り${MOVES_PER_TURN}手`);
       }, retaliationResult.hadRetaliation ? 260 : 80);
     }, result.effectDuration);
-  }, [clearCombatEffects, clearRetaliationEffects, pushLog, pushLogs, resolveRetaliation, scheduleTimeout, setBoard]);
+  }, [addRoleMetrics, clearCombatEffects, clearRetaliationEffects, pushLog, pushLogs, resolveRetaliation, scheduleTimeout, setBoard]);
 
   const handleSlide = useCallback((direction) => {
     if (phase !== GAME_PHASES.PLAYER) {
@@ -250,6 +331,7 @@ export function useGameState() {
     if (repairResult.repairedAmount > 0) {
       setRepairHighlights(repairResult.repairedCells);
       scheduleTimeout(clearRepairEffects, 360);
+      addRoleMetrics(buildRoleMetricDeltaFromCells(repairResult.repairedCells, "repair", nextTurnTileRoles));
       pushLog(`🛠️ 後衛修復 +${repairResult.repairedAmount}`);
     }
 
@@ -280,7 +362,7 @@ export function useGameState() {
     }
 
     pushLog(`残り${nextMovesLeft}手`);
-  }, [clearRepairEffects, enemies, grid, lives, movesLeft, phase, pushLog, resolveTurn, scheduleTimeout, setBoard, tileDamage, tileRoles, wave]);
+  }, [addRoleMetrics, clearRepairEffects, enemies, grid, lives, movesLeft, phase, pushLog, resolveTurn, scheduleTimeout, setBoard, tileDamage, tileRoles, wave]);
 
   const handleTouchStart = useCallback((event) => {
     const touch = event.touches?.[0];
@@ -327,6 +409,12 @@ export function useGameState() {
       if (!canSelectRoleByTileValue(tileValue)) {
         return currentState;
       }
+      if (currentState.tileRoles[row][col]) {
+        return currentState;
+      }
+      if (!nextRole) {
+        return currentState;
+      }
 
       const currentRole = currentState.tileRoles[row][col] ?? null;
       if (currentRole === (nextRole ?? null)) {
@@ -341,13 +429,8 @@ export function useGameState() {
       };
     });
 
-    if (nextRole) {
-      const roleLabel = getTileRoleDef(nextRole)?.label ?? "役職";
-      pushLog(`🎖️ ${roleLabel} を配置`);
-      return;
-    }
-
-    pushLog("↩️ 役職を解除");
+    const roleLabel = getTileRoleDef(nextRole)?.label ?? "役職";
+    pushLog(`🎖️ ${roleLabel} を配置`);
   }, [pushLog]);
 
   const nextWave = useCallback(() => {
@@ -372,6 +455,7 @@ export function useGameState() {
     setMovesLeft(MOVES_PER_TURN);
     setPhase(GAME_PHASES.PLAYER);
     setLog([INITIAL_LOG]);
+    setRoleMetrics(createRoleMetricsState());
     clearCombatEffects();
     clearRetaliationEffects();
     clearRepairEffects();
@@ -417,12 +501,14 @@ export function useGameState() {
     hitEffects,
     damageBursts,
     shotTraces,
+    chainTraces,
     retaliationCols,
     retaliationHits,
     repairHighlights,
     mergeHL,
     colPower: getColumnPowers(grid, tileDamage),
     tileRoles,
+    roleMetrics,
     nextSpawnEnemy: getNextSpawnEnemy(enemies),
     handleTouchStart,
     handleTouchEnd,

@@ -32,7 +32,11 @@ function slideLine(cells) {
   const mergedCells = [];
 
   while (index < filledCells.length) {
-    if (index + 1 < filledCells.length && filledCells[index].value === filledCells[index + 1].value) {
+    if (
+      index + 1 < filledCells.length
+      && filledCells[index].value === filledCells[index + 1].value
+      && canMergeCells(filledCells[index], filledCells[index + 1])
+    ) {
       const mergedValue = filledCells[index].value * 2;
       result.push({
         value: mergedValue,
@@ -54,6 +58,17 @@ function slideLine(cells) {
   }
 
   return { line: result, score, mergedCells };
+}
+
+function canMergeCells(leftCell, rightCell) {
+  const leftHasRole = Boolean(leftCell.role);
+  const rightHasRole = Boolean(rightCell.role);
+
+  if (leftHasRole !== rightHasRole) {
+    return false;
+  }
+
+  return true;
 }
 
 function resolveMergedRole(leftCell, rightCell, mergedValue) {
@@ -254,6 +269,7 @@ export function applyLaneDamage(grid, tileDamage, tileRoles, lane, damageAmount)
       row: rowIndex,
       col: lane,
       damage: appliedDamage,
+      role: tileRole ?? null,
     });
   }
 
@@ -293,6 +309,7 @@ export function applyBacklineRepair(grid, tileDamage) {
         row: rowIndex,
         col: colIndex,
         repair: repairAmount,
+        role: TILE_ROLES.ENGINEER,
       });
     }
   }

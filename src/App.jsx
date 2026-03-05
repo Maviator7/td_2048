@@ -18,6 +18,7 @@ import { WaveClearBanner } from "./components/WaveClearBanner";
 import { NextSpawnIndicator } from "./components/NextSpawnIndicator";
 import { EventLog } from "./components/EventLog";
 import { GuideCards } from "./components/GuideCards";
+import { RoleBalancePanel } from "./components/RoleBalancePanel";
 import { ColumnPowerLabels } from "./components/ColumnPowerLabels";
 import { EnemyLanes } from "./components/EnemyLanes";
 import { TowerGrid } from "./components/TowerGrid";
@@ -42,11 +43,13 @@ export default function MergeTowerDefense() {
     hitEffects,
     damageBursts,
     shotTraces,
+    chainTraces,
     retaliationCols,
     retaliationHits,
     repairHighlights,
     mergeHL,
     colPower,
+    roleMetrics,
     nextSpawnEnemy,
     handleTouchStart,
     handleTouchEnd,
@@ -55,6 +58,7 @@ export default function MergeTowerDefense() {
     setTileRoleAt,
   } = useGameState();
   const [roleModal, setRoleModal] = useState(null);
+  const [isBalanceModeEnabled, setIsBalanceModeEnabled] = useState(false);
 
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
@@ -73,6 +77,9 @@ export default function MergeTowerDefense() {
       return;
     }
     if (!canSelectRoleByTileValue(tile.value)) {
+      return;
+    }
+    if (tile.role) {
       return;
     }
 
@@ -140,6 +147,7 @@ export default function MergeTowerDefense() {
               damageByLane={dmgMap}
               damageBursts={damageBursts}
               shotTraces={shotTraces}
+              chainTraces={chainTraces}
               retaliationCols={retaliationCols}
               laneHeight={laneHeight}
               laneColors={LANE_COLORS}
@@ -172,6 +180,11 @@ export default function MergeTowerDefense() {
           </div>
 
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <RoleBalancePanel
+              isEnabled={isBalanceModeEnabled}
+              onToggle={() => setIsBalanceModeEnabled((current) => !current)}
+              roleMetrics={roleMetrics}
+            />
             <EventLog log={log} isDesktop={isDesktop} />
             <GuideCards isDesktop={isDesktop} />
           </div>
@@ -207,7 +220,7 @@ export default function MergeTowerDefense() {
               役職を選択
             </div>
             <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 10 }}>
-              タイル {roleModal.value}（Lv.{ROLE_RULES.minSelectableLevel}以上で変更可） / 現在: {roleModal.role ? `${TILE_ROLE_DEFS[roleModal.role]?.icon} ${TILE_ROLE_DEFS[roleModal.role]?.label}` : "なし"}
+              タイル {roleModal.value}（Lv.{ROLE_RULES.minSelectableLevel}以上・未役職のみ）
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {TILE_ROLE_ORDER.map((roleKey) => {
@@ -232,22 +245,6 @@ export default function MergeTowerDefense() {
                   </button>
                 );
               })}
-              <button
-                type="button"
-                onClick={() => selectRole(null)}
-                style={{
-                  gridColumn: "1 / -1",
-                  border: "1px solid #475569",
-                  background: "#0b1220",
-                  color: "#cbd5e1",
-                  borderRadius: 10,
-                  padding: "10px 8px",
-                  fontSize: 12,
-                  fontWeight: 700,
-                }}
-              >
-                役職なし
-              </button>
             </div>
           </div>
         </div>

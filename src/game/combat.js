@@ -16,6 +16,7 @@ import {
 import { spawnSplitChildren } from "./enemies";
 
 const MAX_VISUAL_EFFECTS = 10;
+const MAX_CHAIN_VISUAL_EFFECTS = 12;
 
 function buildHitEffect(enemy, lane, row, delayMs, effectIndex) {
   return {
@@ -48,6 +49,20 @@ function buildShotTrace(enemy, lane, row, delayMs, blocked, effectIndex) {
     color: blocked ? "#f1c40f" : LANE_COLORS[lane],
     blocked,
     delayMs,
+  };
+}
+
+function buildChainTrace(fromEnemy, toEnemy, lane, delayMs, effectIndex, chainLevel) {
+  const fromTop = Math.min(1, fromEnemy.step / ENEMY_MAX_STEPS) * 72 + 10;
+  const toTop = Math.min(1, toEnemy.step / ENEMY_MAX_STEPS) * 72 + 10;
+
+  return {
+    key: `chain-${fromEnemy.id}-${toEnemy.id}-${lane}-${effectIndex}`,
+    lane,
+    fromTop,
+    toTop,
+    delayMs,
+    chainLevel,
   };
 }
 
@@ -102,6 +117,8 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
   const hitEffects = [];
   const damageBursts = [];
   const shotTraces = [];
+  const chainTraces = [];
+  const roleDamageByRole = {};
   const logMessages = [];
 
   for (let lane = 0; lane < COLS; lane += 1) {
@@ -142,6 +159,9 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
 
       const damage = shotPower - target.armor;
       damageByLane[lane] = (damageByLane[lane] ?? 0) + damage;
+      if (tileRole) {
+        roleDamageByRole[tileRole] = (roleDamageByRole[tileRole] ?? 0) + damage;
+      }
       laneDidAttack = true;
 
       hitEffects.push(buildHitEffect(target, lane, row, delayMs, effectIndex));
@@ -179,6 +199,21 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
           const chainedDamage = chainedBaseDamage - chainedTarget.armor;
           chainedTarget.hp -= chainedDamage;
           damageByLane[lane] = (damageByLane[lane] ?? 0) + chainedDamage;
+          if (tileRole) {
+            roleDamageByRole[tileRole] = (roleDamageByRole[tileRole] ?? 0) + chainedDamage;
+          }
+          if (chainTraces.length < MAX_CHAIN_VISUAL_EFFECTS) {
+            chainTraces.push(
+              buildChainTrace(
+                target,
+                chainedTarget,
+                lane,
+                delayMs + (chainLevel + 1) * 40,
+                effectIndex,
+                chainLevel,
+              ),
+            );
+          }
 
           if (damageBursts.length < MAX_VISUAL_EFFECTS) {
             damageBursts.push(buildDamageBurst(chainedTarget, lane, row, chainedDamage, delayMs + (chainLevel + 1) * 40, effectIndex));
@@ -252,6 +287,8 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
     hitEffects,
     damageBursts,
     shotTraces,
+    chainTraces,
+    roleDamageByRole,
     logMessages,
     remainingLaneThreats,
     effectDuration: Math.max(650, shotOrder * SHOT_ANIMATION_STAGGER + 420),

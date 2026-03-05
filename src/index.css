@@ -239,6 +239,10 @@ button:focus-visible {
   animation: shot-trace-blocked 0.38s ease-out forwards;
 }
 
+.chain-trace {
+  animation: chain-trace-zap 0.26s ease-out forwards;
+}
+
 @keyframes next-panel-sheen {
   0%, 100% {
     transform: translateX(-40%);
@@ -400,6 +404,21 @@ button:focus-visible {
   100% {
     opacity: 0;
     transform: translateX(-50%) scaleY(0.35);
+  }
+}
+
+@keyframes chain-trace-zap {
+  0% {
+    opacity: 0;
+    filter: brightness(1);
+  }
+  40% {
+    opacity: 1;
+    filter: brightness(1.35);
+  }
+  100% {
+    opacity: 0;
+    filter: brightness(1);
   }
 }
 

@@ -24,6 +24,33 @@ function ShotTrace({ trace }) {
   );
 }
 
+function ChainTrace({ trace }) {
+  const top = Math.min(trace.fromTop, trace.toTop);
+  const height = Math.max(6, Math.abs(trace.toTop - trace.fromTop));
+  const tilt = trace.toTop >= trace.fromTop ? 6 : -6;
+
+  return (
+    <div
+      className="chain-trace"
+      style={{
+        position: "absolute",
+        top: `${top}%`,
+        left: "50%",
+        width: 2,
+        height: `${height}%`,
+        transform: `translateX(-50%) rotate(${tilt}deg)`,
+        transformOrigin: "center top",
+        borderRadius: 999,
+        background: "linear-gradient(180deg, #d6f4ff 0%, #7ce7ff 55%, #38bdf8 100%)",
+        boxShadow: "0 0 8px rgba(124, 231, 255, 0.65)",
+        zIndex: 5,
+        pointerEvents: "none",
+        animationDelay: `${trace.delayMs}ms`,
+      }}
+    />
+  );
+}
+
 function DamageBurst({ burst }) {
   return (
     <div
@@ -197,7 +224,7 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
   );
 }
 
-function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces) {
+function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces, chainTraces) {
   const laneEnemies = Array.from({ length: COLS }, () => []);
   const queuedCounts = Array(COLS).fill(0);
   const queuedBossFlags = Array(COLS).fill(false);
@@ -207,6 +234,7 @@ function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces) {
   const hitEffectByEnemyId = new Map();
   const burstsByLane = Array.from({ length: COLS }, () => []);
   const tracesByLane = Array.from({ length: COLS }, () => []);
+  const chainsByLane = Array.from({ length: COLS }, () => []);
 
   for (const enemy of enemies) {
     if (enemy.step > 0) {
@@ -246,6 +274,10 @@ function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces) {
     tracesByLane[trace.lane].push(trace);
   }
 
+  for (const chainTrace of chainTraces) {
+    chainsByLane[chainTrace.lane].push(chainTrace);
+  }
+
   return {
     laneEnemies,
     queuedCounts,
@@ -256,6 +288,7 @@ function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces) {
     hitEffectByEnemyId,
     burstsByLane,
     tracesByLane,
+    chainsByLane,
   };
 }
 
@@ -275,6 +308,7 @@ function EnemyLane({
   hitEffectByEnemyId,
   laneBursts,
   laneTraces,
+  laneChains,
 }) {
   const isAttacking = atkCols.includes(laneIndex);
   const isCounterAttacking = retaliationCols.includes(laneIndex);
@@ -339,6 +373,7 @@ function EnemyLane({
         />
       )}
       {laneTraces.map((trace) => <ShotTrace key={trace.key} trace={trace} />)}
+      {laneChains.map((chainTrace) => <ChainTrace key={chainTrace.key} trace={chainTrace} />)}
       {damageByLane[laneIndex] && (
         <div
           style={{
@@ -413,10 +448,11 @@ export const EnemyLanes = memo(function EnemyLanes({
   damageByLane,
   damageBursts,
   shotTraces,
+  chainTraces,
   laneHeight,
   laneColors,
 }) {
-  const laneRenderData = buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces);
+  const laneRenderData = buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces, chainTraces);
 
   return (
     <div style={{ display: "flex", gap: 4, height: laneHeight, marginBottom: 6 }}>
@@ -438,6 +474,7 @@ export const EnemyLanes = memo(function EnemyLanes({
           hitEffectByEnemyId={laneRenderData.hitEffectByEnemyId}
           laneBursts={laneRenderData.burstsByLane[laneIndex]}
           laneTraces={laneRenderData.tracesByLane[laneIndex]}
+          laneChains={laneRenderData.chainsByLane[laneIndex]}
         />
       ))}
     </div>
