@@ -32,18 +32,18 @@ function getTileLevel(value) {
   return Math.log2(value);
 }
 
-function getRowBonusLabel(rowIndex) {
+function getRowBonusIcons(rowIndex) {
   const rowRole = getRowRole(rowIndex);
 
   if (rowRole === ROW_ROLES.FRONTLINE) {
-    return "前衛 ATK+";
+    return "🔥";
   }
 
   if (rowRole === ROW_ROLES.MIDLINE) {
-    return "中衛 DEF+";
+    return "⛨";
   }
 
-  return "後衛 回復+";
+  return "🔻💚";
 }
 
 function getRowRoleClassName(rowIndex) {
@@ -92,7 +92,6 @@ export const TowerGrid = memo(function TowerGrid({
             padding: 0,
           }}
         >
-          <div className="row-floor-bonus-label">{getRowBonusLabel(rowIndex)}</div>
           <div style={{ display: "grid", gridTemplateColumns: `repeat(${COLS},1fr)`, gap: 4, position: "relative", zIndex: 2 }}>
             {row.map((value, columnIndex) => {
               const cellKey = `${rowIndex}-${columnIndex}`;
@@ -105,6 +104,7 @@ export const TowerGrid = memo(function TowerGrid({
               const isDamaged = value > 0 && damage > 0;
               const tileLevel = getTileLevel(value);
               const displayedAttackValue = getDisplayedAttackValue(effectiveValue, rowIndex);
+              const rowBonusIcons = getRowBonusIcons(rowIndex);
               const tileClassName = [
                 retaliationDamage ? "tile-retaliation-flash" : null,
                 repairAmount ? "tile-repair-flash" : null,
@@ -191,6 +191,19 @@ export const TowerGrid = memo(function TowerGrid({
                       +{repairAmount}
                     </div>
                   )}
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: retaliationDamage ? 16 : 3,
+                      right: 4,
+                      fontSize: isDesktop ? 14 : 13,
+                      lineHeight: 1,
+                      opacity: 0.72,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    {rowBonusIcons}
+                  </div>
                 </div>
               );
             })}

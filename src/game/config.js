@@ -32,6 +32,7 @@ export const SCORE_RULES = {
 
 export const FORMATION_BONUSES = {
   frontlineAttackMultiplier: 1.25,
+  backlineAttackMultiplier: 0.8,
   midlineDamageReduction: 0.25,
   backlineRepairRatio: 0.1,
 };
@@ -144,9 +145,17 @@ export function getRowRole(rowIndex) {
 }
 
 export function getAttackMultiplierForRow(rowIndex) {
-  return getRowRole(rowIndex) === ROW_ROLES.FRONTLINE
-    ? FORMATION_BONUSES.frontlineAttackMultiplier
-    : 1;
+  const rowRole = getRowRole(rowIndex);
+
+  if (rowRole === ROW_ROLES.FRONTLINE) {
+    return FORMATION_BONUSES.frontlineAttackMultiplier;
+  }
+
+  if (rowRole === ROW_ROLES.BACKLINE) {
+    return FORMATION_BONUSES.backlineAttackMultiplier;
+  }
+
+  return 1;
 }
 
 export function getMidlineReductionForRow(rowIndex) {
