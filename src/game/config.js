@@ -44,12 +44,57 @@ export const FORMATION_BONUSES = {
   backlineAttackMultiplier: 0.8,
   midlineDamageReduction: 0.25,
   backlineRepairRatio: 0.1,
+  engineerDamageTakenMultiplier: 0.65,
+  engineerTurnRepairRatio: 0.05,
+};
+
+export const ROLE_BONUSES = {
+  gamblerMinMultiplier: 0.8,
+  gamblerMaxMultiplier: 2,
+  chainRates: [0.45, 0.25, 0.15],
+};
+
+export const ROLE_RULES = {
+  minSelectableLevel: 7,
 };
 
 export const ROW_ROLES = {
   FRONTLINE: "frontline",
   MIDLINE: "midline",
   BACKLINE: "backline",
+};
+
+export const TILE_ROLES = {
+  SUPPRESSOR: "suppressor",
+  ENGINEER: "engineer",
+  CHAINER: "chainer",
+  GAMBLER: "gambler",
+};
+
+export const TILE_ROLE_ORDER = [
+  TILE_ROLES.SUPPRESSOR,
+  TILE_ROLES.ENGINEER,
+  TILE_ROLES.CHAINER,
+  TILE_ROLES.GAMBLER,
+];
+
+export const TILE_ROLE_DEFS = {
+  [TILE_ROLES.SUPPRESSOR]: {
+    icon: "🕸️",
+    label: "制圧兵",
+  },
+  [TILE_ROLES.ENGINEER]: {
+    icon: "🛠️",
+    label: "整備士",
+  },
+  [TILE_ROLES.CHAINER]: {
+    icon: "⚡",
+    label: "連鎖兵",
+  },
+  [TILE_ROLES.GAMBLER]: {
+    icon: "🎲",
+    label: "賭博師",
+  },
 };
 
 export const WAVE_FEATURES = {
@@ -206,6 +251,40 @@ export function getBacklineRepairAmount(baseValue) {
   }
 
   return Math.ceil(baseValue * FORMATION_BONUSES.backlineRepairRatio);
+}
+
+export function getEngineerTurnRepairAmount(baseValue) {
+  if (baseValue <= 0) {
+    return 0;
+  }
+
+  return Math.max(1, Math.ceil(baseValue * FORMATION_BONUSES.engineerTurnRepairRatio));
+}
+
+export function getTileRoleDef(tileRole) {
+  return TILE_ROLE_DEFS[tileRole] ?? null;
+}
+
+export function getTileRoleIcon(tileRole) {
+  return getTileRoleDef(tileRole)?.icon ?? "";
+}
+
+export function getAutoTileRoleForValue(value) {
+  if (value < 256) {
+    return null;
+  }
+
+  const valueLevel = Math.log2(value);
+  const offset = Math.max(0, valueLevel - 8);
+  return TILE_ROLE_ORDER[offset % TILE_ROLE_ORDER.length];
+}
+
+export function canSelectRoleByTileValue(value) {
+  if (value <= 0) {
+    return false;
+  }
+
+  return Math.log2(value) >= ROLE_RULES.minSelectableLevel;
 }
 
 export function isArmorUnlocked(waveNumber) {

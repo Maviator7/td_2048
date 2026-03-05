@@ -5,14 +5,21 @@ import {
   SWIPE_THRESHOLD,
   INITIAL_LOG,
 } from "../game/constants";
-import { GAME_PHASES, getWaveStartMessage } from "../game/config";
+import {
+  canSelectRoleByTileValue,
+  GAME_PHASES,
+  getTileRoleDef,
+  getWaveStartMessage,
+} from "../game/config";
 import {
   addRandomTile,
   applyBacklineRepair,
+  applyEngineerTurnRepair,
   applyLaneDamage,
   canMove,
   createEmptyDamageGrid,
   createEmptyGrid,
+  createEmptyRoleGrid,
   getEffectiveGrid,
   getColumnPowers,
   slideGrid,
@@ -27,8 +34,9 @@ import { resolveCombatTurn } from "../game/combat";
 function createInitialGrid() {
   const emptyGrid = createEmptyGrid();
   const emptyDamage = createEmptyDamageGrid();
-  const firstTile = addRandomTile(emptyGrid, emptyDamage);
-  return addRandomTile(firstTile.grid, firstTile.tileDamage);
+  const emptyRoles = createEmptyRoleGrid();
+  const firstTile = addRandomTile(emptyGrid, emptyDamage, emptyRoles);
+  return addRandomTile(firstTile.grid, firstTile.tileDamage, firstTile.tileRoles);
 }
 
 export function useGameState() {
@@ -52,7 +60,7 @@ export function useGameState() {
 
   const touchStartRef = useRef(null);
   const timeoutIdsRef = useRef([]);
-  const { grid, tileDamage } = boardState;
+  const { grid, tileDamage, tileRoles } = boardState;
 
   const scheduleTimeout = useCallback((callback, delayMs) => {
     const timeoutId = window.setTimeout(() => {
@@ -98,13 +106,14 @@ export function useGameState() {
     setRepairHighlights([]);
   }, []);
 
-  const setBoard = useCallback((nextGrid, nextTileDamage) => {
-    setBoardState({ grid: nextGrid, tileDamage: nextTileDamage });
+  const setBoard = useCallback((nextGrid, nextTileDamage, nextTileRoles) => {
+    setBoardState({ grid: nextGrid, tileDamage: nextTileDamage, tileRoles: nextTileRoles });
   }, []);
 
-  const resolveRetaliation = useCallback((baseGrid, currentTileDamage, laneThreats) => {
+  const resolveRetaliation = useCallback((baseGrid, currentTileDamage, currentTileRoles, laneThreats) => {
     let nextGrid = baseGrid;
     let nextTileDamage = currentTileDamage;
+    const nextTileRoles = currentTileRoles;
     const retaliationLogs = [];
     const nextRetaliationCols = [];
     const nextRetaliationHits = [];
@@ -115,7 +124,7 @@ export function useGameState() {
         continue;
       }
 
-      const laneDamageResult = applyLaneDamage(nextGrid, nextTileDamage, lane, laneThreat.damage);
+      const laneDamageResult = applyLaneDamage(nextGrid, nextTileDamage, nextTileRoles, lane, laneThreat.damage);
       nextGrid = laneDamageResult.grid;
       nextTileDamage = laneDamageResult.tileDamage;
 
@@ -129,6 +138,7 @@ export function useGameState() {
     return {
       nextGrid,
       nextTileDamage,
+      nextTileRoles,
       retaliationLogs,
       nextRetaliationCols,
       nextRetaliationHits,
@@ -136,10 +146,11 @@ export function useGameState() {
     };
   }, []);
 
-  const resolveTurn = useCallback((baseGrid, currentTileDamage, currentEnemies, currentLives, currentWave) => {
+  const resolveTurn = useCallback((baseGrid, currentTileDamage, currentTileRoles, currentEnemies, currentLives, currentWave) => {
     const attackGrid = getEffectiveGrid(baseGrid, currentTileDamage);
     const result = resolveCombatTurn({
       grid: attackGrid,
+      tileRoles: currentTileRoles,
       enemies: currentEnemies,
       lives: currentLives,
     });
@@ -163,13 +174,28 @@ export function useGameState() {
     }
 
     if (result.nextEnemies.length === 0) {
+      const engineerRepairResult = applyEngineerTurnRepair(baseGrid, currentTileDamage, currentTileRoles);
+      if (engineerRepairResult.repairedAmount > 0) {
+        setBoard(engineerRepairResult.grid, engineerRepairResult.tileDamage, engineerRepairResult.tileRoles);
+        pushLog(`🛠️ 整備士修復 +${engineerRepairResult.repairedAmount}`);
+      }
       setPhase(GAME_PHASES.WAVECLEAR);
       pushLog(`🎉 Wave ${currentWave} クリア！`);
       return;
     }
 
     scheduleTimeout(() => {
-      const retaliationResult = resolveRetaliation(baseGrid, currentTileDamage, result.remainingLaneThreats);
+      const retaliationResult = resolveRetaliation(baseGrid, currentTileDamage, currentTileRoles, result.remainingLaneThreats);
+      const engineerRepairResult = applyEngineerTurnRepair(
+        retaliationResult.nextGrid,
+        retaliationResult.nextTileDamage,
+        retaliationResult.nextTileRoles,
+      );
+      const turnEndLogs = [...retaliationResult.retaliationLogs];
+
+      if (engineerRepairResult.repairedAmount > 0) {
+        turnEndLogs.push(`🛠️ 整備士修復 +${engineerRepairResult.repairedAmount}`);
+      }
 
       if (retaliationResult.hadRetaliation) {
         setRetaliationCols(retaliationResult.nextRetaliationCols);
@@ -177,12 +203,12 @@ export function useGameState() {
         scheduleTimeout(clearRetaliationEffects, 320);
       }
 
-      if (retaliationResult.retaliationLogs.length) {
-        setBoard(retaliationResult.nextGrid, retaliationResult.nextTileDamage);
+      if (turnEndLogs.length) {
+        setBoard(engineerRepairResult.grid, engineerRepairResult.tileDamage, engineerRepairResult.tileRoles);
       }
 
-      if (retaliationResult.retaliationLogs.length) {
-        pushLogs(retaliationResult.retaliationLogs);
+      if (turnEndLogs.length) {
+        pushLogs(turnEndLogs);
       }
 
       scheduleTimeout(() => {
@@ -201,23 +227,26 @@ export function useGameState() {
     const {
       grid: nextGrid,
       tileDamage: nextTileDamage,
+      tileRoles: nextTileRoles,
       score: gainedScore,
       moved,
       mergedCells,
-    } = slideGrid(grid, tileDamage, direction);
+    } = slideGrid(grid, tileDamage, tileRoles, direction);
     if (!moved) {
       return;
     }
 
-    const nextState = addRandomTile(nextGrid, nextTileDamage);
+    const nextState = addRandomTile(nextGrid, nextTileDamage, nextTileRoles);
     const gridWithNewTile = nextState.grid;
     const gridWithNewTileDamage = nextState.tileDamage;
+    const gridWithNewTileRoles = nextState.tileRoles;
 
     const repairResult = applyBacklineRepair(gridWithNewTile, gridWithNewTileDamage);
     const nextTurnGrid = repairResult.grid;
     const nextTurnTileDamage = repairResult.tileDamage;
+    const nextTurnTileRoles = gridWithNewTileRoles;
 
-    setBoard(nextTurnGrid, nextTurnTileDamage);
+    setBoard(nextTurnGrid, nextTurnTileDamage, nextTurnTileRoles);
     if (repairResult.repairedAmount > 0) {
       setRepairHighlights(repairResult.repairedCells);
       scheduleTimeout(clearRepairEffects, 360);
@@ -246,12 +275,12 @@ export function useGameState() {
     if (nextMovesLeft <= 0) {
       pushLog("⚔️ 手数終了 → 攻撃！");
       setPhase(GAME_PHASES.RESOLVING);
-      scheduleTimeout(() => resolveTurn(nextTurnGrid, nextTurnTileDamage, enemies, lives, wave), 200);
+      scheduleTimeout(() => resolveTurn(nextTurnGrid, nextTurnTileDamage, nextTurnTileRoles, enemies, lives, wave), 200);
       return;
     }
 
     pushLog(`残り${nextMovesLeft}手`);
-  }, [clearRepairEffects, enemies, grid, lives, movesLeft, phase, pushLog, resolveTurn, scheduleTimeout, setBoard, tileDamage, wave]);
+  }, [clearRepairEffects, enemies, grid, lives, movesLeft, phase, pushLog, resolveTurn, scheduleTimeout, setBoard, tileDamage, tileRoles, wave]);
 
   const handleTouchStart = useCallback((event) => {
     const touch = event.touches?.[0];
@@ -292,6 +321,35 @@ export function useGameState() {
     handleSlide(dy > 0 ? "down" : "up");
   }, [handleSlide, phase]);
 
+  const setTileRoleAt = useCallback((row, col, nextRole) => {
+    setBoardState((currentState) => {
+      const tileValue = currentState.grid[row]?.[col] ?? 0;
+      if (!canSelectRoleByTileValue(tileValue)) {
+        return currentState;
+      }
+
+      const currentRole = currentState.tileRoles[row][col] ?? null;
+      if (currentRole === (nextRole ?? null)) {
+        return currentState;
+      }
+
+      const nextTileRoles = currentState.tileRoles.map((roleRow) => [...roleRow]);
+      nextTileRoles[row][col] = nextRole ?? null;
+      return {
+        ...currentState,
+        tileRoles: nextTileRoles,
+      };
+    });
+
+    if (nextRole) {
+      const roleLabel = getTileRoleDef(nextRole)?.label ?? "役職";
+      pushLog(`🎖️ ${roleLabel} を配置`);
+      return;
+    }
+
+    pushLog("↩️ 役職を解除");
+  }, [pushLog]);
+
   const nextWave = useCallback(() => {
     const nextWaveNumber = wave + 1;
     setWave(nextWaveNumber);
@@ -306,7 +364,7 @@ export function useGameState() {
     clearScheduledTimeouts();
     resetEnemyIds();
     const initialState = createInitialGrid();
-    setBoard(initialState.grid, initialState.tileDamage);
+    setBoard(initialState.grid, initialState.tileDamage, initialState.tileRoles);
     setEnemies(spawnWave(0));
     setLives(INIT_LIVES);
     setWave(1);
@@ -364,10 +422,12 @@ export function useGameState() {
     repairHighlights,
     mergeHL,
     colPower: getColumnPowers(grid, tileDamage),
+    tileRoles,
     nextSpawnEnemy: getNextSpawnEnemy(enemies),
     handleTouchStart,
     handleTouchEnd,
     nextWave,
     restart,
+    setTileRoleAt,
   };
 }

@@ -1,7 +1,13 @@
 import { memo } from "react";
 
 import { COLS } from "../game/constants";
-import { getAttackMultiplierForRow, getRowRole, ROW_ROLES } from "../game/config";
+import {
+  canSelectRoleByTileValue,
+  getAttackMultiplierForRow,
+  getRowRole,
+  getTileRoleIcon,
+  ROW_ROLES,
+} from "../game/config";
 import { getEffectiveTileValue, getTileColors } from "../game/grid";
 
 function getTileFontSize(value, isDesktop) {
@@ -71,11 +77,13 @@ function getDisplayedAttackValue(effectiveValue, rowIndex) {
 export const TowerGrid = memo(function TowerGrid({
   grid,
   tileDamage,
+  tileRoles,
   retaliationHits,
   repairHighlights,
   mergeHighlights,
   tileHeight,
   isDesktop,
+  onTileClick,
 }) {
   const retaliationHitMap = new Map(retaliationHits.map((hit) => [hit.key, hit.damage]));
   const repairMap = new Map(repairHighlights.map((repair) => [repair.key, repair.repair]));
@@ -101,10 +109,13 @@ export const TowerGrid = memo(function TowerGrid({
               const isMerged = mergeHighlights.includes(cellKey);
               const retaliationDamage = retaliationHitMap.get(cellKey);
               const repairAmount = repairMap.get(cellKey);
+              const tileRole = tileRoles[rowIndex][columnIndex];
+              const tileRoleIcon = getTileRoleIcon(tileRole);
               const isDamaged = value > 0 && damage > 0;
               const tileLevel = getTileLevel(value);
               const displayedAttackValue = getDisplayedAttackValue(effectiveValue, rowIndex);
               const rowBonusIcons = getRowBonusIcons(rowIndex);
+              const isRoleSelectable = canSelectRoleByTileValue(value) && Boolean(onTileClick);
               const tileClassName = [
                 retaliationDamage ? "tile-retaliation-flash" : null,
                 repairAmount ? "tile-repair-flash" : null,
@@ -114,6 +125,12 @@ export const TowerGrid = memo(function TowerGrid({
                 <div
                   key={`${rowIndex}-${columnIndex}`}
                   className={tileClassName}
+                  onClick={isRoleSelectable ? () => onTileClick?.({
+                    row: rowIndex,
+                    col: columnIndex,
+                    value,
+                    role: tileRole,
+                  }) : undefined}
                   style={{
                     background: isMerged ? "#fff3b0" : background,
                     color: isDamaged && !isMerged ? "#2b2b2b" : color,
@@ -138,6 +155,7 @@ export const TowerGrid = memo(function TowerGrid({
                     transform: isMerged ? "scale(1.08)" : "scale(1)",
                     opacity: value && !effectiveValue ? 0.5 : 1,
                     animationDelay: retaliationDamage ? "40ms" : undefined,
+                    cursor: isRoleSelectable ? "pointer" : "default",
                   }}
                 >
                   {tileLevel && (
@@ -153,6 +171,21 @@ export const TowerGrid = memo(function TowerGrid({
                       }}
                     >
                       Lv.{tileLevel}
+                    </div>
+                  )}
+                  {tileRoleIcon && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 3,
+                        right: 4,
+                        fontSize: isDesktop ? 12 : 11,
+                        lineHeight: 1,
+                        opacity: 0.9,
+                        pointerEvents: "none",
+                      }}
+                    >
+                      {tileRoleIcon}
                     </div>
                   )}
                   {value ? displayedAttackValue : ""}

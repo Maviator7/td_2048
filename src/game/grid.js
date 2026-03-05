@@ -2,8 +2,12 @@ import { COLS, ROWS } from "./constants";
 import {
   getAttackMultiplierForRow,
   getBacklineRepairAmount,
+  getEngineerTurnRepairAmount,
   getRowRole,
+  FORMATION_BONUSES,
   ROW_ROLES,
+  TILE_ROLES,
+  getAutoTileRoleForValue,
 } from "./config";
 
 const TILE_COLOR_MAP = {
@@ -30,7 +34,11 @@ function slideLine(cells) {
   while (index < filledCells.length) {
     if (index + 1 < filledCells.length && filledCells[index].value === filledCells[index + 1].value) {
       const mergedValue = filledCells[index].value * 2;
-      result.push({ value: mergedValue, damage: 0 });
+      result.push({
+        value: mergedValue,
+        damage: 0,
+        role: resolveMergedRole(filledCells[index], filledCells[index + 1], mergedValue),
+      });
       score += mergedValue;
       mergedCells.push(filledCells[index].key, filledCells[index + 1].key);
       index += 2;
@@ -42,16 +50,33 @@ function slideLine(cells) {
   }
 
   while (result.length < cells.length) {
-    result.push({ value: 0, damage: 0 });
+    result.push({ value: 0, damage: 0, role: null });
   }
 
   return { line: result, score, mergedCells };
 }
 
-function createCellGrid(grid, tileDamage) {
+function resolveMergedRole(leftCell, rightCell, mergedValue) {
+  if (mergedValue < 256) {
+    return null;
+  }
+
+  if (leftCell.role && rightCell.role) {
+    return leftCell.role === rightCell.role ? leftCell.role : getAutoTileRoleForValue(mergedValue);
+  }
+
+  if (leftCell.role || rightCell.role) {
+    return leftCell.role ?? rightCell.role;
+  }
+
+  return getAutoTileRoleForValue(mergedValue);
+}
+
+function createCellGrid(grid, tileDamage, tileRoles) {
   return grid.map((row, rowIndex) => row.map((value, colIndex) => ({
     value,
     damage: tileDamage[rowIndex][colIndex],
+    role: tileRoles[rowIndex][colIndex],
     key: `${rowIndex}-${colIndex}`,
   })));
 }
@@ -60,11 +85,12 @@ function splitCellGrid(cellGrid) {
   return {
     grid: cellGrid.map((row) => row.map((cell) => cell.value)),
     tileDamage: cellGrid.map((row) => row.map((cell) => cell.damage)),
+    tileRoles: cellGrid.map((row) => row.map((cell) => cell.role ?? null)),
   };
 }
 
-export function slideGrid(grid, tileDamage, direction) {
-  const nextCells = createCellGrid(grid, tileDamage);
+export function slideGrid(grid, tileDamage, tileRoles, direction) {
+  const nextCells = createCellGrid(grid, tileDamage, tileRoles);
   let score = 0;
   let moved = false;
   const mergedInto = [];
@@ -125,7 +151,11 @@ export function createEmptyDamageGrid() {
   return createEmptyGrid();
 }
 
-export function addRandomTile(grid, tileDamage) {
+export function createEmptyRoleGrid() {
+  return createEmptyGrid().map((row) => row.map(() => null));
+}
+
+export function addRandomTile(grid, tileDamage, tileRoles) {
   const emptyCells = [];
 
   for (let rowIndex = 0; rowIndex < ROWS; rowIndex += 1) {
@@ -137,15 +167,17 @@ export function addRandomTile(grid, tileDamage) {
   }
 
   if (!emptyCells.length) {
-    return { grid, tileDamage };
+    return { grid, tileDamage, tileRoles };
   }
 
   const [rowIndex, colIndex] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
   const nextGrid = grid.map((row) => [...row]);
   const nextDamage = tileDamage.map((row) => [...row]);
+  const nextRoles = tileRoles.map((row) => [...row]);
   nextGrid[rowIndex][colIndex] = Math.random() < 0.85 ? 2 : 4;
   nextDamage[rowIndex][colIndex] = 0;
-  return { grid: nextGrid, tileDamage: nextDamage };
+  nextRoles[rowIndex][colIndex] = null;
+  return { grid: nextGrid, tileDamage: nextDamage, tileRoles: nextRoles };
 }
 
 export function canMove(grid) {
@@ -187,9 +219,9 @@ export function getColumnPowers(grid, tileDamage) {
   });
 }
 
-export function applyLaneDamage(grid, tileDamage, lane, damageAmount) {
+export function applyLaneDamage(grid, tileDamage, tileRoles, lane, damageAmount) {
   if (damageAmount <= 0) {
-    return { grid, tileDamage, damageTaken: 0, affectedCells: [] };
+    return { grid, tileDamage, tileRoles, damageTaken: 0, affectedCells: [] };
   }
 
   const nextGrid = grid.map((row) => [...row]);
@@ -210,18 +242,22 @@ export function applyLaneDamage(grid, tileDamage, lane, damageAmount) {
     }
 
     const absorbedDamage = Math.min(effectiveValue, remainingDamage);
-    nextDamage[rowIndex][lane] = Math.min(baseValue, nextDamage[rowIndex][lane] + absorbedDamage);
+    const tileRole = tileRoles[rowIndex][lane];
+    const appliedDamage = tileRole === TILE_ROLES.ENGINEER
+      ? Math.max(1, Math.round(absorbedDamage * FORMATION_BONUSES.engineerDamageTakenMultiplier))
+      : absorbedDamage;
+    nextDamage[rowIndex][lane] = Math.min(baseValue, nextDamage[rowIndex][lane] + appliedDamage);
     remainingDamage -= absorbedDamage;
-    damageTaken += absorbedDamage;
+    damageTaken += appliedDamage;
     affectedCells.push({
       key: `${rowIndex}-${lane}`,
       row: rowIndex,
       col: lane,
-      damage: absorbedDamage,
+      damage: appliedDamage,
     });
   }
 
-  return { grid: nextGrid, tileDamage: nextDamage, damageTaken, affectedCells };
+  return { grid: nextGrid, tileDamage: nextDamage, tileRoles, damageTaken, affectedCells };
 }
 
 export function applyBacklineRepair(grid, tileDamage) {
@@ -262,6 +298,46 @@ export function applyBacklineRepair(grid, tileDamage) {
   }
 
   return { grid, tileDamage: nextDamage, repairedAmount, repairedCells };
+}
+
+export function applyEngineerTurnRepair(grid, tileDamage, tileRoles) {
+  const nextDamage = tileDamage.map((row) => [...row]);
+  let repairedAmount = 0;
+  const repairedCells = [];
+
+  for (let rowIndex = 0; rowIndex < ROWS; rowIndex += 1) {
+    for (let colIndex = 0; colIndex < COLS; colIndex += 1) {
+      if (tileRoles[rowIndex][colIndex] !== TILE_ROLES.ENGINEER) {
+        continue;
+      }
+
+      const baseValue = grid[rowIndex][colIndex];
+      if (!baseValue) {
+        continue;
+      }
+
+      const currentDamage = nextDamage[rowIndex][colIndex];
+      if (!currentDamage) {
+        continue;
+      }
+
+      const repairAmount = Math.min(currentDamage, getEngineerTurnRepairAmount(baseValue));
+      if (repairAmount <= 0) {
+        continue;
+      }
+
+      nextDamage[rowIndex][colIndex] -= repairAmount;
+      repairedAmount += repairAmount;
+      repairedCells.push({
+        key: `${rowIndex}-${colIndex}`,
+        row: rowIndex,
+        col: colIndex,
+        repair: repairAmount,
+      });
+    }
+  }
+
+  return { grid, tileDamage: nextDamage, tileRoles, repairedAmount, repairedCells };
 }
 
 export function getTileColors(value) {

@@ -6,7 +6,13 @@ import {
   LANE_COLORS,
   LANE_NAMES,
 } from "./constants";
-import { ENEMY_TYPES, getAttackMultiplierForRow, getEnemyReward } from "./config";
+import {
+  ENEMY_TYPES,
+  ROLE_BONUSES,
+  TILE_ROLES,
+  getAttackMultiplierForRow,
+  getEnemyReward,
+} from "./config";
 import { spawnSplitChildren } from "./enemies";
 
 const MAX_VISUAL_EFFECTS = 10;
@@ -48,12 +54,18 @@ function buildShotTrace(enemy, lane, row, delayMs, blocked, effectIndex) {
 function advanceEnemies(enemies) {
   const newlyDeployedIds = new Set();
   const advancedEnemies = enemies.map((enemy) => {
-    const nextStep = enemy.step + (enemy.speed ?? 1);
+    const isSlowed = (enemy.slowTurns ?? 0) > 0;
+    const stepDelta = (enemy.speed ?? 1) * (isSlowed ? 0.5 : 1);
+    const nextStep = enemy.step + stepDelta;
     if (enemy.step <= 0 && nextStep > 0) {
       newlyDeployedIds.add(enemy.id);
     }
 
-    return { ...enemy, step: nextStep };
+    return {
+      ...enemy,
+      step: nextStep,
+      slowTurns: Math.max(0, (enemy.slowTurns ?? 0) - 1),
+    };
   });
 
   return { advancedEnemies, newlyDeployedIds };
@@ -75,7 +87,7 @@ function buildLaneTargets(enemies, newlyDeployedIds) {
   return laneTargets;
 }
 
-export function resolveCombatTurn({ grid, enemies, lives }) {
+export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
   const { advancedEnemies, newlyDeployedIds } = advanceEnemies(enemies);
   let nextEnemies = advancedEnemies.map((enemy) => ({ ...enemy }));
   const laneTargets = buildLaneTargets(nextEnemies, newlyDeployedIds);
@@ -101,7 +113,11 @@ export function resolveCombatTurn({ grid, enemies, lives }) {
       if (!basePower) {
         continue;
       }
-      const shotPower = Math.round(basePower * getAttackMultiplierForRow(row));
+      const tileRole = tileRoles[row][lane];
+      const gambleMultiplier = tileRole === TILE_ROLES.GAMBLER
+        ? ROLE_BONUSES.gamblerMinMultiplier + Math.random() * (ROLE_BONUSES.gamblerMaxMultiplier - ROLE_BONUSES.gamblerMinMultiplier)
+        : 1;
+      const shotPower = Math.round(basePower * getAttackMultiplierForRow(row) * gambleMultiplier);
 
       while (laneTargetIndexes[lane] < targets.length && targets[laneTargetIndexes[lane]].hp <= 0) {
         laneTargetIndexes[lane] += 1;
@@ -137,6 +153,40 @@ export function resolveCombatTurn({ grid, enemies, lives }) {
       }
       effectIndex += 1;
       target.hp -= damage;
+
+      if (tileRole === TILE_ROLES.SUPPRESSOR) {
+        target.slowTurns = Math.max(target.slowTurns ?? 0, 1);
+      }
+
+      if (tileRole === TILE_ROLES.CHAINER) {
+        let chainTargetIndex = laneTargetIndexes[lane] + 1;
+        for (let chainLevel = 0; chainLevel < ROLE_BONUSES.chainRates.length; chainLevel += 1) {
+          while (chainTargetIndex < targets.length && targets[chainTargetIndex].hp <= 0) {
+            chainTargetIndex += 1;
+          }
+
+          if (chainTargetIndex >= targets.length) {
+            break;
+          }
+
+          const chainedTarget = targets[chainTargetIndex];
+          const chainedBaseDamage = Math.max(1, Math.round(damage * ROLE_BONUSES.chainRates[chainLevel]));
+          if (chainedBaseDamage <= chainedTarget.armor) {
+            chainTargetIndex += 1;
+            continue;
+          }
+
+          const chainedDamage = chainedBaseDamage - chainedTarget.armor;
+          chainedTarget.hp -= chainedDamage;
+          damageByLane[lane] = (damageByLane[lane] ?? 0) + chainedDamage;
+
+          if (damageBursts.length < MAX_VISUAL_EFFECTS) {
+            damageBursts.push(buildDamageBurst(chainedTarget, lane, row, chainedDamage, delayMs + (chainLevel + 1) * 40, effectIndex));
+          }
+          effectIndex += 1;
+          chainTargetIndex += 1;
+        }
+      }
     }
 
     if (laneDidAttack) {

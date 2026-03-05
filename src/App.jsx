@@ -6,6 +6,12 @@ import {
   COLS,
 } from "./game/constants";
 import { GAME_PHASES } from "./game/config";
+import {
+  canSelectRoleByTileValue,
+  ROLE_RULES,
+  TILE_ROLE_DEFS,
+  TILE_ROLE_ORDER,
+} from "./game/config";
 import { StatusHud } from "./components/StatusHud";
 import { MovesIndicator } from "./components/MovesIndicator";
 import { WaveClearBanner } from "./components/WaveClearBanner";
@@ -23,6 +29,7 @@ export default function MergeTowerDefense() {
   const {
     grid,
     tileDamage,
+    tileRoles,
     enemies,
     lives,
     wave,
@@ -45,7 +52,9 @@ export default function MergeTowerDefense() {
     handleTouchEnd,
     nextWave,
     restart,
+    setTileRoleAt,
   } = useGameState();
+  const [roleModal, setRoleModal] = useState(null);
 
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
@@ -57,6 +66,31 @@ export default function MergeTowerDefense() {
   const isWideDesktop = viewportWidth >= 1200;
   const tileHeight = isWideDesktop ? 62 : isDesktop ? 56 : 54;
   const laneHeight = isWideDesktop ? 160 : isDesktop ? 140 : 130;
+  const canEditRoles = phase === GAME_PHASES.PLAYER;
+
+  const openRoleModal = (tile) => {
+    if (!canEditRoles) {
+      return;
+    }
+    if (!canSelectRoleByTileValue(tile.value)) {
+      return;
+    }
+
+    setRoleModal(tile);
+  };
+
+  const closeRoleModal = () => {
+    setRoleModal(null);
+  };
+
+  const selectRole = (nextRole) => {
+    if (!roleModal) {
+      return;
+    }
+
+    setTileRoleAt(roleModal.row, roleModal.col, nextRole);
+    closeRoleModal();
+  };
 
   return (
     <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0f0e17 0%,#1a1a2e 100%)",display:"flex",justifyContent:"center",padding:"12px 8px",fontFamily:"'Segoe UI',sans-serif"}}>
@@ -121,11 +155,13 @@ export default function MergeTowerDefense() {
             <TowerGrid
               grid={grid}
               tileDamage={tileDamage}
+              tileRoles={tileRoles}
               retaliationHits={retaliationHits}
               repairHighlights={repairHighlights}
               mergeHighlights={mergeHL}
               tileHeight={tileHeight}
               isDesktop={isDesktop}
+              onTileClick={openRoleModal}
             />
             <ActionPanel
               phase={phase}
@@ -141,6 +177,81 @@ export default function MergeTowerDefense() {
           </div>
         </div>
       </div>
+      {roleModal && (
+        <div
+          onClick={closeRoleModal}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 16,
+          }}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: 360,
+              background: "#111827",
+              border: "1px solid #334155",
+              borderRadius: 12,
+              padding: 14,
+              boxShadow: "0 14px 30px rgba(0, 0, 0, 0.4)",
+            }}
+          >
+            <div style={{ fontSize: 13, color: "#e5e7eb", fontWeight: "700", marginBottom: 4 }}>
+              役職を選択
+            </div>
+            <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 10 }}>
+              タイル {roleModal.value}（Lv.{ROLE_RULES.minSelectableLevel}以上で変更可） / 現在: {roleModal.role ? `${TILE_ROLE_DEFS[roleModal.role]?.icon} ${TILE_ROLE_DEFS[roleModal.role]?.label}` : "なし"}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {TILE_ROLE_ORDER.map((roleKey) => {
+                const roleDef = TILE_ROLE_DEFS[roleKey];
+                const selected = roleModal.role === roleKey;
+                return (
+                  <button
+                    key={roleKey}
+                    type="button"
+                    onClick={() => selectRole(roleKey)}
+                    style={{
+                      border: selected ? "1px solid #fbbf24" : "1px solid #475569",
+                      background: selected ? "#1f2937" : "#0f172a",
+                      color: "#e5e7eb",
+                      borderRadius: 10,
+                      padding: "10px 8px",
+                      fontSize: 13,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {roleDef.icon} {roleDef.label}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => selectRole(null)}
+                style={{
+                  gridColumn: "1 / -1",
+                  border: "1px solid #475569",
+                  background: "#0b1220",
+                  color: "#cbd5e1",
+                  borderRadius: 10,
+                  padding: "10px 8px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                }}
+              >
+                役職なし
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

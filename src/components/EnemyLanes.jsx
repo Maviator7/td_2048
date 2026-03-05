@@ -54,6 +54,7 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
   const isFast = enemy.type === "fast";
   const isSplitter = enemy.type === "splitter";
   const isSplitChild = enemy.type === "split_child";
+  const isSlowed = (enemy.slowTurns ?? 0) > 0;
   const size = enemy.isBoss ? 36 : isSplitter ? 33 : isFast ? 28 : isSplitChild ? 21 : 30;
 
   return (
@@ -121,6 +122,19 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
           }}
         >
           ✳️
+        </div>
+      )}
+      {isSlowed && (
+        <div
+          style={{
+            position: "absolute",
+            top: -8,
+            right: 0,
+            fontSize: 10,
+            zIndex: 8,
+          }}
+        >
+          🕸️
         </div>
       )}
       <div
