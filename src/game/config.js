@@ -30,6 +30,18 @@ export const SCORE_RULES = {
   bossKillMultiplier: 5,
 };
 
+export const FORMATION_BONUSES = {
+  frontlineAttackMultiplier: 1.25,
+  midlineDamageReduction: 0.25,
+  backlineRepairRatio: 0.1,
+};
+
+export const ROW_ROLES = {
+  FRONTLINE: "frontline",
+  MIDLINE: "midline",
+  BACKLINE: "backline",
+};
+
 export const WAVE_FEATURES = {
   fastEnemiesStartWave: ENEMY_BALANCE.fast.startWave,
   armoredEnemiesStartWave: ENEMY_BALANCE.armor.startWave,
@@ -117,6 +129,38 @@ export function getBaseArmor(waveNumber) {
 
 export function getEnemyReward(enemy) {
   return enemy.maxHp * getEnemyTypeDef(enemy.type).rewardMultiplier;
+}
+
+export function getRowRole(rowIndex) {
+  if (rowIndex <= 1) {
+    return ROW_ROLES.FRONTLINE;
+  }
+
+  if (rowIndex <= 3) {
+    return ROW_ROLES.MIDLINE;
+  }
+
+  return ROW_ROLES.BACKLINE;
+}
+
+export function getAttackMultiplierForRow(rowIndex) {
+  return getRowRole(rowIndex) === ROW_ROLES.FRONTLINE
+    ? FORMATION_BONUSES.frontlineAttackMultiplier
+    : 1;
+}
+
+export function getMidlineReductionForRow(rowIndex) {
+  return getRowRole(rowIndex) === ROW_ROLES.MIDLINE
+    ? FORMATION_BONUSES.midlineDamageReduction
+    : 0;
+}
+
+export function getBacklineRepairAmount(baseValue) {
+  if (baseValue <= 0) {
+    return 0;
+  }
+
+  return Math.ceil(baseValue * FORMATION_BONUSES.backlineRepairRatio);
 }
 
 export function isArmorUnlocked(waveNumber) {

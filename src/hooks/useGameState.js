@@ -8,6 +8,7 @@ import {
 import { GAME_PHASES, getWaveStartMessage } from "../game/config";
 import {
   addRandomTile,
+  applyBacklineRepair,
   applyLaneDamage,
   canMove,
   createEmptyDamageGrid,
@@ -46,6 +47,7 @@ export function useGameState() {
   const [shotTraces, setShotTraces] = useState([]);
   const [retaliationCols, setRetaliationCols] = useState([]);
   const [retaliationHits, setRetaliationHits] = useState([]);
+  const [repairHighlights, setRepairHighlights] = useState([]);
   const [mergeHL, setMergeHL] = useState([]);
 
   const touchStartRef = useRef(null);
@@ -92,6 +94,10 @@ export function useGameState() {
     setRetaliationHits([]);
   }, []);
 
+  const clearRepairEffects = useCallback(() => {
+    setRepairHighlights([]);
+  }, []);
+
   const setBoard = useCallback((nextGrid, nextTileDamage) => {
     setBoardState({ grid: nextGrid, tileDamage: nextTileDamage });
   }, []);
@@ -120,17 +126,15 @@ export function useGameState() {
       }
     }
 
-    if (retaliationLogs.length) {
-      setRetaliationCols(nextRetaliationCols);
-      setRetaliationHits(nextRetaliationHits);
-      setBoard(nextGrid, nextTileDamage);
-      pushLogs(retaliationLogs);
-      scheduleTimeout(clearRetaliationEffects, 320);
-      return true;
-    }
-
-    return false;
-  }, [clearRetaliationEffects, pushLogs, scheduleTimeout, setBoard]);
+    return {
+      nextGrid,
+      nextTileDamage,
+      retaliationLogs,
+      nextRetaliationCols,
+      nextRetaliationHits,
+      hadRetaliation: nextRetaliationCols.length > 0,
+    };
+  }, []);
 
   const resolveTurn = useCallback((baseGrid, currentTileDamage, currentEnemies, currentLives, currentWave) => {
     const attackGrid = getEffectiveGrid(baseGrid, currentTileDamage);
@@ -165,15 +169,29 @@ export function useGameState() {
     }
 
     scheduleTimeout(() => {
-      const hadRetaliation = resolveRetaliation(baseGrid, currentTileDamage, result.remainingLaneThreats);
+      const retaliationResult = resolveRetaliation(baseGrid, currentTileDamage, result.remainingLaneThreats);
+
+      if (retaliationResult.hadRetaliation) {
+        setRetaliationCols(retaliationResult.nextRetaliationCols);
+        setRetaliationHits(retaliationResult.nextRetaliationHits);
+        scheduleTimeout(clearRetaliationEffects, 320);
+      }
+
+      if (retaliationResult.retaliationLogs.length) {
+        setBoard(retaliationResult.nextGrid, retaliationResult.nextTileDamage);
+      }
+
+      if (retaliationResult.retaliationLogs.length) {
+        pushLogs(retaliationResult.retaliationLogs);
+      }
 
       scheduleTimeout(() => {
         setMovesLeft(MOVES_PER_TURN);
         setPhase(GAME_PHASES.PLAYER);
         pushLog(`🔄 新ターン！残り${MOVES_PER_TURN}手`);
-      }, hadRetaliation ? 260 : 80);
+      }, retaliationResult.hadRetaliation ? 260 : 80);
     }, result.effectDuration);
-  }, [clearCombatEffects, pushLog, pushLogs, resolveRetaliation, scheduleTimeout]);
+  }, [clearCombatEffects, clearRetaliationEffects, pushLog, pushLogs, resolveRetaliation, scheduleTimeout, setBoard]);
 
   const handleSlide = useCallback((direction) => {
     if (phase !== GAME_PHASES.PLAYER) {
@@ -195,7 +213,17 @@ export function useGameState() {
     const gridWithNewTile = nextState.grid;
     const gridWithNewTileDamage = nextState.tileDamage;
 
-    setBoard(gridWithNewTile, gridWithNewTileDamage);
+    const repairResult = applyBacklineRepair(gridWithNewTile, gridWithNewTileDamage);
+    const nextTurnGrid = repairResult.grid;
+    const nextTurnTileDamage = repairResult.tileDamage;
+
+    setBoard(nextTurnGrid, nextTurnTileDamage);
+    if (repairResult.repairedAmount > 0) {
+      setRepairHighlights(repairResult.repairedCells);
+      scheduleTimeout(clearRepairEffects, 360);
+      pushLog(`🛠️ 後衛修復 +${repairResult.repairedAmount}`);
+    }
+
     if (gainedScore) {
       setScore((currentScore) => currentScore + gainedScore);
       pushLog(`🔀 合体！+${gainedScore}pts`);
@@ -206,7 +234,7 @@ export function useGameState() {
       scheduleTimeout(() => setMergeHL([]), 400);
     }
 
-    if (!canMove(gridWithNewTile)) {
+    if (!canMove(nextTurnGrid)) {
       setPhase(GAME_PHASES.GAMEOVER);
       pushLog("💀 グリッド満杯！ゲームオーバー！");
       return;
@@ -218,12 +246,12 @@ export function useGameState() {
     if (nextMovesLeft <= 0) {
       pushLog("⚔️ 手数終了 → 攻撃！");
       setPhase(GAME_PHASES.RESOLVING);
-      scheduleTimeout(() => resolveTurn(gridWithNewTile, gridWithNewTileDamage, enemies, lives, wave), 200);
+      scheduleTimeout(() => resolveTurn(nextTurnGrid, nextTurnTileDamage, enemies, lives, wave), 200);
       return;
     }
 
     pushLog(`残り${nextMovesLeft}手`);
-  }, [enemies, grid, lives, movesLeft, phase, pushLog, resolveTurn, scheduleTimeout, setBoard, tileDamage, wave]);
+  }, [clearRepairEffects, enemies, grid, lives, movesLeft, phase, pushLog, resolveTurn, scheduleTimeout, setBoard, tileDamage, wave]);
 
   const handleTouchStart = useCallback((event) => {
     const touch = event.touches?.[0];
@@ -288,8 +316,9 @@ export function useGameState() {
     setLog([INITIAL_LOG]);
     clearCombatEffects();
     clearRetaliationEffects();
+    clearRepairEffects();
     setMergeHL([]);
-  }, [clearCombatEffects, clearRetaliationEffects, clearScheduledTimeouts, setBoard]);
+  }, [clearCombatEffects, clearRepairEffects, clearRetaliationEffects, clearScheduledTimeouts, setBoard]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -332,6 +361,7 @@ export function useGameState() {
     shotTraces,
     retaliationCols,
     retaliationHits,
+    repairHighlights,
     mergeHL,
     colPower: getColumnPowers(grid, tileDamage),
     nextSpawnEnemy: getNextSpawnEnemy(enemies),

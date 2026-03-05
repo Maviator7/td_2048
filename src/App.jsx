@@ -37,6 +37,7 @@ export default function MergeTowerDefense() {
     shotTraces,
     retaliationCols,
     retaliationHits,
+    repairHighlights,
     mergeHL,
     colPower,
     nextSpawnEnemy,
@@ -121,6 +122,7 @@ export default function MergeTowerDefense() {
               grid={grid}
               tileDamage={tileDamage}
               retaliationHits={retaliationHits}
+              repairHighlights={repairHighlights}
               mergeHighlights={mergeHL}
               tileHeight={tileHeight}
               isDesktop={isDesktop}

@@ -1,4 +1,5 @@
 import { COLS, ROWS } from "./constants";
+import { getBacklineRepairAmount, getRowRole, ROW_ROLES } from "./config";
 
 const TILE_COLOR_MAP = {
   2: ["#eee4da", "#776e65"],
@@ -215,6 +216,46 @@ export function applyLaneDamage(grid, tileDamage, lane, damageAmount) {
   }
 
   return { grid: nextGrid, tileDamage: nextDamage, damageTaken, affectedCells };
+}
+
+export function applyBacklineRepair(grid, tileDamage) {
+  const nextDamage = tileDamage.map((row) => [...row]);
+  let repairedAmount = 0;
+  const repairedCells = [];
+
+  for (let rowIndex = 0; rowIndex < ROWS; rowIndex += 1) {
+    if (getRowRole(rowIndex) !== ROW_ROLES.BACKLINE) {
+      continue;
+    }
+
+    for (let colIndex = 0; colIndex < COLS; colIndex += 1) {
+      const baseValue = grid[rowIndex][colIndex];
+      if (!baseValue) {
+        continue;
+      }
+
+      const currentDamage = nextDamage[rowIndex][colIndex];
+      if (!currentDamage) {
+        continue;
+      }
+
+      const repairAmount = Math.min(currentDamage, getBacklineRepairAmount(baseValue));
+      if (repairAmount <= 0) {
+        continue;
+      }
+
+      nextDamage[rowIndex][colIndex] -= repairAmount;
+      repairedAmount += repairAmount;
+      repairedCells.push({
+        key: `${rowIndex}-${colIndex}`,
+        row: rowIndex,
+        col: colIndex,
+        repair: repairAmount,
+      });
+    }
+  }
+
+  return { grid, tileDamage: nextDamage, repairedAmount, repairedCells };
 }
 
 export function getTileColors(value) {
