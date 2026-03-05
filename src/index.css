@@ -88,6 +88,10 @@ button:focus-visible {
   animation: enemy-hit-flash 0.28s ease-out;
 }
 
+.fast-enemy-core {
+  animation: fast-enemy-core-pulse 0.7s ease-in-out infinite;
+}
+
 .retaliation-lane-flash {
   animation: retaliation-lane-flash 0.28s ease-out;
 }
@@ -264,6 +268,15 @@ button:focus-visible {
   100% {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+@keyframes fast-enemy-core-pulse {
+  0%, 100% {
+    filter: saturate(1) brightness(1);
+  }
+  50% {
+    filter: saturate(1.35) brightness(1.2);
   }
 }
 

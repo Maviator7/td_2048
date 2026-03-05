@@ -12,6 +12,10 @@ export const ENEMY_BALANCE = {
   baseHpFactor: 18,
   hpRollMin: 0.7,
   hpRollRange: 0.6,
+  fast: {
+    startWave: 2,
+    spawnChance: 0.28,
+  },
   armor: {
     startWave: 4,
     growthOffset: 2,
@@ -22,15 +26,18 @@ export const ENEMY_BALANCE = {
 
 export const SCORE_RULES = {
   normalKillMultiplier: 2,
+  fastKillMultiplier: 3,
   bossKillMultiplier: 5,
 };
 
 export const WAVE_FEATURES = {
+  fastEnemiesStartWave: ENEMY_BALANCE.fast.startWave,
   armoredEnemiesStartWave: ENEMY_BALANCE.armor.startWave,
 };
 
 export const ENEMY_TYPES = {
   NORMAL: "normal",
+  FAST: "fast",
   BOSS: "boss",
 };
 
@@ -39,13 +46,23 @@ export const ENEMY_TYPE_DEFS = {
     hpMultiplier: 1,
     armorMultiplier: 1,
     armorFlatBonus: 0,
+    speed: 1,
     rewardMultiplier: SCORE_RULES.normalKillMultiplier,
+    isBoss: false,
+  },
+  [ENEMY_TYPES.FAST]: {
+    hpMultiplier: 0.85,
+    armorMultiplier: 1,
+    armorFlatBonus: 0,
+    speed: 1.7,
+    rewardMultiplier: SCORE_RULES.fastKillMultiplier,
     isBoss: false,
   },
   [ENEMY_TYPES.BOSS]: {
     hpMultiplier: 2.2,
     armorMultiplier: 1,
     armorFlatBonus: 6,
+    speed: 1,
     rewardMultiplier: SCORE_RULES.bossKillMultiplier,
     isBoss: true,
   },
@@ -65,8 +82,20 @@ export function getRolledEnemyHp(waveNumber) {
   return Math.floor(baseHp * hpMultiplier);
 }
 
-export function getEnemyType({ isLastEnemyInWave }) {
-  return isLastEnemyInWave ? ENEMY_TYPES.BOSS : ENEMY_TYPES.NORMAL;
+export function isFastUnlocked(waveNumber) {
+  return waveNumber >= WAVE_FEATURES.fastEnemiesStartWave;
+}
+
+export function getEnemyType({ waveNumber, isLastEnemyInWave }) {
+  if (isLastEnemyInWave) {
+    return ENEMY_TYPES.BOSS;
+  }
+
+  if (isFastUnlocked(waveNumber) && Math.random() < ENEMY_BALANCE.fast.spawnChance) {
+    return ENEMY_TYPES.FAST;
+  }
+
+  return ENEMY_TYPES.NORMAL;
 }
 
 export function getEnemyTypeDef(enemyType) {
@@ -96,6 +125,9 @@ export function isArmorUnlocked(waveNumber) {
 
 export function getWaveStartMessage(waveNumber) {
   const suffixes = ["最後にボス出現！"];
+  if (isFastUnlocked(waveNumber)) {
+    suffixes.push("高速敵に注意！");
+  }
   if (isArmorUnlocked(waveNumber)) {
     suffixes.push("装甲敵が登場！");
   }

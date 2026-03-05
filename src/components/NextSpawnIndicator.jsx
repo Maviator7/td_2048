@@ -2,7 +2,11 @@ import { memo } from "react";
 
 export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEnemy, laneColors, laneNames }) {
   const isBossNext = Boolean(nextSpawnEnemy?.isBoss);
+  const isFastNext = nextSpawnEnemy?.type === "fast";
   const nextLaneColor = nextSpawnEnemy ? laneColors[nextSpawnEnemy.lane] : "#1e2a3a";
+  const typeAccentColor = isBossNext ? "#f1c40f" : isFastNext ? "#3ddcff" : nextLaneColor;
+  const panelLabel = isBossNext ? "次の出現 (BOSS)" : isFastNext ? "次の出現 (FAST)" : "次の出現列";
+  const panelTypeTag = isBossNext ? "👑BOSS" : isFastNext ? "⚡FAST" : "";
 
   return (
     <div
@@ -16,14 +20,16 @@ export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEn
         padding: "8px 10px",
         background: isBossNext
           ? "linear-gradient(135deg, rgba(76, 44, 121, 0.7), rgba(13, 17, 23, 0.95))"
+          : isFastNext
+            ? "linear-gradient(135deg, rgba(15, 83, 108, 0.62), rgba(13, 17, 23, 0.95))"
           : "#0d1117",
-        border: isBossNext ? "1px solid #f1c40f" : "1px solid #1e2a3a",
+        border: nextSpawnEnemy ? `1px solid ${typeAccentColor}` : "1px solid #1e2a3a",
         borderRadius: 10,
-        ...(nextSpawnEnemy ? { "--next-glow-color": nextLaneColor } : {}),
+        ...(nextSpawnEnemy ? { "--next-glow-color": typeAccentColor } : {}),
       }}
     >
-      <span style={{ fontSize: 11, color: isBossNext ? "#ffe08a" : "#888" }}>
-        {isBossNext ? "次の出現 (BOSS)" : "次の出現列"}
+      <span style={{ fontSize: 11, color: nextSpawnEnemy ? typeAccentColor : "#888" }}>
+        {panelLabel}
       </span>
       {nextSpawnEnemy ? (
         <>
@@ -41,11 +47,11 @@ export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEn
             style={{
               fontSize: 14,
               fontWeight: "bold",
-              color: nextLaneColor,
-              textShadow: `0 0 10px ${nextLaneColor}66`,
+              color: typeAccentColor,
+              textShadow: `0 0 10px ${typeAccentColor}66`,
             }}
           >
-            レーン {laneNames[nextSpawnEnemy.lane]}{isBossNext ? "  👑BOSS" : ""}
+            レーン {laneNames[nextSpawnEnemy.lane]}{panelTypeTag ? `  ${panelTypeTag}` : ""}
           </span>
         </>
       ) : (

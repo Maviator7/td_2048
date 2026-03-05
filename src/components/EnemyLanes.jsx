@@ -50,7 +50,8 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
   const top = Math.min(1, enemy.step / ENEMY_MAX_STEPS) * 72;
   const hpRatio = enemy.hp / enemy.maxHp;
   const isHit = Boolean(hitEffect);
-  const size = enemy.isBoss ? 36 : 30;
+  const isFast = enemy.type === "fast";
+  const size = enemy.isBoss ? 36 : isFast ? 28 : 30;
 
   return (
     <div
@@ -59,7 +60,7 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
         top: `${top}%`,
         left: "50%",
         transform: "translateX(-50%)",
-        width: enemy.isBoss ? 42 : 34,
+        width: enemy.isBoss ? 42 : isFast ? 38 : 34,
         transition: "top 0.35s ease",
       }}
     >
@@ -77,23 +78,44 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
           👑
         </div>
       )}
+      {isFast && (
+        <div
+          style={{
+            position: "absolute",
+            top: -9,
+            left: "50%",
+            transform: "translateX(-50%)",
+            fontSize: 10,
+            zIndex: 8,
+          }}
+        >
+          ⚡
+        </div>
+      )}
       <div
-        className={isHit ? "enemy-hit-flash" : undefined}
+        className={`${isHit ? "enemy-hit-flash " : ""}${isFast ? "fast-enemy-core" : ""}`.trim()}
         style={{
           width: size,
           height: size,
           margin: "0 auto",
-          borderRadius: enemy.isBoss ? 6 : "50%",
+          borderRadius: enemy.isBoss ? 6 : isFast ? 4 : "50%",
+          clipPath: isFast ? "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" : "none",
           background: enemy.isBoss
             ? "radial-gradient(circle at 30% 30%, #b37feb 0%, #8e44ad 45%, #4a235a 100%)"
+            : isFast
+              ? "linear-gradient(145deg, #22d3ee 0%, #0ea5b7 55%, #0b6170 100%)"
             : laneColor,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: enemy.isBoss ? 10 : 9,
+          fontSize: enemy.isBoss ? 10 : isFast ? 8 : 9,
           color: "#fff",
           fontWeight: "bold",
-          border: enemy.armor ? "2px solid #f1c40f" : "2px solid transparent",
+          border: enemy.armor
+            ? "2px solid #f1c40f"
+            : isFast
+              ? "2px solid #7ce7ff"
+              : "2px solid transparent",
           opacity: isHit ? 0.82 : 1,
           animationDelay: isHit ? `${hitEffect.delayMs}ms` : undefined,
         }}
@@ -120,6 +142,7 @@ function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces) {
   const laneEnemies = Array.from({ length: COLS }, () => []);
   const queuedCounts = Array(COLS).fill(0);
   const queuedBossFlags = Array(COLS).fill(false);
+  const queuedFastFlags = Array(COLS).fill(false);
   const hitEffectByEnemyId = new Map();
   const burstsByLane = Array.from({ length: COLS }, () => []);
   const tracesByLane = Array.from({ length: COLS }, () => []);
@@ -131,6 +154,9 @@ function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces) {
       queuedCounts[enemy.lane] += 1;
       if (enemy.isBoss) {
         queuedBossFlags[enemy.lane] = true;
+      }
+      if (enemy.type === "fast") {
+        queuedFastFlags[enemy.lane] = true;
       }
     }
   }
@@ -157,6 +183,7 @@ function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces) {
     laneEnemies,
     queuedCounts,
     queuedBossFlags,
+    queuedFastFlags,
     hitEffectByEnemyId,
     burstsByLane,
     tracesByLane,
@@ -173,6 +200,7 @@ function EnemyLane({
   laneEnemies,
   queuedCount,
   hasQueuedBoss,
+  hasQueuedFast,
   hitEffectByEnemyId,
   laneBursts,
   laneTraces,
@@ -276,7 +304,7 @@ function EnemyLane({
             color: "#444",
           }}
         >
-          +{queuedCount}待機{hasQueuedBoss ? " 👑" : ""}
+          +{queuedCount}待機{hasQueuedBoss ? " 👑" : ""}{hasQueuedFast ? " ⚡" : ""}
         </div>
       )}
       {isCounterAttacking && (
@@ -329,6 +357,7 @@ export const EnemyLanes = memo(function EnemyLanes({
           laneEnemies={laneRenderData.laneEnemies[laneIndex]}
           queuedCount={laneRenderData.queuedCounts[laneIndex]}
           hasQueuedBoss={laneRenderData.queuedBossFlags[laneIndex]}
+          hasQueuedFast={laneRenderData.queuedFastFlags[laneIndex]}
           hitEffectByEnemyId={laneRenderData.hitEffectByEnemyId}
           laneBursts={laneRenderData.burstsByLane[laneIndex]}
           laneTraces={laneRenderData.tracesByLane[laneIndex]}

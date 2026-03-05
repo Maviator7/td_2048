@@ -6,7 +6,7 @@ import {
   LANE_COLORS,
   LANE_NAMES,
 } from "./constants";
-import { getEnemyReward } from "./config";
+import { ENEMY_TYPES, getEnemyReward } from "./config";
 
 const MAX_VISUAL_EFFECTS = 10;
 
@@ -47,7 +47,7 @@ function buildShotTrace(enemy, lane, row, delayMs, blocked, effectIndex) {
 function advanceEnemies(enemies) {
   const newlyDeployedIds = new Set();
   const advancedEnemies = enemies.map((enemy) => {
-    const nextStep = enemy.step + 1;
+    const nextStep = enemy.step + (enemy.speed ?? 1);
     if (enemy.step <= 0 && nextStep > 0) {
       newlyDeployedIds.add(enemy.id);
     }
@@ -146,7 +146,12 @@ export function resolveCombatTurn({ grid, enemies, lives }) {
   defeatedEnemies.forEach((enemy) => {
     const reward = getEnemyReward(enemy);
     scoreGained += reward;
-    logMessages.push(`${enemy.isBoss ? "💥ボス" : "✅"}撃破！+${reward}pts`);
+    const enemyLabel = enemy.isBoss
+      ? "💥ボス"
+      : enemy.type === ENEMY_TYPES.FAST
+        ? "⚡高速敵"
+        : "✅";
+    logMessages.push(`${enemyLabel}撃破！+${reward}pts`);
   });
   nextEnemies = nextEnemies.filter((enemy) => enemy.hp > 0);
 

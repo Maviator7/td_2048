@@ -13,7 +13,7 @@ let enemyIdCounter = 0;
 function createEnemy(lane, waveNumber, isLastEnemyInWave) {
   const rolledHp = getRolledEnemyHp(waveNumber);
   const baseArmor = getBaseArmor(waveNumber);
-  const type = getEnemyType({ isLastEnemyInWave });
+  const type = getEnemyType({ waveNumber, isLastEnemyInWave });
   const typeDef = getEnemyTypeDef(type);
   const maxHp = Math.max(1, Math.floor(rolledHp * typeDef.hpMultiplier));
 
@@ -24,6 +24,7 @@ function createEnemy(lane, waveNumber, isLastEnemyInWave) {
     hp: maxHp,
     maxHp,
     armor: baseArmor * typeDef.armorMultiplier + (typeDef.armorFlatBonus ?? 0),
+    speed: typeDef.speed ?? 1,
     step: 0,
     isBoss: typeDef.isBoss,
   };
