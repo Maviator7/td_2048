@@ -64,8 +64,8 @@ function canMergeCells(leftCell, rightCell) {
   const leftHasRole = Boolean(leftCell.role);
   const rightHasRole = Boolean(rightCell.role);
 
-  if (leftHasRole !== rightHasRole) {
-    return false;
+  if (leftHasRole || rightHasRole) {
+    return leftCell.role === rightCell.role;
   }
 
   return true;
