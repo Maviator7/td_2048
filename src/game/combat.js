@@ -6,7 +6,7 @@ import {
   LANE_COLORS,
   LANE_NAMES,
 } from "./constants";
-import { ENEMY_TYPES, getEnemyReward } from "./config";
+import { ENEMY_TYPES, getAttackMultiplierForRow, getEnemyReward } from "./config";
 
 const MAX_VISUAL_EFFECTS = 10;
 
@@ -96,10 +96,11 @@ export function resolveCombatTurn({ grid, enemies, lives }) {
     const targets = laneTargets[lane];
 
     for (let row = 0; row < ROWS; row += 1) {
-      const shotPower = grid[row][lane];
-      if (!shotPower) {
+      const basePower = grid[row][lane];
+      if (!basePower) {
         continue;
       }
+      const shotPower = Math.round(basePower * getAttackMultiplierForRow(row));
 
       while (laneTargetIndexes[lane] < targets.length && targets[laneTargetIndexes[lane]].hp <= 0) {
         laneTargetIndexes[lane] += 1;

@@ -104,22 +104,38 @@ button:focus-visible {
   animation: tile-repair-flash 0.32s ease-out;
 }
 
+.row-floor {
+  overflow: hidden;
+}
+
 .tile-row-frontline {
-  box-shadow:
-    inset 0 0 0 1px rgba(230, 126, 34, 0.34),
-    0 0 8px rgba(230, 126, 34, 0.1);
+  background: linear-gradient(90deg, rgba(230, 126, 34, 0.2) 0%, rgba(192, 57, 43, 0.14) 100%);
+  border: 1px solid rgba(230, 126, 34, 0.38);
 }
 
 .tile-row-midline {
-  box-shadow:
-    inset 0 0 0 1px rgba(52, 152, 219, 0.34),
-    0 0 8px rgba(52, 152, 219, 0.1);
+  background: linear-gradient(90deg, rgba(52, 152, 219, 0.2) 0%, rgba(41, 128, 185, 0.14) 100%);
+  border: 1px solid rgba(52, 152, 219, 0.38);
 }
 
 .tile-row-backline {
-  box-shadow:
-    inset 0 0 0 1px rgba(39, 174, 96, 0.34),
-    0 0 8px rgba(39, 174, 96, 0.1);
+  background: linear-gradient(90deg, rgba(39, 174, 96, 0.22) 0%, rgba(22, 160, 133, 0.16) 100%);
+  border: 1px solid rgba(39, 174, 96, 0.38);
+}
+
+.row-floor-bonus-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.26);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
 }
 
 .row-bonus-badge {

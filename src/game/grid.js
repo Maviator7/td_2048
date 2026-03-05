@@ -1,5 +1,10 @@
 import { COLS, ROWS } from "./constants";
-import { getBacklineRepairAmount, getRowRole, ROW_ROLES } from "./config";
+import {
+  getAttackMultiplierForRow,
+  getBacklineRepairAmount,
+  getRowRole,
+  ROW_ROLES,
+} from "./config";
 
 const TILE_COLOR_MAP = {
   2: ["#eee4da", "#776e65"],
@@ -175,7 +180,8 @@ export function getColumnPowers(grid, tileDamage) {
   return Array.from({ length: COLS }, (_, colIndex) => {
     let power = 0;
     for (let rowIndex = 0; rowIndex < ROWS; rowIndex += 1) {
-      power += getEffectiveTileValue(grid[rowIndex][colIndex], tileDamage[rowIndex][colIndex]);
+      const effectivePower = getEffectiveTileValue(grid[rowIndex][colIndex], tileDamage[rowIndex][colIndex]);
+      power += Math.round(effectivePower * getAttackMultiplierForRow(rowIndex));
     }
     return power;
   });
