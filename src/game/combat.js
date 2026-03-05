@@ -7,6 +7,7 @@ import {
   LANE_NAMES,
 } from "./constants";
 import { ENEMY_TYPES, getAttackMultiplierForRow, getEnemyReward } from "./config";
+import { spawnSplitChildren } from "./enemies";
 
 const MAX_VISUAL_EFFECTS = 10;
 
@@ -144,6 +145,7 @@ export function resolveCombatTurn({ grid, enemies, lives }) {
   }
 
   const defeatedEnemies = nextEnemies.filter((enemy) => enemy.hp <= 0);
+  const spawnedChildren = [];
   defeatedEnemies.forEach((enemy) => {
     const reward = getEnemyReward(enemy);
     scoreGained += reward;
@@ -151,10 +153,23 @@ export function resolveCombatTurn({ grid, enemies, lives }) {
       ? "💥ボス"
       : enemy.type === ENEMY_TYPES.FAST
         ? "⚡高速敵"
+        : enemy.type === ENEMY_TYPES.SPLITTER
+          ? "🧬分裂敵"
+          : enemy.type === ENEMY_TYPES.SPLIT_CHILD
+            ? "✳️分裂子"
         : "✅";
     logMessages.push(`${enemyLabel}撃破！+${reward}pts`);
+
+    if (enemy.type === ENEMY_TYPES.SPLITTER) {
+      const splitChildren = spawnSplitChildren(enemy);
+      spawnedChildren.push(...splitChildren);
+      logMessages.push(`🧬 分裂！レーン${LANE_NAMES[enemy.lane]}に${splitChildren.length}体出現`);
+    }
   });
   nextEnemies = nextEnemies.filter((enemy) => enemy.hp > 0);
+  if (spawnedChildren.length) {
+    nextEnemies = nextEnemies.concat(spawnedChildren);
+  }
 
   const breachedEnemies = nextEnemies.filter((enemy) => enemy.step >= ENEMY_MAX_STEPS);
   if (breachedEnemies.length) {

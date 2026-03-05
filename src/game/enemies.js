@@ -1,5 +1,7 @@
-import { COLS } from "./constants";
+import { COLS, ENEMY_MAX_STEPS } from "./constants";
 import {
+  ENEMY_BALANCE,
+  ENEMY_TYPES,
   getBaseArmor,
   getEnemyType,
   getEnemyTypeDef,
@@ -10,6 +12,10 @@ import {
 
 let enemyIdCounter = 0;
 
+function createEnemyId() {
+  return `e${enemyIdCounter++}`;
+}
+
 function createEnemy(lane, waveNumber, isLastEnemyInWave) {
   const rolledHp = getRolledEnemyHp(waveNumber);
   const baseArmor = getBaseArmor(waveNumber);
@@ -18,7 +24,7 @@ function createEnemy(lane, waveNumber, isLastEnemyInWave) {
   const maxHp = Math.max(1, Math.floor(rolledHp * typeDef.hpMultiplier));
 
   return {
-    id: `e${enemyIdCounter++}`,
+    id: createEnemyId(),
     type,
     lane,
     hp: maxHp,
@@ -39,6 +45,27 @@ export function spawnWave(waveNumber) {
     enemy.step = getEnemySpawnOffset(index);
     return enemy;
   });
+}
+
+export function spawnSplitChildren(parentEnemy) {
+  const childTypeDef = getEnemyTypeDef(ENEMY_TYPES.SPLIT_CHILD);
+  const childCount = ENEMY_BALANCE.splitter.splitCount;
+  const childBaseHp = Math.max(1, Math.floor(parentEnemy.maxHp * ENEMY_BALANCE.splitter.childHpRatio));
+  const baseChildStep = Math.min(ENEMY_MAX_STEPS - 0.2, Math.max(0.2, parentEnemy.step - 1));
+  const laneOffsets = [-9, 0, 9];
+
+  return Array.from({ length: childCount }, (_, index) => ({
+    id: createEnemyId(),
+    type: ENEMY_TYPES.SPLIT_CHILD,
+    lane: parentEnemy.lane,
+    hp: childBaseHp,
+    maxHp: childBaseHp,
+    armor: 0,
+    speed: childTypeDef.speed ?? 1,
+    step: Math.min(ENEMY_MAX_STEPS - 0.1, baseChildStep + index * 0.16),
+    laneOffsetPx: laneOffsets[index % laneOffsets.length],
+    isBoss: false,
+  }));
 }
 
 export function resetEnemyIds() {

@@ -16,6 +16,13 @@ export const ENEMY_BALANCE = {
     startWave: 2,
     spawnChance: 0.28,
   },
+  splitter: {
+    startWave: 3,
+    spawnChance: 0.16,
+    splitCount: 3,
+    childHpRatio: 0.34,
+    childSpeed: 1.25,
+  },
   armor: {
     startWave: 4,
     growthOffset: 2,
@@ -27,6 +34,8 @@ export const ENEMY_BALANCE = {
 export const SCORE_RULES = {
   normalKillMultiplier: 2,
   fastKillMultiplier: 3,
+  splitterKillMultiplier: 4,
+  splitChildKillMultiplier: 1,
   bossKillMultiplier: 5,
 };
 
@@ -45,12 +54,15 @@ export const ROW_ROLES = {
 
 export const WAVE_FEATURES = {
   fastEnemiesStartWave: ENEMY_BALANCE.fast.startWave,
+  splitterEnemiesStartWave: ENEMY_BALANCE.splitter.startWave,
   armoredEnemiesStartWave: ENEMY_BALANCE.armor.startWave,
 };
 
 export const ENEMY_TYPES = {
   NORMAL: "normal",
   FAST: "fast",
+  SPLITTER: "splitter",
+  SPLIT_CHILD: "split_child",
   BOSS: "boss",
 };
 
@@ -69,6 +81,22 @@ export const ENEMY_TYPE_DEFS = {
     armorFlatBonus: 0,
     speed: 1.7,
     rewardMultiplier: SCORE_RULES.fastKillMultiplier,
+    isBoss: false,
+  },
+  [ENEMY_TYPES.SPLITTER]: {
+    hpMultiplier: 1,
+    armorMultiplier: 1,
+    armorFlatBonus: 0,
+    speed: 1,
+    rewardMultiplier: SCORE_RULES.splitterKillMultiplier,
+    isBoss: false,
+  },
+  [ENEMY_TYPES.SPLIT_CHILD]: {
+    hpMultiplier: ENEMY_BALANCE.splitter.childHpRatio,
+    armorMultiplier: 1,
+    armorFlatBonus: 0,
+    speed: ENEMY_BALANCE.splitter.childSpeed,
+    rewardMultiplier: SCORE_RULES.splitChildKillMultiplier,
     isBoss: false,
   },
   [ENEMY_TYPES.BOSS]: {
@@ -99,9 +127,17 @@ export function isFastUnlocked(waveNumber) {
   return waveNumber >= WAVE_FEATURES.fastEnemiesStartWave;
 }
 
+export function isSplitterUnlocked(waveNumber) {
+  return waveNumber >= WAVE_FEATURES.splitterEnemiesStartWave;
+}
+
 export function getEnemyType({ waveNumber, isLastEnemyInWave }) {
   if (isLastEnemyInWave) {
     return ENEMY_TYPES.BOSS;
+  }
+
+  if (isSplitterUnlocked(waveNumber) && Math.random() < ENEMY_BALANCE.splitter.spawnChance) {
+    return ENEMY_TYPES.SPLITTER;
   }
 
   if (isFastUnlocked(waveNumber) && Math.random() < ENEMY_BALANCE.fast.spawnChance) {
@@ -180,6 +216,9 @@ export function getWaveStartMessage(waveNumber) {
   const suffixes = ["最後にボス出現！"];
   if (isFastUnlocked(waveNumber)) {
     suffixes.push("高速敵に注意！");
+  }
+  if (isSplitterUnlocked(waveNumber)) {
+    suffixes.push("分裂敵が出現！");
   }
   if (isArmorUnlocked(waveNumber)) {
     suffixes.push("装甲敵が登場！");

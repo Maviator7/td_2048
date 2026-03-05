@@ -92,6 +92,14 @@ button:focus-visible {
   animation: fast-enemy-core-pulse 0.7s ease-in-out infinite;
 }
 
+.splitter-enemy-core {
+  animation: splitter-enemy-core-pulse 0.95s ease-in-out infinite;
+}
+
+.split-child-enemy-core {
+  animation: split-child-enemy-core-pulse 0.75s ease-in-out infinite;
+}
+
 .retaliation-lane-flash {
   animation: retaliation-lane-flash 0.28s ease-out;
 }
@@ -300,6 +308,26 @@ button:focus-visible {
   }
   50% {
     filter: saturate(1.35) brightness(1.2);
+  }
+}
+
+@keyframes splitter-enemy-core-pulse {
+  0%, 100% {
+    filter: saturate(1) brightness(1);
+  }
+  50% {
+    filter: saturate(1.25) brightness(1.13);
+  }
+}
+
+@keyframes split-child-enemy-core-pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: saturate(1) brightness(1);
+  }
+  50% {
+    transform: scale(1.06);
+    filter: saturate(1.2) brightness(1.12);
   }
 }
 

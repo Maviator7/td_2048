@@ -3,10 +3,36 @@ import { memo } from "react";
 export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEnemy, laneColors, laneNames }) {
   const isBossNext = Boolean(nextSpawnEnemy?.isBoss);
   const isFastNext = nextSpawnEnemy?.type === "fast";
+  const isSplitterNext = nextSpawnEnemy?.type === "splitter";
+  const isSplitChildNext = nextSpawnEnemy?.type === "split_child";
   const nextLaneColor = nextSpawnEnemy ? laneColors[nextSpawnEnemy.lane] : "#1e2a3a";
-  const typeAccentColor = isBossNext ? "#f1c40f" : isFastNext ? "#3ddcff" : nextLaneColor;
-  const panelLabel = isBossNext ? "次の出現 (BOSS)" : isFastNext ? "次の出現 (FAST)" : "次の出現列";
-  const panelTypeTag = isBossNext ? "👑BOSS" : isFastNext ? "⚡FAST" : "";
+  const typeAccentColor = isBossNext
+    ? "#f1c40f"
+    : isSplitterNext
+      ? "#ff9f43"
+      : isFastNext
+        ? "#3ddcff"
+        : isSplitChildNext
+          ? "#ffd166"
+          : nextLaneColor;
+  const panelLabel = isBossNext
+    ? "次の出現 (BOSS)"
+    : isSplitterNext
+      ? "次の出現 (SPLIT)"
+      : isFastNext
+        ? "次の出現 (FAST)"
+        : isSplitChildNext
+          ? "次の出現 (MINI)"
+          : "次の出現列";
+  const panelTypeTag = isBossNext
+    ? "👑BOSS"
+    : isSplitterNext
+      ? "🧬SPLIT"
+      : isFastNext
+        ? "⚡FAST"
+        : isSplitChildNext
+          ? "✳️MINI"
+          : "";
 
   return (
     <div
@@ -20,6 +46,8 @@ export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEn
         padding: "8px 10px",
         background: isBossNext
           ? "linear-gradient(135deg, rgba(76, 44, 121, 0.7), rgba(13, 17, 23, 0.95))"
+          : isSplitterNext
+            ? "linear-gradient(135deg, rgba(120, 64, 18, 0.68), rgba(13, 17, 23, 0.95))"
           : isFastNext
             ? "linear-gradient(135deg, rgba(15, 83, 108, 0.62), rgba(13, 17, 23, 0.95))"
           : "#0d1117",
