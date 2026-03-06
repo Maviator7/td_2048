@@ -65,6 +65,7 @@ export default function MergeTowerDefense() {
   const [isBalanceModeEnabled, setIsBalanceModeEnabled] = useState(false);
   const isDebugMode = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEBUG_PANEL === "true";
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(() => isDebugMode);
+  const [debugBoostTarget, setDebugBoostTarget] = useState({ row: 0, col: 0 });
 
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
@@ -103,6 +104,10 @@ export default function MergeTowerDefense() {
 
     setTileRoleAt(roleModal.row, roleModal.col, nextRole);
     closeRoleModal();
+  };
+
+  const handleTileClick = (tile) => {
+    setDebugBoostTarget({ row: tile.row, col: tile.col });
   };
 
   const startGame = () => {
@@ -162,11 +167,14 @@ export default function MergeTowerDefense() {
                 score={score}
                 movesLeft={movesLeft}
                 phase={phase}
+                boostRow={debugBoostTarget.row}
+                boostCol={debugBoostTarget.col}
                 onSetWave={debug.setWave}
                 onSetLives={debug.setLives}
                 onSetScore={debug.setScore}
                 onSetMovesLeft={debug.setMovesLeft}
                 onSetPhase={debug.setPhase}
+                onBoostTile={debug.boostTile}
                 onKillAllEnemies={debug.killAllEnemies}
                 onRespawnWaveEnemies={debug.respawnWaveEnemies}
                 onNextWave={nextWave}
@@ -229,6 +237,7 @@ export default function MergeTowerDefense() {
               tileHeight={tileHeight}
               isDesktop={isDesktop}
               onTileClick={openRoleModal}
+              onAnyTileClick={handleTileClick}
             />
             <ActionPanel
               phase={phase}

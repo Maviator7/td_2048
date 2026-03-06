@@ -503,6 +503,43 @@ export function useGameState() {
     pushLog(`🧪 DEBUG: フェーズ ${nextPhase}`);
   }, [clearScheduledTimeouts, pushLog]);
 
+  const debugBoostTile = useCallback((rawRow, rawCol) => {
+    const rowIndex = Number.isFinite(Number(rawRow)) ? Math.floor(Number(rawRow)) : -1;
+    const colIndex = Number.isFinite(Number(rawCol)) ? Math.floor(Number(rawCol)) : -1;
+    let boostedValue = 0;
+
+    setBoardState((currentState) => {
+      if (!currentState.grid[rowIndex] || typeof currentState.grid[rowIndex][colIndex] !== "number") {
+        return currentState;
+      }
+
+      const currentValue = currentState.grid[rowIndex][colIndex];
+      if (currentValue <= 0) {
+        return currentState;
+      }
+
+      boostedValue = currentValue * 2;
+      const nextGrid = currentState.grid.map((row) => [...row]);
+      const nextTileDamage = currentState.tileDamage.map((row) => [...row]);
+      const nextTileRoles = currentState.tileRoles.map((row) => [...row]);
+      nextGrid[rowIndex][colIndex] = boostedValue;
+      nextTileDamage[rowIndex][colIndex] = Math.min(nextTileDamage[rowIndex][colIndex], boostedValue);
+
+      return {
+        grid: nextGrid,
+        tileDamage: nextTileDamage,
+        tileRoles: nextTileRoles,
+      };
+    });
+
+    if (boostedValue > 0) {
+      pushLog(`🧪 DEBUG: タイル(${rowIndex},${colIndex})を Lv+1 → ${boostedValue}`);
+      return;
+    }
+
+    pushLog(`🧪 DEBUG: タイル(${rowIndex},${colIndex})は強化できません`);
+  }, [pushLog]);
+
   const debugKillAllEnemies = useCallback(() => {
     clearScheduledTimeouts();
     clearCombatEffects();
@@ -604,6 +641,7 @@ export function useGameState() {
       setScore: debugSetScore,
       setMovesLeft: debugSetMovesLeft,
       setPhase: debugSetPhase,
+      boostTile: debugBoostTile,
       killAllEnemies: debugKillAllEnemies,
       respawnWaveEnemies: debugRespawnWaveEnemies,
     },

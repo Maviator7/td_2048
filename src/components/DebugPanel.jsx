@@ -1,6 +1,7 @@
 import { memo, useEffect, useState } from "react";
 
 import { GAME_PHASES } from "../game/config";
+import { COLS, ROWS } from "../game/constants";
 
 const PHASE_OPTIONS = Object.values(GAME_PHASES);
 
@@ -53,11 +54,14 @@ export const DebugPanel = memo(function DebugPanel({
   score,
   movesLeft,
   phase,
+  boostRow,
+  boostCol,
   onSetWave,
   onSetLives,
   onSetScore,
   onSetMovesLeft,
   onSetPhase,
+  onBoostTile,
   onKillAllEnemies,
   onRespawnWaveEnemies,
   onNextWave,
@@ -67,6 +71,8 @@ export const DebugPanel = memo(function DebugPanel({
   const [scoreInput, setScoreInput] = useState(String(score));
   const [movesInput, setMovesInput] = useState(String(movesLeft));
   const [phaseInput, setPhaseInput] = useState(phase);
+  const [boostRowInput, setBoostRowInput] = useState("0");
+  const [boostColInput, setBoostColInput] = useState("0");
 
   useEffect(() => {
     setWaveInput(String(wave));
@@ -87,6 +93,14 @@ export const DebugPanel = memo(function DebugPanel({
   useEffect(() => {
     setPhaseInput(phase);
   }, [phase]);
+
+  useEffect(() => {
+    setBoostRowInput(String(boostRow));
+  }, [boostRow]);
+
+  useEffect(() => {
+    setBoostColInput(String(boostCol));
+  }, [boostCol]);
 
   return (
     <div
@@ -154,6 +168,33 @@ export const DebugPanel = memo(function DebugPanel({
           </select>
           <button type="button" style={buttonStyle()} onClick={() => onSetPhase(phaseInput)}>
             適用
+          </button>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 8, ...sectionStyle() }}>
+        <div style={labelStyle()}>Boost Tile (Lv +1)</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8 }}>
+          <input
+            type="number"
+            min="0"
+            max={ROWS - 1}
+            value={boostRowInput}
+            onChange={(event) => setBoostRowInput(event.target.value)}
+            style={inputStyle()}
+            placeholder={`row (0-${ROWS - 1})`}
+          />
+          <input
+            type="number"
+            min="0"
+            max={COLS - 1}
+            value={boostColInput}
+            onChange={(event) => setBoostColInput(event.target.value)}
+            style={inputStyle()}
+            placeholder={`col (0-${COLS - 1})`}
+          />
+          <button type="button" style={buttonStyle()} onClick={() => onBoostTile(boostRowInput, boostColInput)}>
+            タイル強化
           </button>
         </div>
       </div>

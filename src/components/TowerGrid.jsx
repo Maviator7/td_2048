@@ -84,6 +84,7 @@ export const TowerGrid = memo(function TowerGrid({
   tileHeight,
   isDesktop,
   onTileClick,
+  onAnyTileClick,
 }) {
   const retaliationHitMap = new Map(retaliationHits.map((hit) => [hit.key, hit.damage]));
   const repairMap = new Map(repairHighlights.map((repair) => [repair.key, repair.repair]));
@@ -125,12 +126,22 @@ export const TowerGrid = memo(function TowerGrid({
                 <div
                   key={`${rowIndex}-${columnIndex}`}
                   className={tileClassName}
-                  onClick={isRoleSelectable ? () => onTileClick?.({
-                    row: rowIndex,
-                    col: columnIndex,
-                    value,
-                    role: tileRole,
-                  }) : undefined}
+                  onClick={() => {
+                    onAnyTileClick?.({
+                      row: rowIndex,
+                      col: columnIndex,
+                      value,
+                      role: tileRole,
+                    });
+                    if (isRoleSelectable) {
+                      onTileClick?.({
+                        row: rowIndex,
+                        col: columnIndex,
+                        value,
+                        role: tileRole,
+                      });
+                    }
+                  }}
                   style={{
                     background: isMerged ? "#fff3b0" : background,
                     color: isDamaged && !isMerged ? "#2b2b2b" : color,
@@ -155,7 +166,7 @@ export const TowerGrid = memo(function TowerGrid({
                     transform: isMerged ? "scale(1.08)" : "scale(1)",
                     opacity: value && !effectiveValue ? 0.5 : 1,
                     animationDelay: retaliationDamage ? "40ms" : undefined,
-                    cursor: isRoleSelectable ? "pointer" : "default",
+                    cursor: isRoleSelectable || onAnyTileClick ? "pointer" : "default",
                   }}
                 >
                   {tileLevel && (
