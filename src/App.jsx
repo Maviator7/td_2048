@@ -18,6 +18,7 @@ import { WaveClearBanner } from "./components/WaveClearBanner";
 import { NextSpawnIndicator } from "./components/NextSpawnIndicator";
 import { EventLog } from "./components/EventLog";
 import { GuideCards } from "./components/GuideCards";
+import { TitleScreen } from "./components/TitleScreen";
 import { RoleBalancePanel } from "./components/RoleBalancePanel";
 import { ColumnPowerLabels } from "./components/ColumnPowerLabels";
 import { EnemyLanes } from "./components/EnemyLanes";
@@ -27,6 +28,7 @@ import { useGameState } from "./hooks/useGameState";
 
 export default function MergeTowerDefense() {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+  const [hasStarted, setHasStarted] = useState(false);
   const {
     grid,
     tileDamage,
@@ -98,6 +100,16 @@ export default function MergeTowerDefense() {
     setTileRoleAt(roleModal.row, roleModal.col, nextRole);
     closeRoleModal();
   };
+
+  const startGame = () => {
+    restart();
+    setRoleModal(null);
+    setHasStarted(true);
+  };
+
+  if (!hasStarted) {
+    return <TitleScreen onStart={startGame} />;
+  }
 
   return (
     <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0f0e17 0%,#1a1a2e 100%)",display:"flex",justifyContent:"center",padding:"12px 8px",fontFamily:"'Segoe UI',sans-serif"}}>
