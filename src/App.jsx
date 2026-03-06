@@ -117,7 +117,7 @@ export default function MergeTowerDefense() {
 
         {/* Title */}
         <div style={{textAlign:"center",marginBottom:10}}>
-          <h1 style={{margin:0,fontSize:22,color:"#f1c40f",letterSpacing:1,textShadow:"0 0 12px #f1c40f88"}}>🗼 MERGE TOWER DEFENSE</h1>
+          <h1 style={{margin:0,fontSize:22,color:"#f1c40f",letterSpacing:1,textShadow:"0 0 12px #f1c40f88"}}>🗼 MERGE FORTRESS 2048</h1>
           <div style={{fontSize:11,color:"#555",marginTop:2}}>スライドで砲塔合体 → 敵を撃退せよ</div>
         </div>
 
