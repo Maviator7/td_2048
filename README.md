@@ -14,3 +14,13 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Debug Panel Flag
+
+The tester debug panel is enabled in local development (`npm run dev`) and disabled in production by default.
+
+To enable it for a deployed build, set this environment variable at build time:
+
+```bash
+VITE_ENABLE_DEBUG_PANEL=true
+```

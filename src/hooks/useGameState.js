@@ -91,6 +91,7 @@ export function useGameState() {
   const [wave, setWave] = useState(1);
   const [score, setScore] = useState(0);
   const [phase, setPhase] = useState(GAME_PHASES.PLAYER);
+  const [movesPerTurn, setMovesPerTurn] = useState(MOVES_PER_TURN);
   const [movesLeft, setMovesLeft] = useState(MOVES_PER_TURN);
   const [log, setLog] = useState([INITIAL_LOG]);
   const [atkCols, setAtkCols] = useState([]);
@@ -293,12 +294,12 @@ export function useGameState() {
       }
 
       scheduleTimeout(() => {
-        setMovesLeft(MOVES_PER_TURN);
+        setMovesLeft(movesPerTurn);
         setPhase(GAME_PHASES.PLAYER);
-        pushLog(`🔄 新ターン！残り${MOVES_PER_TURN}手`);
+        pushLog(`🔄 新ターン！残り${movesPerTurn}手`);
       }, retaliationResult.hadRetaliation ? 260 : 80);
     }, result.effectDuration);
-  }, [addRoleMetrics, clearCombatEffects, clearRetaliationEffects, pushLog, pushLogs, resolveRetaliation, scheduleTimeout, setBoard]);
+  }, [addRoleMetrics, clearCombatEffects, clearRetaliationEffects, movesPerTurn, pushLog, pushLogs, resolveRetaliation, scheduleTimeout, setBoard]);
 
   const handleSlide = useCallback((direction) => {
     if (phase !== GAME_PHASES.PLAYER) {
@@ -437,11 +438,91 @@ export function useGameState() {
     const nextWaveNumber = wave + 1;
     setWave(nextWaveNumber);
     setEnemies(spawnWave(nextWaveNumber - 1));
-    setMovesLeft(MOVES_PER_TURN);
+    setMovesLeft(movesPerTurn);
     setPhase(GAME_PHASES.PLAYER);
     clearCombatEffects();
     pushLog(getWaveStartMessage(nextWaveNumber));
-  }, [clearCombatEffects, pushLog, wave]);
+  }, [clearCombatEffects, movesPerTurn, pushLog, wave]);
+
+  const debugSetWave = useCallback((rawWaveNumber) => {
+    const nextWaveNumber = Number.isFinite(Number(rawWaveNumber))
+      ? Math.max(1, Math.floor(Number(rawWaveNumber)))
+      : 1;
+    clearScheduledTimeouts();
+    clearCombatEffects();
+    clearRetaliationEffects();
+    clearRepairEffects();
+    setMergeHL([]);
+    setWave(nextWaveNumber);
+    setEnemies(spawnWave(nextWaveNumber - 1));
+    setMovesLeft(movesPerTurn);
+    setPhase(GAME_PHASES.PLAYER);
+    pushLog(`🧪 DEBUG: Wave ${nextWaveNumber} に設定`);
+  }, [clearCombatEffects, clearRepairEffects, clearRetaliationEffects, clearScheduledTimeouts, movesPerTurn, pushLog]);
+
+  const debugSetLives = useCallback((rawLives) => {
+    const nextLives = Number.isFinite(Number(rawLives))
+      ? Math.max(0, Math.floor(Number(rawLives)))
+      : 0;
+    clearScheduledTimeouts();
+    setLives(nextLives);
+    if (nextLives <= 0) {
+      setPhase(GAME_PHASES.GAMEOVER);
+      pushLog("🧪 DEBUG: ライフを0に設定（ゲームオーバー）");
+      return;
+    }
+    if (phase === GAME_PHASES.GAMEOVER) {
+      setPhase(GAME_PHASES.PLAYER);
+    }
+    pushLog(`🧪 DEBUG: ライフ ${nextLives}`);
+  }, [clearScheduledTimeouts, phase, pushLog]);
+
+  const debugSetScore = useCallback((rawScore) => {
+    const nextScore = Number.isFinite(Number(rawScore))
+      ? Math.max(0, Math.floor(Number(rawScore)))
+      : 0;
+    setScore(nextScore);
+    pushLog(`🧪 DEBUG: スコア ${nextScore.toLocaleString()}`);
+  }, [pushLog]);
+
+  const debugSetMovesLeft = useCallback((rawMovesLeft) => {
+    const nextMovesPerTurn = Number.isFinite(Number(rawMovesLeft))
+      ? Math.max(1, Math.floor(Number(rawMovesLeft)))
+      : 1;
+    setMovesPerTurn(nextMovesPerTurn);
+    setMovesLeft(nextMovesPerTurn);
+    pushLog(`🧪 DEBUG: 1ターン手数を ${nextMovesPerTurn} に設定`);
+  }, [pushLog]);
+
+  const debugSetPhase = useCallback((nextPhase) => {
+    if (!Object.values(GAME_PHASES).includes(nextPhase)) {
+      return;
+    }
+    clearScheduledTimeouts();
+    setPhase(nextPhase);
+    pushLog(`🧪 DEBUG: フェーズ ${nextPhase}`);
+  }, [clearScheduledTimeouts, pushLog]);
+
+  const debugKillAllEnemies = useCallback(() => {
+    clearScheduledTimeouts();
+    clearCombatEffects();
+    clearRetaliationEffects();
+    setEnemies([]);
+    setPhase(GAME_PHASES.WAVECLEAR);
+    pushLog("🧪 DEBUG: 敵を全滅扱いにしました");
+  }, [clearCombatEffects, clearRetaliationEffects, clearScheduledTimeouts, pushLog]);
+
+  const debugRespawnWaveEnemies = useCallback(() => {
+    clearScheduledTimeouts();
+    clearCombatEffects();
+    clearRetaliationEffects();
+    setEnemies(spawnWave(wave - 1));
+    if (lives > 0) {
+      setPhase(GAME_PHASES.PLAYER);
+    }
+    setMovesLeft(movesPerTurn);
+    pushLog(`🧪 DEBUG: Wave ${wave} の敵を再生成`);
+  }, [clearCombatEffects, clearRetaliationEffects, clearScheduledTimeouts, lives, movesPerTurn, pushLog, wave]);
 
   const restart = useCallback(() => {
     clearScheduledTimeouts();
@@ -452,6 +533,7 @@ export function useGameState() {
     setLives(INIT_LIVES);
     setWave(1);
     setScore(0);
+    setMovesPerTurn(MOVES_PER_TURN);
     setMovesLeft(MOVES_PER_TURN);
     setPhase(GAME_PHASES.PLAYER);
     setLog([INITIAL_LOG]);
@@ -494,6 +576,7 @@ export function useGameState() {
     wave,
     score,
     phase,
+    movesPerTurn,
     movesLeft,
     log,
     atkCols,
@@ -515,5 +598,14 @@ export function useGameState() {
     nextWave,
     restart,
     setTileRoleAt,
+    debug: {
+      setWave: debugSetWave,
+      setLives: debugSetLives,
+      setScore: debugSetScore,
+      setMovesLeft: debugSetMovesLeft,
+      setPhase: debugSetPhase,
+      killAllEnemies: debugKillAllEnemies,
+      respawnWaveEnemies: debugRespawnWaveEnemies,
+    },
   };
 }

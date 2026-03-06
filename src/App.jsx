@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  MOVES_PER_TURN,
   LANE_COLORS,
   LANE_NAMES,
   COLS,
@@ -24,6 +23,7 @@ import { ColumnPowerLabels } from "./components/ColumnPowerLabels";
 import { EnemyLanes } from "./components/EnemyLanes";
 import { TowerGrid } from "./components/TowerGrid";
 import { ActionPanel } from "./components/ActionPanel";
+import { DebugPanel } from "./components/DebugPanel";
 import { useGameState } from "./hooks/useGameState";
 
 export default function MergeTowerDefense() {
@@ -38,6 +38,7 @@ export default function MergeTowerDefense() {
     wave,
     score,
     phase,
+    movesPerTurn,
     movesLeft,
     log,
     atkCols,
@@ -58,9 +59,12 @@ export default function MergeTowerDefense() {
     nextWave,
     restart,
     setTileRoleAt,
+    debug,
   } = useGameState();
   const [roleModal, setRoleModal] = useState(null);
   const [isBalanceModeEnabled, setIsBalanceModeEnabled] = useState(false);
+  const isDebugMode = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEBUG_PANEL === "true";
+  const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(() => isDebugMode);
 
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
@@ -129,9 +133,47 @@ export default function MergeTowerDefense() {
         <StatusHud lives={lives} wave={wave} score={score} />
         <MovesIndicator
           movesLeft={movesLeft}
-          totalMoves={MOVES_PER_TURN}
+          totalMoves={movesPerTurn}
           isResolving={phase === GAME_PHASES.RESOLVING}
         />
+        {isDebugMode && (
+          <div style={{ marginBottom: 8 }}>
+            <button
+              type="button"
+              onClick={() => setIsDebugPanelOpen((current) => !current)}
+              style={{
+                width: "100%",
+                border: "1px solid #475569",
+                borderRadius: 10,
+                padding: "8px 10px",
+                background: "#111827",
+                color: "#e2e8f0",
+                fontSize: 12,
+                fontWeight: 800,
+                cursor: "pointer",
+              }}
+            >
+              {isDebugPanelOpen ? "🧪 デバッグパネルを閉じる" : "🧪 デバッグパネルを開く"}
+            </button>
+            {isDebugPanelOpen && (
+              <DebugPanel
+                wave={wave}
+                lives={lives}
+                score={score}
+                movesLeft={movesLeft}
+                phase={phase}
+                onSetWave={debug.setWave}
+                onSetLives={debug.setLives}
+                onSetScore={debug.setScore}
+                onSetMovesLeft={debug.setMovesLeft}
+                onSetPhase={debug.setPhase}
+                onKillAllEnemies={debug.killAllEnemies}
+                onRespawnWaveEnemies={debug.respawnWaveEnemies}
+                onNextWave={nextWave}
+              />
+            )}
+          </div>
+        )}
 
         {phase===GAME_PHASES.WAVECLEAR&&(
           <WaveClearBanner wave={wave} onNextWave={nextWave} />
