@@ -107,6 +107,11 @@ export default function MergeTowerDefense() {
     setHasStarted(true);
   };
 
+  const backToTitle = () => {
+    setRoleModal(null);
+    setHasStarted(false);
+  };
+
   if (!hasStarted) {
     return <TitleScreen onStart={startGame} />;
   }
@@ -188,6 +193,7 @@ export default function MergeTowerDefense() {
               isDesktop={isDesktop}
               score={score}
               onRestart={restart}
+              onBackToTitle={backToTitle}
             />
           </div>
 
