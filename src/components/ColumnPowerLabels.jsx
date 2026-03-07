@@ -12,18 +12,18 @@ export function ColumnPowerLabels({ columnPowers, nextSpawnEnemy, isDesktop, lan
             style={{
               flex: 1,
               textAlign: "center",
-              fontSize: isDesktop ? 12 : 10,
+              fontSize: isDesktop ? 13 : 12,
               color: laneColors[columnIndex],
-              fontWeight: "bold",
+              fontWeight: 800,
               borderRadius: 999,
-              padding: "2px 0",
+              padding: "3px 0",
               background: isNextSpawnLane ? `${laneColors[columnIndex]}22` : "transparent",
               boxShadow: isNextSpawnLane ? `0 0 12px ${laneColors[columnIndex]}33` : "none",
               textShadow: isNextSpawnLane ? `0 0 8px ${laneColors[columnIndex]}66` : "none",
               transition: "all 0.2s",
             }}
           >
-            {laneNames[columnIndex]} 砲:{columnPowers[columnIndex]}
+            {laneNames[columnIndex]} 💥 {columnPowers[columnIndex]}
             {isNextSpawnLane ? "  NEXT" : ""}
           </div>
         );

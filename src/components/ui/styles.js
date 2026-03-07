@@ -165,13 +165,14 @@ export const hudLifeCellStyle = {
 };
 
 export const hudLabelStyle = {
-  fontSize: 10,
+  fontSize: 11,
   color: "#94a3b8",
   letterSpacing: 1,
+  fontWeight: 700,
 };
 
 export const hudLivesValueStyle = {
-  fontSize: 16,
+  fontSize: 17,
   color: "#f87171",
   fontWeight: 700,
 };
@@ -185,7 +186,7 @@ export const hudWaveValueStyle = {
 };
 
 export const hudScoreValueStyle = {
-  fontSize: 17,
+  fontSize: 18,
   color: "#4ade80",
   fontWeight: 700,
 };
@@ -199,14 +200,15 @@ export const movesIndicatorShellStyle = {
 };
 
 export const movesIndicatorLabelStyle = {
-  fontSize: 11,
+  fontSize: 13,
   color: "#888",
+  fontWeight: 700,
 };
 
 export function createMovePipStyle(isActive) {
   return {
-    width: 22,
-    height: 22,
+    width: 24,
+    height: 24,
     borderRadius: 6,
     background: isActive ? "#f1c40f" : "#1e2a3a",
     border: `2px solid ${isActive ? "#f1c40f" : "#2a3a4a"}`,
@@ -216,9 +218,10 @@ export function createMovePipStyle(isActive) {
 }
 
 export const resolvingTextStyle = {
-  fontSize: 11,
+  fontSize: 13,
   color: "#e74c3c",
   marginLeft: 4,
+  fontWeight: 700,
 };
 
 export function createInfoPanelStyle({ maxHeight } = {}) {
@@ -234,9 +237,9 @@ export function createInfoPanelStyle({ maxHeight } = {}) {
 
 export function createLogEntryStyle({ isLatest, isDesktop }) {
   return {
-    fontSize: isLatest ? (isDesktop ? 12 : 11) : (isDesktop ? 11 : 10),
+    fontSize: isLatest ? (isDesktop ? 13 : 12) : (isDesktop ? 12 : 11),
     color: isLatest ? "#e5e7eb" : "#64748b",
-    fontWeight: isLatest ? 600 : 400,
+    fontWeight: isLatest ? 700 : 600,
     marginBottom: isLatest ? 4 : 3,
     lineHeight: 1.4,
     opacity: isLatest ? 1 : 0.82,
@@ -259,24 +262,26 @@ export const guideCardStyle = {
 };
 
 export const guideCardTitleStyle = {
-  fontSize: 11,
+  fontSize: 12,
   color: "#cbd5e1",
   fontWeight: "bold",
   letterSpacing: 0.2,
 };
 
 export const guideCardDescriptionStyle = {
-  fontSize: 10,
+  fontSize: 11,
   color: "#94a3b8",
   marginTop: 4,
   lineHeight: 1.45,
+  fontWeight: 600,
 };
 
 export const guideHintStyle = {
   textAlign: "center",
   color: "#64748b",
-  fontSize: 10,
+  fontSize: 11,
   marginTop: 6,
+  fontWeight: 600,
 };
 
 export function createTileSurfaceStyle({

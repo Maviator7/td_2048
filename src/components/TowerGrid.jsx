@@ -167,8 +167,8 @@ export const TowerGrid = memo(function TowerGrid({
                         position: "absolute",
                         top: 3,
                         left: 4,
-                        fontSize: isDesktop ? 11 : 10,
-                        fontWeight: "700",
+                        fontSize: isDesktop ? 12 : 11,
+                        fontWeight: 800,
                         lineHeight: 1,
                         color: isDamaged && !isMerged ? "#6b2a2a" : "rgba(0, 0, 0, 0.62)",
                       }}
@@ -193,7 +193,7 @@ export const TowerGrid = memo(function TowerGrid({
                   )}
                   {value ? displayedAttackValue : ""}
                   {isDamaged && effectiveValue > 0 && (
-                    <div style={{ fontSize: isDesktop ? 9 : 8, color: "#a94442", lineHeight: 1 }}>
+                    <div style={{ fontSize: isDesktop ? 10 : 9, color: "#a94442", lineHeight: 1, fontWeight: 700 }}>
                       -{damage}
                     </div>
                   )}
@@ -203,8 +203,8 @@ export const TowerGrid = memo(function TowerGrid({
                         position: "absolute",
                         bottom: 3,
                         right: 4,
-                        fontSize: isDesktop ? 9 : 8,
-                        fontWeight: "700",
+                        fontSize: isDesktop ? 10 : 9,
+                        fontWeight: 800,
                         color: "#c0392b",
                         lineHeight: 1,
                       }}
@@ -218,8 +218,8 @@ export const TowerGrid = memo(function TowerGrid({
                         position: "absolute",
                         bottom: 3,
                         left: 4,
-                        fontSize: isDesktop ? 9 : 8,
-                        fontWeight: "700",
+                        fontSize: isDesktop ? 10 : 9,
+                        fontWeight: 800,
                         color: "#1e8449",
                         lineHeight: 1,
                       }}
@@ -250,7 +250,7 @@ export const TowerGrid = memo(function TowerGrid({
                         borderRadius: 999,
                         background: "rgba(15, 23, 42, 0.74)",
                         color: "#e2e8f0",
-                        fontSize: isDesktop ? 8 : 7,
+                        fontSize: isDesktop ? 9 : 8,
                         fontWeight: 800,
                         lineHeight: 1,
                         letterSpacing: 0.4,

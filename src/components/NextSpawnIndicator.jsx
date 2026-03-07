@@ -56,7 +56,7 @@ export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEn
         ...(nextSpawnEnemy ? { "--next-glow-color": typeAccentColor } : {}),
       }}
     >
-      <span style={{ fontSize: 11, color: nextSpawnEnemy ? typeAccentColor : "#888" }}>
+      <span style={{ fontSize: 13, color: nextSpawnEnemy ? typeAccentColor : "#888", fontWeight: 800 }}>
         {panelLabel}
       </span>
       {nextSpawnEnemy ? (
@@ -73,8 +73,8 @@ export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEn
           />
           <span
             style={{
-              fontSize: 14,
-              fontWeight: "bold",
+              fontSize: 16,
+              fontWeight: 800,
               color: typeAccentColor,
               textShadow: `0 0 10px ${typeAccentColor}66`,
             }}
@@ -83,7 +83,7 @@ export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEn
           </span>
         </>
       ) : (
-        <span style={{ fontSize: 12, color: "#555" }}>待機中の敵なし</span>
+        <span style={{ fontSize: 14, color: "#64748b", fontWeight: 700 }}>待機中の敵なし</span>
       )}
     </div>
   );

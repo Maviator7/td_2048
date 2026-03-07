@@ -190,9 +190,10 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: enemy.isBoss ? 10 : isSplitter ? 8 : isFast ? 8 : isSplitChild ? 7 : 9,
+          fontSize: enemy.isBoss ? 12 : isSplitter ? 10 : isFast ? 10 : isSplitChild ? 9 : 11,
           color: "#fff",
-          fontWeight: "bold",
+          fontWeight: 800,
+          textShadow: "0 1px 4px rgba(0, 0, 0, 0.45)",
           border: enemy.armor
             ? "2px solid #f1c40f"
             : isSplitter
@@ -219,7 +220,11 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
           }}
         />
       </div>
-      {enemy.armor > 0 && <div style={{ fontSize: 7, color: "#f1c40f", textAlign: "center" }}>🛡{enemy.armor}</div>}
+      {enemy.armor > 0 && (
+        <div style={{ fontSize: 9, color: "#fde047", textAlign: "center", fontWeight: 800, marginTop: 1 }}>
+          🛡{enemy.armor}
+        </div>
+      )}
     </div>
   );
 }
@@ -406,11 +411,14 @@ function EnemyLane({
             bottom: 3,
             left: "50%",
             transform: "translateX(-50%)",
-            fontSize: 9,
-            color: "#64748b",
-            background: "rgba(15, 23, 42, 0.72)",
-            padding: "2px 6px",
+            fontSize: 10,
+            color: "#cbd5e1",
+            fontWeight: 700,
+            background: "rgba(15, 23, 42, 0.88)",
+            border: "1px solid rgba(71, 85, 105, 0.8)",
+            padding: "3px 7px",
             borderRadius: 999,
+            whiteSpace: "nowrap",
           }}
         >
           +{queuedCount}待機
