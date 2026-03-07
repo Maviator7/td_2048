@@ -82,18 +82,22 @@ export const TILE_ROLE_DEFS = {
   [TILE_ROLES.SUPPRESSOR]: {
     icon: "🕸️",
     label: "制圧兵",
+    description: "攻撃した敵を次のターンに減速させます。速い敵を防衛線手前で足止めしたい時に有効です。",
   },
   [TILE_ROLES.ENGINEER]: {
     icon: "🛠️",
     label: "整備士",
+    description: "ターン終了時に自分のダメージを少し修復します。傷んだ高レベル砲塔の維持に向いています。",
   },
   [TILE_ROLES.CHAINER]: {
     icon: "⚡",
     label: "連鎖兵",
+    description: "先頭の敵を攻撃した後、後続の敵にも連鎖ダメージを与えます。敵が密集するレーンで強力です。",
   },
   [TILE_ROLES.GAMBLER]: {
     icon: "🎲",
     label: "賭博師",
+    description: "攻撃ごとの威力が大きく上下します。高火力も狙えますが、安定性は低めです。",
   },
 };
 

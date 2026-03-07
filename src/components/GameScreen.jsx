@@ -122,7 +122,12 @@ export function GameScreen({ game }) {
         </div>
       </div>
 
-      <RoleSelectModal roleModal={roleModal} onClose={closeRoleModal} onSelectRole={selectRole} />
+      <RoleSelectModal
+        key={roleModal ? `${roleModal.row}-${roleModal.col}-${roleModal.value}` : "role-modal"}
+        roleModal={roleModal}
+        onClose={closeRoleModal}
+        onSelectRole={selectRole}
+      />
     </div>
   );
 }

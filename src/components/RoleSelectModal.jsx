@@ -1,12 +1,22 @@
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { ROLE_RULES, TILE_ROLE_DEFS, TILE_ROLE_ORDER } from "../game/config";
-import { createModalSurface, createRoleOptionButtonStyle, roleSelectionGridStyle } from "./ui/styles";
+import {
+  createModalSurface,
+  createRoleActionButtonStyle,
+  createRoleOptionButtonStyle,
+  roleDescriptionPanelStyle,
+  roleDescriptionTextStyle,
+  roleDescriptionTitleStyle,
+  roleModalActionsStyle,
+  roleSelectionGridStyle,
+} from "./ui/styles";
 
 export function RoleSelectModal({ roleModal, onClose, onSelectRole }) {
   const dialogRef = useRef(null);
   const titleId = useId();
   const descriptionId = useId();
+  const [selectedRole, setSelectedRole] = useState(TILE_ROLE_ORDER[0] ?? null);
 
   useEffect(() => {
     if (!roleModal) {
@@ -57,6 +67,8 @@ export function RoleSelectModal({ roleModal, onClose, onSelectRole }) {
     return null;
   }
 
+  const selectedRoleDef = selectedRole ? TILE_ROLE_DEFS[selectedRole] : null;
+
   return (
     <div
       onClick={onClose}
@@ -89,13 +101,13 @@ export function RoleSelectModal({ roleModal, onClose, onSelectRole }) {
         <div style={roleSelectionGridStyle}>
           {TILE_ROLE_ORDER.map((roleKey) => {
             const roleDef = TILE_ROLE_DEFS[roleKey];
-            const selected = roleModal.role === roleKey;
+            const selected = selectedRole === roleKey;
 
             return (
               <button
                 key={roleKey}
                 type="button"
-                onClick={() => onSelectRole(roleKey)}
+                onClick={() => setSelectedRole(roleKey)}
                 aria-pressed={selected}
                 style={createRoleOptionButtonStyle(selected)}
               >
@@ -103,6 +115,42 @@ export function RoleSelectModal({ roleModal, onClose, onSelectRole }) {
               </button>
             );
           })}
+        </div>
+        <div style={roleDescriptionPanelStyle}>
+          <div style={roleDescriptionTitleStyle}>
+            {selectedRoleDef ? `${selectedRoleDef.icon} ${selectedRoleDef.label}` : "役職効果"}
+          </div>
+          <div style={roleDescriptionTextStyle}>
+            {selectedRoleDef
+              ? selectedRoleDef.description
+              : "上のボタンから役職を選ぶと、ここに効果の説明が表示されます。"}
+          </div>
+        </div>
+        <div style={roleModalActionsStyle}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={createRoleActionButtonStyle()}
+          >
+            閉じる
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!selectedRole) {
+                return;
+              }
+              onSelectRole(selectedRole);
+            }}
+            disabled={!selectedRole}
+            style={{
+              ...createRoleActionButtonStyle({ emphasis: true }),
+              opacity: selectedRole ? 1 : 0.55,
+              cursor: selectedRole ? "pointer" : "not-allowed",
+            }}
+          >
+            役職を確定
+          </button>
         </div>
       </div>
     </div>

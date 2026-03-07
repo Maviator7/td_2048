@@ -361,3 +361,50 @@ export function createRoleOptionButtonStyle(selected) {
       : "0 10px 20px rgba(2, 6, 23, 0.18)",
   });
 }
+
+export const roleDescriptionPanelStyle = {
+  marginTop: 12,
+  padding: "12px 12px 10px",
+  borderRadius: 12,
+  background: "linear-gradient(180deg, rgba(15,23,42,0.92) 0%, rgba(17,24,39,0.98) 100%)",
+  border: "1px solid #334155",
+};
+
+export const roleDescriptionTitleStyle = {
+  fontSize: 14,
+  color: "#f8fafc",
+  fontWeight: 700,
+  marginBottom: 6,
+};
+
+export const roleDescriptionTextStyle = {
+  fontSize: 13,
+  color: "#94a3b8",
+  lineHeight: 1.55,
+  minHeight: 40,
+};
+
+export const roleModalActionsStyle = {
+  display: "flex",
+  gap: 8,
+  marginTop: 12,
+};
+
+export function createRoleActionButtonStyle({ emphasis = false } = {}) {
+  return {
+    flex: 1,
+    border: emphasis ? "1px solid #16a34a" : "1px solid #475569",
+    borderRadius: 12,
+    padding: "11px 10px",
+    background: emphasis
+      ? "linear-gradient(90deg, #15803d 0%, #16a34a 50%, #15803d 100%)"
+      : "linear-gradient(180deg, #0f172a 0%, #111827 100%)",
+    color: emphasis ? "#f0fdf4" : "#e5e7eb",
+    fontSize: 13,
+    fontWeight: 800,
+    cursor: "pointer",
+    boxShadow: emphasis
+      ? "0 12px 24px rgba(22, 163, 74, 0.18)"
+      : "0 8px 18px rgba(2, 6, 23, 0.16)",
+  };
+}
