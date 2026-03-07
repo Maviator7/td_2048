@@ -1,5 +1,6 @@
 import { MovesIndicator } from "./MovesIndicator";
 import { StatusHud } from "./StatusHud";
+import { gameHeaderIntroStyle, gameSubtitleStyle, gameTitleStyle } from "./ui/styles";
 
 export function GameHeader({
   lives,
@@ -14,9 +15,9 @@ export function GameHeader({
 }) {
   return (
     <>
-      <div style={{ textAlign: "center", marginBottom: 10 }}>
-        <h1 style={{ margin: 0, fontSize: 22, color: "#f1c40f", letterSpacing: 1, textShadow: "0 0 12px #f1c40f88" }}>🗼 MERGE FORTRESS 2048</h1>
-        <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>スライドで砲塔合体 → 敵を撃退せよ</div>
+      <div style={gameHeaderIntroStyle}>
+        <h1 style={gameTitleStyle}>🗼 MERGE FORTRESS 2048</h1>
+        <div style={gameSubtitleStyle}>スライドで砲塔合体 → 敵を撃退せよ</div>
       </div>
       <StatusHud
         lives={lives}

@@ -1,10 +1,11 @@
 import { EventLog } from "./EventLog";
 import { GuideCards } from "./GuideCards";
 import { RoleBalancePanel } from "./RoleBalancePanel";
+import { stackedSidebarStyle } from "./ui/styles";
 
 export function GameSidebar({ isDesktop, isBalanceModeEnabled, onToggleBalanceMode, roleMetrics, log }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div style={stackedSidebarStyle}>
       <RoleBalancePanel
         isEnabled={isBalanceModeEnabled}
         onToggle={onToggleBalanceMode}

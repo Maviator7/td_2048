@@ -7,7 +7,13 @@ import { EnemyLanes } from "./EnemyLanes";
 import { NextSpawnIndicator } from "./NextSpawnIndicator";
 import { TowerGrid } from "./TowerGrid";
 import { WaveClearBanner } from "./WaveClearBanner";
-import { createSecondaryPanelButtonStyle, defenseLineStyle } from "./ui/styles";
+import {
+  createSecondaryPanelButtonStyle,
+  debugToggleWrapStyle,
+  defenseLineStyle,
+  laneDividerLabelStyle,
+  laneDividerLineStyle,
+} from "./ui/styles";
 
 export function GameBoardSection({
   game,
@@ -51,11 +57,11 @@ export function GameBoardSection({
   return (
     <div style={{ width: "100%", touchAction: isDesktop ? "auto" : "none" }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {isDebugMode && (
-        <div style={{ marginBottom: 8 }}>
+        <div style={debugToggleWrapStyle}>
           <button
             type="button"
             onClick={onToggleDebugPanel}
-            style={createSecondaryPanelButtonStyle()}
+            style={createSecondaryPanelButtonStyle({ subdued: true })}
           >
             {isDebugPanelOpen ? "🧪 デバッグパネルを閉じる" : "🧪 デバッグパネルを開く"}
           </button>
@@ -107,9 +113,9 @@ export function GameBoardSection({
       />
 
       <div style={defenseLineStyle}>
-        <div style={{ flex: 1, height: 2, background: "#e74c3c" }} />
-        <div style={{ fontSize: 11, color: "#e74c3c", fontWeight: "bold", whiteSpace: "nowrap" }}>⚔️ DEFENSE LINE ⚔️</div>
-        <div style={{ flex: 1, height: 2, background: "#e74c3c" }} />
+        <div style={laneDividerLineStyle} />
+        <div style={laneDividerLabelStyle}>⚔️ DEFENSE LINE ⚔️</div>
+        <div style={laneDividerLineStyle} />
       </div>
 
       <TowerGrid

@@ -5,6 +5,11 @@ import { GameBoardSection } from "./GameBoardSection";
 import { GameHeader } from "./GameHeader";
 import { GameSidebar } from "./GameSidebar";
 import { RoleSelectModal } from "./RoleSelectModal";
+import {
+  createGameScreenContentStyle,
+  createGameScreenGridStyle,
+  gameScreenShellStyle,
+} from "./ui/styles";
 
 export function GameScreen({ game }) {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
@@ -86,14 +91,14 @@ export function GameScreen({ game }) {
   };
 
   return (
-    <div className={isLifeLossActive ? "screen-life-loss-shake" : undefined} style={{ minHeight: "100vh", background: "linear-gradient(135deg,#0f0e17 0%,#1a1a2e 100%)", display: "flex", justifyContent: "center", padding: "12px 8px", fontFamily: "'Segoe UI',sans-serif" }}>
+    <div className={isLifeLossActive ? "screen-life-loss-shake" : undefined} style={gameScreenShellStyle}>
       {isLifeLossActive && (
         <>
           <div className="life-loss-overlay" key={`life-overlay-${lifeLossFxKey}`} />
           <div className="life-loss-banner" key={`life-banner-${lifeLossFxKey}`}>⚠️ -{lifeLossAmount} LIFE</div>
         </>
       )}
-      <div style={{ width: "100%", maxWidth: isDesktop ? "100%" : 420 }}>
+      <div style={createGameScreenContentStyle(isDesktop)}>
         <GameHeader
           lives={lives}
           wave={wave}
@@ -106,7 +111,7 @@ export function GameScreen({ game }) {
           lifeLossFxKey={lifeLossFxKey}
         />
 
-        <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "minmax(0,1fr) minmax(280px,360px)" : "1fr", gap: 12, alignItems: "start" }}>
+        <div style={createGameScreenGridStyle(isDesktop)}>
           <GameBoardSection
             game={game}
             isDesktop={isDesktop}

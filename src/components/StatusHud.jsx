@@ -1,4 +1,13 @@
 import { memo } from "react";
+import {
+  hudCellStyle,
+  hudLabelStyle,
+  hudLifeCellStyle,
+  hudLivesValueStyle,
+  hudScoreValueStyle,
+  hudShellStyle,
+  hudWaveValueStyle,
+} from "./ui/styles";
 
 function formatLives(lives) {
   if (lives <= 0) {
@@ -17,37 +26,27 @@ export const StatusHud = memo(function StatusHud({
   lifeLossFxKey,
 }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        background: "#16213e",
-        borderRadius: 12,
-        padding: "10px 16px",
-        marginBottom: 10,
-        border: "1px solid #2a2a4a",
-      }}
-    >
+    <div style={hudShellStyle}>
       <div
         className={isLifeLossActive ? "hud-life-loss-pulse" : undefined}
         key={isLifeLossActive ? `life-cell-${lifeLossFxKey}` : undefined}
-        style={{ textAlign: "center", position: "relative" }}
+        style={hudLifeCellStyle}
       >
-        <div style={{ fontSize: 9, color: "#555" }}>LIVES</div>
-        <div style={{ fontSize: 15, color: "#e74c3c" }}>{formatLives(lives)}</div>
+        <div style={hudLabelStyle}>LIVES</div>
+        <div style={hudLivesValueStyle}>{formatLives(lives)}</div>
         {isLifeLossActive && (
           <div className="hud-life-loss-float">
             -{lifeLossAmount}
           </div>
         )}
       </div>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 9, color: "#555" }}>WAVE</div>
-        <div style={{ fontSize: 26, fontWeight: "bold", color: "#f1c40f", lineHeight: 1.1 }}>{wave}</div>
+      <div style={hudCellStyle}>
+        <div style={hudLabelStyle}>WAVE</div>
+        <div style={hudWaveValueStyle}>{wave}</div>
       </div>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 9, color: "#555" }}>SCORE</div>
-        <div style={{ fontSize: 15, color: "#2ecc71" }}>{score.toLocaleString()}</div>
+      <div style={hudCellStyle}>
+        <div style={hudLabelStyle}>SCORE</div>
+        <div style={hudScoreValueStyle}>{score.toLocaleString()}</div>
       </div>
     </div>
   );

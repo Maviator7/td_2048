@@ -1,3 +1,11 @@
+import {
+  createGuideGridStyle,
+  guideCardDescriptionStyle,
+  guideCardStyle,
+  guideCardTitleStyle,
+  guideHintStyle,
+} from "./ui/styles";
+
 const GUIDE_ITEMS = [
   ["🟡 手数マス", "3マス分スライドしたら自動攻撃"],
   ["⚡ 高速敵", "通常より速くDEFENSE LINEへ接近"],
@@ -10,15 +18,15 @@ const GUIDE_ITEMS = [
 export function GuideCards({ isDesktop }) {
   return (
     <>
-      <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "1fr" : "1fr 1fr", gap: 4 }}>
+      <div style={createGuideGridStyle(isDesktop)}>
         {GUIDE_ITEMS.map(([title, description]) => (
-          <div key={title} style={{ background: "#0d1117", border: "1px solid #1e2a3a", borderRadius: 8, padding: "6px 8px" }}>
-            <div style={{ fontSize: 11, color: "#aaa", fontWeight: "bold" }}>{title}</div>
-            <div style={{ fontSize: 10, color: "#555", marginTop: 2 }}>{description}</div>
+          <div key={title} style={guideCardStyle}>
+            <div style={guideCardTitleStyle}>{title}</div>
+            <div style={guideCardDescriptionStyle}>{description}</div>
           </div>
         ))}
       </div>
-      <div style={{ textAlign: "center", color: "#333", fontSize: 10, marginTop: 2 }}>
+      <div style={guideHintStyle}>
         矢印キー / スワイプ: スライド
       </div>
     </>
