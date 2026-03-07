@@ -3,18 +3,15 @@ import { useEffect, useRef, useState } from "react";
 import { GAME_PHASES, canSelectRoleByTileValue } from "../game/config";
 import { GameBoardSection } from "./GameBoardSection";
 import { GameHeader } from "./GameHeader";
-import { GameSidebar } from "./GameSidebar";
 import { RoleSelectModal } from "./RoleSelectModal";
 import {
   createGameScreenContentStyle,
-  createGameScreenGridStyle,
   gameScreenShellStyle,
 } from "./ui/styles";
 
 export function GameScreen({ game }) {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [roleModal, setRoleModal] = useState(null);
-  const [isBalanceModeEnabled, setIsBalanceModeEnabled] = useState(false);
   const isDebugMode = import.meta.env.VITE_ENABLE_DEBUG_PANEL === "true";
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(() => isDebugMode);
   const [debugBoostTarget, setDebugBoostTarget] = useState({ row: 0, col: 0 });
@@ -30,8 +27,6 @@ export function GameScreen({ game }) {
     phase,
     movesPerTurn,
     movesLeft,
-    log,
-    roleMetrics,
     setTileRoleAt,
   } = game;
 
@@ -111,7 +106,7 @@ export function GameScreen({ game }) {
           lifeLossFxKey={lifeLossFxKey}
         />
 
-        <div style={createGameScreenGridStyle(isDesktop)}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12, alignItems: "start" }}>
           <GameBoardSection
             game={game}
             isDesktop={isDesktop}
@@ -123,13 +118,6 @@ export function GameScreen({ game }) {
             debugBoostTarget={debugBoostTarget}
             onOpenRoleModal={openRoleModal}
             onAnyTileClick={handleTileClick}
-          />
-          <GameSidebar
-            isDesktop={isDesktop}
-            isBalanceModeEnabled={isBalanceModeEnabled}
-            onToggleBalanceMode={() => setIsBalanceModeEnabled((current) => !current)}
-            roleMetrics={roleMetrics}
-            log={log}
           />
         </div>
       </div>
