@@ -8,7 +8,14 @@ function formatLives(lives) {
   return "❤️".repeat(Math.min(lives, 5)) + (lives > 5 ? `+${lives - 5}` : "");
 }
 
-export const StatusHud = memo(function StatusHud({ lives, wave, score }) {
+export const StatusHud = memo(function StatusHud({
+  lives,
+  wave,
+  score,
+  isLifeLossActive,
+  lifeLossAmount,
+  lifeLossFxKey,
+}) {
   return (
     <div
       style={{
@@ -21,9 +28,18 @@ export const StatusHud = memo(function StatusHud({ lives, wave, score }) {
         border: "1px solid #2a2a4a",
       }}
     >
-      <div style={{ textAlign: "center" }}>
+      <div
+        className={isLifeLossActive ? "hud-life-loss-pulse" : undefined}
+        key={isLifeLossActive ? `life-cell-${lifeLossFxKey}` : undefined}
+        style={{ textAlign: "center", position: "relative" }}
+      >
         <div style={{ fontSize: 9, color: "#555" }}>LIVES</div>
         <div style={{ fontSize: 15, color: "#e74c3c" }}>{formatLives(lives)}</div>
+        {isLifeLossActive && (
+          <div className="hud-life-loss-float">
+            -{lifeLossAmount}
+          </div>
+        )}
       </div>
       <div style={{ textAlign: "center" }}>
         <div style={{ fontSize: 9, color: "#555" }}>WAVE</div>

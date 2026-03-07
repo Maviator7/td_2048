@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { GAME_PHASES, canSelectRoleByTileValue } from "../game/config";
 import { GameBoardSection } from "./GameBoardSection";
@@ -13,6 +13,10 @@ export function GameScreen({ game }) {
   const isDebugMode = import.meta.env.VITE_ENABLE_DEBUG_PANEL === "true";
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(() => isDebugMode);
   const [debugBoostTarget, setDebugBoostTarget] = useState({ row: 0, col: 0 });
+  const [isLifeLossActive, setIsLifeLossActive] = useState(false);
+  const [lifeLossAmount, setLifeLossAmount] = useState(0);
+  const [lifeLossFxKey, setLifeLossFxKey] = useState(0);
+  const prevLivesRef = useRef(game.lives);
 
   const {
     lives,
@@ -31,6 +35,21 @@ export function GameScreen({ game }) {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  useEffect(() => {
+    if (lives < prevLivesRef.current) {
+      const loss = prevLivesRef.current - lives;
+      setLifeLossAmount(loss);
+      setLifeLossFxKey((current) => current + 1);
+      setIsLifeLossActive(true);
+      const timeoutId = window.setTimeout(() => setIsLifeLossActive(false), 900);
+      prevLivesRef.current = lives;
+      return () => window.clearTimeout(timeoutId);
+    }
+
+    prevLivesRef.current = lives;
+    return undefined;
+  }, [lives]);
 
   const isDesktop = viewportWidth >= 768;
   const isWideDesktop = viewportWidth >= 1200;
@@ -67,7 +86,13 @@ export function GameScreen({ game }) {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg,#0f0e17 0%,#1a1a2e 100%)", display: "flex", justifyContent: "center", padding: "12px 8px", fontFamily: "'Segoe UI',sans-serif" }}>
+    <div className={isLifeLossActive ? "screen-life-loss-shake" : undefined} style={{ minHeight: "100vh", background: "linear-gradient(135deg,#0f0e17 0%,#1a1a2e 100%)", display: "flex", justifyContent: "center", padding: "12px 8px", fontFamily: "'Segoe UI',sans-serif" }}>
+      {isLifeLossActive && (
+        <>
+          <div className="life-loss-overlay" key={`life-overlay-${lifeLossFxKey}`} />
+          <div className="life-loss-banner" key={`life-banner-${lifeLossFxKey}`}>⚠️ -{lifeLossAmount} LIFE</div>
+        </>
+      )}
       <div style={{ width: "100%", maxWidth: isDesktop ? "100%" : 420 }}>
         <GameHeader
           lives={lives}
@@ -76,6 +101,9 @@ export function GameScreen({ game }) {
           movesLeft={movesLeft}
           movesPerTurn={movesPerTurn}
           isResolving={phase === GAME_PHASES.RESOLVING}
+          isLifeLossActive={isLifeLossActive}
+          lifeLossAmount={lifeLossAmount}
+          lifeLossFxKey={lifeLossFxKey}
         />
 
         <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "minmax(0,1fr) minmax(280px,360px)" : "1fr", gap: 12, alignItems: "start" }}>
