@@ -18,6 +18,7 @@ import { NextSpawnIndicator } from "./components/NextSpawnIndicator";
 import { EventLog } from "./components/EventLog";
 import { GuideCards } from "./components/GuideCards";
 import { TitleScreen } from "./components/TitleScreen";
+import { RankingScreen } from "./components/RankingScreen";
 import { RoleBalancePanel } from "./components/RoleBalancePanel";
 import { ColumnPowerLabels } from "./components/ColumnPowerLabels";
 import { EnemyLanes } from "./components/EnemyLanes";
@@ -25,10 +26,19 @@ import { TowerGrid } from "./components/TowerGrid";
 import { ActionPanel } from "./components/ActionPanel";
 import { DebugPanel } from "./components/DebugPanel";
 import { useGameState } from "./hooks/useGameState";
+import { getLocalRankings, saveLocalRanking } from "./game/rankings";
+
+const SCREENS = {
+  TITLE: "title",
+  GAME: "game",
+  RANKING: "ranking",
+};
 
 export default function MergeTowerDefense() {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
-  const [hasStarted, setHasStarted] = useState(false);
+  const [screen, setScreen] = useState(SCREENS.TITLE);
+  const [rankings, setRankings] = useState(() => getLocalRankings());
+  const [latestRankingEntryId, setLatestRankingEntryId] = useState(null);
   const {
     grid,
     tileDamage,
@@ -63,15 +73,28 @@ export default function MergeTowerDefense() {
   } = useGameState();
   const [roleModal, setRoleModal] = useState(null);
   const [isBalanceModeEnabled, setIsBalanceModeEnabled] = useState(false);
-  const isDebugMode = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEBUG_PANEL === "true";
+  const isDebugMode = import.meta.env.VITE_ENABLE_DEBUG_PANEL === "true";
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(() => isDebugMode);
   const [debugBoostTarget, setDebugBoostTarget] = useState({ row: 0, col: 0 });
+  const [didPersistCurrentRun, setDidPersistCurrentRun] = useState(false);
 
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  useEffect(() => {
+    if (phase !== GAME_PHASES.GAMEOVER || didPersistCurrentRun) {
+      return;
+    }
+
+    const { entry, rankings: nextRankings } = saveLocalRanking({ score, wave });
+    setRankings(nextRankings);
+    setLatestRankingEntryId(entry.id);
+    setDidPersistCurrentRun(true);
+    setScreen(SCREENS.RANKING);
+  }, [didPersistCurrentRun, phase, score, wave]);
 
   const isDesktop = viewportWidth >= 768;
   const isWideDesktop = viewportWidth >= 1200;
@@ -113,16 +136,34 @@ export default function MergeTowerDefense() {
   const startGame = () => {
     restart();
     setRoleModal(null);
-    setHasStarted(true);
+    setLatestRankingEntryId(null);
+    setDidPersistCurrentRun(false);
+    setScreen(SCREENS.GAME);
   };
 
   const backToTitle = () => {
     setRoleModal(null);
-    setHasStarted(false);
+    setScreen(SCREENS.TITLE);
   };
 
-  if (!hasStarted) {
-    return <TitleScreen onStart={startGame} />;
+  const openRanking = () => {
+    setRankings(getLocalRankings());
+    setScreen(SCREENS.RANKING);
+  };
+
+  if (screen === SCREENS.TITLE) {
+    return <TitleScreen onStart={startGame} onOpenRanking={openRanking} topScore={rankings[0]?.score ?? null} />;
+  }
+
+  if (screen === SCREENS.RANKING) {
+    return (
+      <RankingScreen
+        rankings={rankings}
+        latestEntryId={latestRankingEntryId}
+        onStart={startGame}
+        onBackToTitle={backToTitle}
+      />
+    );
   }
 
   return (

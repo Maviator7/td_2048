@@ -8,7 +8,7 @@ const FEATURE_CARDS = [
   ["🛡️ 装甲敵", "火力不足だと弾かれる"],
 ];
 
-export function TitleScreen({ onStart }) {
+export function TitleScreen({ onStart, onOpenRanking, topScore }) {
   const [isHowToOpen, setIsHowToOpen] = useState(false);
 
   return (
@@ -17,6 +17,10 @@ export function TitleScreen({ onStart }) {
         <div style={{fontSize:13,color:"#6b7280",letterSpacing:1,marginBottom:8}}>TOWER MERGE BATTLE</div>
         <h1 style={{margin:"0 0 6px",fontSize:30,color:"#f1c40f",textShadow:"0 0 14px rgba(241,196,15,0.55)"}}>🗼 MERGE FORTRESS 2048</h1>
         <div style={{fontSize:13,color:"#94a3b8",marginBottom:14}}>砲塔を合体して、押し寄せる敵を迎え撃て</div>
+        <div style={{marginBottom:14,padding:"10px 12px",borderRadius:12,background:"linear-gradient(135deg,rgba(30,41,59,0.95),rgba(15,23,42,0.9))",border:"1px solid #334155"}}>
+          <div style={{fontSize:11,color:"#64748b"}}>LOCAL BEST SCORE</div>
+          <div style={{fontSize:24,fontWeight:900,color:"#22c55e",lineHeight:1.1}}>{topScore ? topScore.toLocaleString() : "--"}</div>
+        </div>
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
           {FEATURE_CARDS.map(([title, desc]) => (
@@ -44,6 +48,24 @@ export function TitleScreen({ onStart }) {
           }}
         >
           ▶ ゲームスタート
+        </button>
+        <button
+          type="button"
+          onClick={onOpenRanking}
+          style={{
+            width:"100%",
+            marginTop:10,
+            border:"1px solid #475569",
+            borderRadius:12,
+            padding:"11px 10px",
+            background:"linear-gradient(90deg,#0f172a 0%,#1e293b 100%)",
+            color:"#e2e8f0",
+            fontSize:15,
+            fontWeight:800,
+            cursor:"pointer",
+          }}
+        >
+          🏆 ランキング
         </button>
         <button
           type="button"
