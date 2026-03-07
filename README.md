@@ -1,26 +1,65 @@
-# React + Vite
+# Merge Fortress 2048
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+2048 パズルとタワーディフェンスを組み合わせたブラウザゲームです。Vite + React で構成されています。
 
-Currently, two official plugins are available:
+## 主な機能
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- スライド操作でタイルを合体
+- 手数制のターン進行
+- Wave 制の敵出現と戦闘解決
+- 役職システム
+- ローカルランキング
+- タイトル画面からの遊び方表示
 
-## React Compiler
+## 画面構成
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- タイトル画面
+- ゲーム画面
+- ランキング画面
 
-## Expanding the ESLint configuration
+ゲームオーバー時は現在のスコアをローカルランキングへ保存し、そのままランキング画面へ遷移します。
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## ローカルランキング
 
-## Debug Panel Flag
+ランキングはブラウザの `localStorage` に保存します。
 
-The tester debug panel is enabled in local development (`npm run dev`) and disabled in production by default.
+- 保存キー: `merge-fortress-2048:local-rankings:v1`
+- 保存件数: 上位 20 件
+- 並び順: `score desc`, `wave desc`, `playedAt desc`
 
-To enable it for a deployed build, set this environment variable at build time:
+旧キー `merge-fortress-2048:local-rankings` を持っている場合は、初回読み込み時に新キーへ移行します。
+
+## 開発
+
+```bash
+npm install
+npm run dev
+```
+
+本番ビルド:
+
+```bash
+npm run build
+```
+
+Lint:
+
+```bash
+npm run lint
+```
+
+## デバッグパネル
+
+デバッグパネルはデフォルトで無効です。ローカル開発でも自動では表示されません。
+
+表示したい場合だけ、起動またはビルド時に以下を指定してください。
 
 ```bash
 VITE_ENABLE_DEBUG_PANEL=true
 ```
+
+## 今後の拡張
+
+- Cloudflare Pages + Functions + D1 を使ったオンラインランキング
+- ランキング repository の `local` / `remote` 差し替え
+- 戦闘解決ロジックのさらなる分離
