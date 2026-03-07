@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { TitleHowToModal } from "./TitleHowToModal";
+
 const FEATURE_CARDS = [
   ["⚡ 高速敵", "通常より速く侵攻"],
   ["🧬 分裂敵", "撃破で3体に分裂"],
@@ -6,6 +9,8 @@ const FEATURE_CARDS = [
 ];
 
 export function TitleScreen({ onStart }) {
+  const [isHowToOpen, setIsHowToOpen] = useState(false);
+
   return (
     <div style={{minHeight:"100vh",background:"linear-gradient(145deg,#0b1020 0%,#1a1a2e 50%,#0f172a 100%)",display:"flex",justifyContent:"center",alignItems:"center",padding:"20px 12px",fontFamily:"'Segoe UI',sans-serif"}}>
       <div style={{width:"100%",maxWidth:460,background:"rgba(13,17,23,0.92)",border:"1px solid #29303d",borderRadius:16,padding:"22px 16px",boxShadow:"0 20px 50px rgba(0,0,0,0.45)",textAlign:"center"}}>
@@ -40,8 +45,27 @@ export function TitleScreen({ onStart }) {
         >
           ▶ ゲームスタート
         </button>
+        <button
+          type="button"
+          onClick={() => setIsHowToOpen(true)}
+          style={{
+            width: "100%",
+            marginTop: 8,
+            border: "1px solid #334155",
+            borderRadius: 10,
+            padding: "10px",
+            background: "#111827",
+            color: "#d1d5db",
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          📘 遊び方
+        </button>
         <div style={{marginTop:10,fontSize:11,color:"#475569"}}>矢印キー / スワイプで操作</div>
       </div>
+      <TitleHowToModal isOpen={isHowToOpen} onClose={() => setIsHowToOpen(false)} />
     </div>
   );
 }
