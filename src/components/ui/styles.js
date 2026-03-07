@@ -278,3 +278,86 @@ export const guideHintStyle = {
   fontSize: 10,
   marginTop: 6,
 };
+
+export function createTileSurfaceStyle({
+  background,
+  color,
+  isMerged,
+  isDamaged,
+  retaliationDamage,
+  effectiveValue,
+  isInteractive,
+  tileHeight,
+}) {
+  return {
+    background: isMerged
+      ? "linear-gradient(180deg, #fff7c2 0%, #facc15 100%)"
+      : background,
+    color,
+    borderRadius: 10,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    height: tileHeight,
+    fontWeight: "bold",
+    boxShadow: valueOrFallbackBoxShadow(background, isInteractive, isMerged),
+    border: retaliationDamage
+      ? "2px solid rgba(248, 113, 113, 0.9)"
+      : isMerged
+        ? "2px solid #fde047"
+        : isDamaged
+          ? "2px solid rgba(248, 113, 113, 0.45)"
+          : isInteractive
+            ? "2px solid rgba(255,255,255,0.16)"
+            : "2px solid transparent",
+    transition: "transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease",
+    transform: isMerged ? "scale(1.08)" : isInteractive ? "translateY(0)" : "scale(1)",
+    opacity: effectiveValue === 0 ? 0.56 : 1,
+    animationDelay: retaliationDamage ? "40ms" : undefined,
+    cursor: isInteractive ? "pointer" : "default",
+    overflow: "hidden",
+  };
+}
+
+function valueOrFallbackBoxShadow(background, isInteractive, isMerged) {
+  if (isMerged) {
+    return "0 10px 20px rgba(250, 204, 21, 0.22)";
+  }
+  if (isInteractive) {
+    return `0 10px 18px ${background}55, inset 0 1px 0 rgba(255,255,255,0.28)`;
+  }
+  return `0 6px 12px ${background}44, inset 0 1px 0 rgba(255,255,255,0.18)`;
+}
+
+export const selectableTileHintStyle = {
+  position: "absolute",
+  inset: 0,
+  borderRadius: 10,
+  boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.14)",
+  pointerEvents: "none",
+};
+
+export const roleSelectionGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: 8,
+};
+
+export function createRoleOptionButtonStyle(selected) {
+  return createPrimaryButtonStyle({
+    border: selected ? "1px solid #fbbf24" : "1px solid #475569",
+    background: selected
+      ? "linear-gradient(180deg, #1f2937 0%, #111827 100%)"
+      : "linear-gradient(180deg, #0f172a 0%, #111827 100%)",
+    color: "#e5e7eb",
+    borderRadius: 12,
+    padding: "12px 10px",
+    fontSize: 13,
+    fontWeight: 700,
+    boxShadow: selected
+      ? "0 12px 24px rgba(250, 204, 21, 0.12)"
+      : "0 10px 20px rgba(2, 6, 23, 0.18)",
+  });
+}

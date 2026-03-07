@@ -407,7 +407,10 @@ function EnemyLane({
             left: "50%",
             transform: "translateX(-50%)",
             fontSize: 9,
-            color: "#444",
+            color: "#64748b",
+            background: "rgba(15, 23, 42, 0.72)",
+            padding: "2px 6px",
+            borderRadius: 999,
           }}
         >
           +{queuedCount}待機
@@ -428,7 +431,7 @@ function EnemyLane({
             fontSize: 7,
             fontWeight: "bold",
             color: "#fff",
-            background: "rgba(231, 76, 60, 0.78)",
+            background: "rgba(248, 113, 113, 0.88)",
             zIndex: 8,
           }}
         >

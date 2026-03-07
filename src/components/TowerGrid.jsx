@@ -9,6 +9,7 @@ import {
   ROW_ROLES,
 } from "../game/config";
 import { getEffectiveTileValue, getTileColors } from "../game/grid";
+import { createTileSurfaceStyle, selectableTileHintStyle } from "./ui/styles";
 
 function getTileFontSize(value, isDesktop) {
   if (isDesktop) {
@@ -117,6 +118,7 @@ export const TowerGrid = memo(function TowerGrid({
               const displayedAttackValue = getDisplayedAttackValue(effectiveValue, rowIndex);
               const rowBonusIcons = getRowBonusIcons(rowIndex);
               const isRoleSelectable = canSelectRoleByTileValue(value) && !tileRole && Boolean(onTileClick);
+              const isInteractive = isRoleSelectable || Boolean(onAnyTileClick);
               const tileClassName = [
                 retaliationDamage ? "tile-retaliation-flash" : null,
                 repairAmount ? "tile-repair-flash" : null,
@@ -143,32 +145,22 @@ export const TowerGrid = memo(function TowerGrid({
                     }
                   }}
                   style={{
-                    background: isMerged ? "#fff3b0" : background,
                     color: isDamaged && !isMerged ? "#2b2b2b" : color,
-                    borderRadius: 8,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    position: "relative",
-                    height: tileHeight,
                     fontWeight: "bold",
                     fontSize: getTileFontSize(effectiveValue || value, isDesktop),
-                    boxShadow: value ? `0 3px 8px ${background}66` : "none",
-                    border: retaliationDamage
-                      ? "2px solid rgba(231, 76, 60, 0.7)"
-                      : isMerged
-                        ? "2px solid #f1c40f"
-                        : isDamaged
-                          ? "2px solid rgba(231, 76, 60, 0.4)"
-                          : "2px solid transparent",
-                    transition: "all 0.15s",
-                    transform: isMerged ? "scale(1.08)" : "scale(1)",
-                    opacity: value && !effectiveValue ? 0.5 : 1,
-                    animationDelay: retaliationDamage ? "40ms" : undefined,
-                    cursor: isRoleSelectable || onAnyTileClick ? "pointer" : "default",
+                    ...createTileSurfaceStyle({
+                      background: value ? background : "#1c1c2e",
+                      color: isDamaged && !isMerged ? "#2b2b2b" : color,
+                      isMerged,
+                      isDamaged,
+                      retaliationDamage,
+                      effectiveValue: value ? effectiveValue : 1,
+                      isInteractive,
+                      tileHeight,
+                    }),
                   }}
                 >
+                  {isRoleSelectable && <div style={selectableTileHintStyle} />}
                   {tileLevel && (
                     <div
                       style={{
@@ -248,6 +240,25 @@ export const TowerGrid = memo(function TowerGrid({
                   >
                     {rowBonusIcons}
                   </div>
+                  {isRoleSelectable && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: 4,
+                        left: 4,
+                        padding: "2px 5px",
+                        borderRadius: 999,
+                        background: "rgba(15, 23, 42, 0.74)",
+                        color: "#e2e8f0",
+                        fontSize: isDesktop ? 8 : 7,
+                        fontWeight: 800,
+                        lineHeight: 1,
+                        letterSpacing: 0.4,
+                      }}
+                    >
+                      ROLE
+                    </div>
+                  )}
                 </div>
               );
             })}

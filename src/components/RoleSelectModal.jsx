@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef } from "react";
 
 import { ROLE_RULES, TILE_ROLE_DEFS, TILE_ROLE_ORDER } from "../game/config";
-import { createModalSurface, createPrimaryButtonStyle } from "./ui/styles";
+import { createModalSurface, createRoleOptionButtonStyle, roleSelectionGridStyle } from "./ui/styles";
 
 export function RoleSelectModal({ roleModal, onClose, onSelectRole }) {
   const dialogRef = useRef(null);
@@ -86,7 +86,7 @@ export function RoleSelectModal({ roleModal, onClose, onSelectRole }) {
         <div id={descriptionId} style={{ fontSize: 13, color: "#94a3b8", marginBottom: 10, lineHeight: 1.5 }}>
           タイル {roleModal.value}（Lv.{ROLE_RULES.minSelectableLevel}以上・未役職のみ）
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <div style={roleSelectionGridStyle}>
           {TILE_ROLE_ORDER.map((roleKey) => {
             const roleDef = TILE_ROLE_DEFS[roleKey];
             const selected = roleModal.role === roleKey;
@@ -97,16 +97,7 @@ export function RoleSelectModal({ roleModal, onClose, onSelectRole }) {
                 type="button"
                 onClick={() => onSelectRole(roleKey)}
                 aria-pressed={selected}
-                style={createPrimaryButtonStyle({
-                  border: selected ? "1px solid #fbbf24" : "1px solid #475569",
-                  background: selected ? "#1f2937" : "#0f172a",
-                  color: "#e5e7eb",
-                  borderRadius: 10,
-                  padding: "10px 8px",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  boxShadow: "none",
-                })}
+                style={createRoleOptionButtonStyle(selected)}
               >
                 {roleDef.icon} {roleDef.label}
               </button>
