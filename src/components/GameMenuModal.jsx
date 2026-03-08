@@ -21,6 +21,7 @@ export function GameMenuModal({
   onClose,
   onSave,
   onLoad,
+  onOpenEnemyCodex,
   saveMeta,
   statusMessage,
 }) {
@@ -88,8 +89,22 @@ export function GameMenuModal({
         </div>
         <button
           type="button"
+          onClick={onOpenEnemyCodex}
+          style={createPrimaryButtonStyle({
+            background: "linear-gradient(90deg,#38bdf8 0%,#0ea5e9 100%)",
+            color: "#082f49",
+            fontSize: 15,
+            padding: "10px 10px",
+            fontWeight: 800,
+          })}
+        >
+          📘 敵図鑑
+        </button>
+        <button
+          type="button"
           onClick={onSave}
           style={createPrimaryButtonStyle({
+            marginTop: 8,
             background: "linear-gradient(90deg,#0ea5e9 0%,#0284c7 100%)",
             color: "#f8fafc",
             fontSize: 15,

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { GAME_PHASES, canSelectRoleByTileValue } from "../game/config";
 import { GameBoardSection } from "./GameBoardSection";
+import { EnemyCodexModal } from "./EnemyCodexModal";
 import { GameHeader } from "./GameHeader";
 import { GameMenuModal } from "./GameMenuModal";
 import { RoleSelectModal } from "./RoleSelectModal";
@@ -10,12 +11,34 @@ import {
   gameScreenShellStyle,
 } from "./ui/styles";
 
+const ENEMY_CODEX_STORAGE_KEY = "mf2048_enemy_codex_seen_v1";
+
+function loadDiscoveredEnemyTypes() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(ENEMY_CODEX_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((entry) => typeof entry === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
 export function GameScreen({ game, onSaveMetaUpdated }) {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [roleModal, setRoleModal] = useState(null);
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
+  const [isEnemyCodexOpen, setIsEnemyCodexOpen] = useState(false);
   const [saveStatusMessage, setSaveStatusMessage] = useState("");
   const [saveMeta, setSaveMeta] = useState(() => game.getSaveMeta());
+  const [discoveredEnemyTypes, setDiscoveredEnemyTypes] = useState(loadDiscoveredEnemyTypes);
   const isDebugMode = import.meta.env.VITE_ENABLE_DEBUG_PANEL === "true";
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(() => isDebugMode);
   const [debugBoostTarget, setDebugBoostTarget] = useState({ row: 0, col: 0 });
@@ -26,6 +49,7 @@ export function GameScreen({ game, onSaveMetaUpdated }) {
 
   const {
     lives,
+    enemies,
     wave,
     score,
     phase,
@@ -54,6 +78,33 @@ export function GameScreen({ game, onSaveMetaUpdated }) {
     prevLivesRef.current = lives;
     return undefined;
   }, [lives]);
+
+  useEffect(() => {
+    if (!enemies?.length) {
+      return;
+    }
+
+    setDiscoveredEnemyTypes((current) => {
+      const nextSet = new Set(current);
+      enemies.forEach((enemy) => {
+        if (enemy?.type) {
+          nextSet.add(enemy.type);
+        }
+      });
+      const next = Array.from(nextSet);
+      if (next.length === current.length) {
+        return current;
+      }
+
+      try {
+        window.localStorage.setItem(ENEMY_CODEX_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Ignore storage failures and keep runtime state.
+      }
+
+      return next;
+    });
+  }, [enemies]);
 
   const isDesktop = viewportWidth >= 768;
   const isWideDesktop = viewportWidth >= 1200;
@@ -195,8 +246,17 @@ export function GameScreen({ game, onSaveMetaUpdated }) {
         onClose={closeMenuModal}
         onSave={handleSaveGame}
         onLoad={handleLoadGame}
+        onOpenEnemyCodex={() => {
+          setIsMenuModalOpen(false);
+          setIsEnemyCodexOpen(true);
+        }}
         saveMeta={saveMeta}
         statusMessage={saveStatusMessage}
+      />
+      <EnemyCodexModal
+        isOpen={isEnemyCodexOpen}
+        discoveredEnemyTypes={discoveredEnemyTypes}
+        onClose={() => setIsEnemyCodexOpen(false)}
       />
     </div>
   );
