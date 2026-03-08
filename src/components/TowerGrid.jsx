@@ -129,11 +129,15 @@ export const TowerGrid = memo(function TowerGrid({
                   key={`${rowIndex}-${columnIndex}`}
                   className={tileClassName}
                   onClick={() => {
+                    const originXPercent = ((columnIndex + 0.5) / COLS) * 100;
+                    const originYPercent = ((rowIndex + 0.5) / grid.length) * 100;
                     onAnyTileClick?.({
                       row: rowIndex,
                       col: columnIndex,
                       value,
                       role: tileRole,
+                      originXPercent,
+                      originYPercent,
                     });
                     if (isRoleSelectable) {
                       onTileClick?.({
@@ -141,6 +145,8 @@ export const TowerGrid = memo(function TowerGrid({
                         col: columnIndex,
                         value,
                         role: tileRole,
+                        originXPercent,
+                        originYPercent,
                       });
                     }
                   }}

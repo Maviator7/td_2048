@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 import { ROLE_RULES, TILE_ROLE_DEFS, TILE_ROLE_ORDER } from "../game/config";
+import { useModalTransition } from "../hooks/useModalTransition";
 import {
   createModalSurface,
   createRoleActionButtonStyle,
@@ -12,14 +13,15 @@ import {
   roleSelectionGridStyle,
 } from "./ui/styles";
 
-export function RoleSelectModal({ roleModal, onClose, onSelectRole }) {
+export function RoleSelectModal({ isOpen, roleModal, onClose, onSelectRole, onExited }) {
   const dialogRef = useRef(null);
   const titleId = useId();
   const descriptionId = useId();
   const [selectedRole, setSelectedRole] = useState(TILE_ROLE_ORDER[0] ?? null);
+  const { isRendered, phase } = useModalTransition(isOpen);
 
   useEffect(() => {
-    if (!roleModal) {
+    if (!isOpen) {
       return undefined;
     }
 
@@ -61,9 +63,15 @@ export function RoleSelectModal({ roleModal, onClose, onSelectRole }) {
       window.removeEventListener("keydown", handleKeyDown);
       previousActiveElement?.focus?.();
     };
-  }, [onClose, roleModal]);
+  }, [isOpen, onClose]);
 
-  if (!roleModal) {
+  useEffect(() => {
+    if (!isOpen && !isRendered) {
+      onExited?.();
+    }
+  }, [isOpen, isRendered, onExited]);
+
+  if (!isRendered || !roleModal) {
     return null;
   }
 
@@ -71,11 +79,13 @@ export function RoleSelectModal({ roleModal, onClose, onSelectRole }) {
 
   return (
     <div
+      className={`modal-backdrop modal-backdrop-${phase} role-modal-backdrop`}
       onClick={onClose}
       style={{
+        "--role-origin-x": `${roleModal.originXPercent ?? 50}%`,
+        "--role-origin-y": `${roleModal.originYPercent ?? 50}%`,
         position: "fixed",
         inset: 0,
-        background: "rgba(0, 0, 0, 0.55)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -84,13 +94,17 @@ export function RoleSelectModal({ roleModal, onClose, onSelectRole }) {
       }}
     >
       <div
+        className={`modal-surface modal-surface-${phase} role-modal-surface`}
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
         onClick={(event) => event.stopPropagation()}
-        style={createModalSurface({ maxWidth: 360 })}
+        style={{
+          ...createModalSurface({ maxWidth: 360 }),
+          transformOrigin: `${roleModal.originXPercent ?? 50}% ${roleModal.originYPercent ?? 50}%`,
+        }}
       >
         <div id={titleId} style={{ fontSize: 16, color: "#e5e7eb", fontWeight: "700", marginBottom: 4 }}>
           役職を選択

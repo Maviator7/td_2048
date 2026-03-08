@@ -33,6 +33,177 @@ body {
   min-height: 100vh;
 }
 
+.app-screen-root {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.app-screen-layer {
+  --screen-enter-y: 10px;
+  --screen-enter-scale: 0.997;
+  --screen-enter-blur: 0.8px;
+  --screen-enter-sat: 0.96;
+  --screen-exit-y: -8px;
+  --screen-exit-scale: 0.996;
+  --screen-exit-blur: 1px;
+  --screen-exit-sat: 0.95;
+  width: 100%;
+  min-height: 100vh;
+  will-change: opacity, transform, filter;
+  transition:
+    opacity 220ms ease,
+    transform 250ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 250ms ease;
+}
+
+.app-screen-layer-deploy {
+  --screen-enter-y: 14px;
+  --screen-exit-y: -4px;
+}
+
+.app-screen-layer-report {
+  --screen-enter-y: 6px;
+  --screen-enter-scale: 0.986;
+  --screen-enter-blur: 1px;
+  --screen-exit-y: -6px;
+  --screen-exit-scale: 0.992;
+}
+
+.app-screen-layer-return {
+  --screen-enter-y: -10px;
+  --screen-exit-y: 8px;
+}
+
+.app-screen-layer-menu {
+  --screen-enter-y: 8px;
+  --screen-enter-scale: 0.993;
+}
+
+.app-screen-layer-entering {
+  opacity: 0;
+  transform: translateY(var(--screen-enter-y)) scale(var(--screen-enter-scale));
+  filter: saturate(var(--screen-enter-sat)) blur(var(--screen-enter-blur));
+}
+
+.app-screen-layer-entered {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: saturate(1) blur(0);
+}
+
+.app-screen-layer-exiting {
+  opacity: 0;
+  transform: translateY(var(--screen-exit-y)) scale(var(--screen-exit-scale));
+  filter: saturate(var(--screen-exit-sat)) blur(var(--screen-exit-blur));
+}
+
+.modal-backdrop,
+.modal-surface {
+  will-change: opacity, transform, filter;
+}
+
+.modal-backdrop {
+  transition: opacity 170ms ease;
+}
+
+.modal-backdrop-entering,
+.modal-backdrop-entered {
+  opacity: 1;
+}
+
+.modal-backdrop-exiting {
+  opacity: 0;
+}
+
+.modal-surface {
+  transition:
+    opacity 190ms ease,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 220ms ease;
+}
+
+.modal-surface-entering {
+  opacity: 0;
+  transform: translateY(11px) scale(0.98);
+  filter: saturate(0.94);
+}
+
+.modal-surface-entered {
+  transition-delay: 45ms;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: saturate(1);
+}
+
+.modal-surface-exiting {
+  transition-delay: 0ms;
+  opacity: 0;
+  transform: translateY(8px) scale(0.987);
+  filter: saturate(0.95);
+}
+
+.title-content-shell,
+.game-content-shell {
+  transition: transform 180ms ease, filter 180ms ease, opacity 180ms ease;
+}
+
+.title-content-paused,
+.game-content-paused {
+  transform: scale(0.988);
+  filter: saturate(0.9) brightness(0.92);
+}
+
+.game-screen-paused {
+  background:
+    radial-gradient(circle at 50% 10%, rgba(148, 163, 184, 0.06), transparent 44%),
+    linear-gradient(135deg, #0f0e17 0%, #1a1a2e 100%);
+}
+
+.role-modal-backdrop {
+  background:
+    radial-gradient(
+      circle at var(--role-origin-x, 50%) var(--role-origin-y, 50%),
+      rgba(147, 197, 253, 0.12) 0%,
+      rgba(96, 165, 250, 0.06) 18%,
+      rgba(0, 0, 0, 0) 42%
+    ),
+    rgba(0, 0, 0, 0.56);
+}
+
+.role-modal-surface.modal-surface-entering {
+  transform: translateY(10px) scale(0.972);
+}
+
+.codex-entry {
+  will-change: transform, opacity, filter;
+}
+
+.codex-entry-stagger {
+  opacity: 0;
+  animation: codex-entry-rise 260ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.wave-clear-engaging {
+  animation: wave-clear-engage-shift 280ms ease forwards;
+}
+
+.wave-engage-flash {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 52%, rgba(134, 239, 172, 0.28), rgba(74, 222, 128, 0.1) 42%, transparent 72%);
+  animation: wave-engage-flash 280ms ease-out forwards;
+}
+
+.wave-next-btn:disabled {
+  cursor: default;
+  opacity: 0.78;
+}
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
@@ -268,6 +439,42 @@ button:focus-visible {
   }
   50% {
     transform: scale(1.01);
+  }
+}
+
+@keyframes codex-entry-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(7px) scale(0.992);
+    filter: saturate(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: saturate(1);
+  }
+}
+
+@keyframes wave-engage-flash {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes wave-clear-engage-shift {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-6px) scale(0.994);
+    opacity: 0.9;
   }
 }
 
@@ -532,6 +739,16 @@ button:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .screen-life-loss-shake,
+  .app-screen-layer,
+  .modal-backdrop,
+  .modal-surface,
+  .title-content-paused,
+  .game-content-paused,
+  .title-content-shell,
+  .game-content-shell,
+  .codex-entry-stagger,
+  .wave-clear-engaging,
+  .wave-engage-flash,
   .life-loss-overlay,
   .life-loss-banner,
   .hud-life-loss-pulse,
@@ -559,6 +776,8 @@ button:focus-visible {
   .wave-next-btn,
   .next-spawn-panel,
   .row-floor,
+  .title-content-paused,
+  .game-content-paused,
   button,
   [class*="tile"],
   [class*="enemy"] {

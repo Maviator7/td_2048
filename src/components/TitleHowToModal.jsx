@@ -1,10 +1,12 @@
 import { useEffect, useId, useRef } from "react";
 import { createModalSurface, createPrimaryButtonStyle } from "./ui/styles";
+import { useModalTransition } from "../hooks/useModalTransition";
 
 export function TitleHowToModal({ isOpen, onClose }) {
   const dialogRef = useRef(null);
   const titleId = useId();
   const descriptionId = useId();
+  const { isRendered, phase } = useModalTransition(isOpen);
 
   useEffect(() => {
     if (!isOpen) {
@@ -28,12 +30,13 @@ export function TitleHowToModal({ isOpen, onClose }) {
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) {
+  if (!isRendered) {
     return null;
   }
 
   return (
     <div
+      className={`modal-backdrop modal-backdrop-${phase}`}
       onClick={onClose}
       style={{
         position: "fixed",
@@ -47,6 +50,7 @@ export function TitleHowToModal({ isOpen, onClose }) {
       }}
     >
       <div
+        className={`modal-surface modal-surface-${phase}`}
         ref={dialogRef}
         role="dialog"
         aria-modal="true"

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from "react";
 
 import { createModalSurface, createPrimaryButtonStyle } from "./ui/styles";
+import { useModalTransition } from "../hooks/useModalTransition";
 
 export function TitleSettingsModal({
   isOpen,
@@ -18,6 +19,7 @@ export function TitleSettingsModal({
   const dialogRef = useRef(null);
   const titleId = useId();
   const descriptionId = useId();
+  const { isRendered, phase } = useModalTransition(isOpen);
 
   useEffect(() => {
     if (!isOpen) {
@@ -41,12 +43,13 @@ export function TitleSettingsModal({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) {
+  if (!isRendered) {
     return null;
   }
 
   return (
     <div
+      className={`modal-backdrop modal-backdrop-${phase}`}
       onClick={onClose}
       style={{
         position: "fixed",
@@ -60,6 +63,7 @@ export function TitleSettingsModal({
       }}
     >
       <div
+        className={`modal-surface modal-surface-${phase}`}
         ref={dialogRef}
         role="dialog"
         aria-modal="true"

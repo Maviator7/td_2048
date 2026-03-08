@@ -1,6 +1,31 @@
+import { useEffect, useRef, useState } from "react";
+
+const WAVE_TRANSITION_DELAY_MS = 260;
+
 export function WaveClearBanner({ wave, onNextWave }) {
+  const [isEngaging, setIsEngaging] = useState(false);
+  const timerRef = useRef(null);
+
+  useEffect(() => () => window.clearTimeout(timerRef.current), []);
+
+  const handleNextWave = () => {
+    if (isEngaging) {
+      return;
+    }
+
+    setIsEngaging(true);
+    timerRef.current = window.setTimeout(() => {
+      onNextWave?.();
+      setIsEngaging(false);
+    }, WAVE_TRANSITION_DELAY_MS);
+  };
+
   return (
-    <div className="waveclear-top-cta wave-clear-panel" key={`wave-clear-${wave}`}>
+    <div
+      className={`waveclear-top-cta wave-clear-panel ${isEngaging ? "wave-clear-engaging" : ""}`}
+      key={`wave-clear-${wave}`}
+    >
+      {isEngaging && <div className="wave-engage-flash" aria-hidden="true" />}
       <div className="wave-clear-confetti" aria-hidden="true">
         {Array.from({ length: 14 }).map((_, index) => (
           <span
@@ -20,7 +45,7 @@ export function WaveClearBanner({ wave, onNextWave }) {
       <div style={{ fontSize: 12, color: "#d5e9da", marginTop: 3, marginBottom: 8 }}>
         次のウェーブへ進めます
       </div>
-      <button className="wave-next-btn" onClick={onNextWave}>
+      <button className="wave-next-btn" onClick={handleNextWave} disabled={isEngaging}>
         ▶ 次のウェーブへ進む (Wave {wave + 1})
       </button>
     </div>

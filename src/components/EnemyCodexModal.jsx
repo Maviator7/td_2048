@@ -3,6 +3,7 @@ import { useEffect, useId, useRef } from "react";
 import { ENEMY_TYPES } from "../game/config";
 import { LANE_COLORS } from "../game/constants";
 import { createModalSurface, createPrimaryButtonStyle } from "./ui/styles";
+import { useModalTransition } from "../hooks/useModalTransition";
 
 const CODEX_ENTRIES = [
   {
@@ -119,6 +120,7 @@ export function EnemyCodexModal({ isOpen, discoveredEnemyTypes, onClose }) {
   const titleId = useId();
   const descriptionId = useId();
   const discoveredSet = new Set(discoveredEnemyTypes ?? []);
+  const { isRendered, phase } = useModalTransition(isOpen);
 
   useEffect(() => {
     if (!isOpen) {
@@ -142,12 +144,13 @@ export function EnemyCodexModal({ isOpen, discoveredEnemyTypes, onClose }) {
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) {
+  if (!isRendered) {
     return null;
   }
 
   return (
     <div
+      className={`modal-backdrop modal-backdrop-${phase}`}
       onClick={onClose}
       style={{
         position: "fixed",
@@ -161,6 +164,7 @@ export function EnemyCodexModal({ isOpen, discoveredEnemyTypes, onClose }) {
       }}
     >
       <div
+        className={`modal-surface modal-surface-${phase}`}
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
@@ -199,40 +203,47 @@ export function EnemyCodexModal({ isOpen, discoveredEnemyTypes, onClose }) {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8, marginBottom: 10 }}>
-          {CODEX_ENTRIES.map((entry) => {
+          {CODEX_ENTRIES.map((entry, index) => {
             const discovered = discoveredSet.has(entry.type);
             return (
               <div
                 key={entry.type}
+                className={`codex-entry ${phase === "exiting" ? "" : "codex-entry-stagger"}`}
                 style={{
-                  border: `1px solid ${discovered ? "#334155" : "#1f2937"}`,
-                  background: discovered ? "rgba(15,23,42,0.75)" : "rgba(2,6,23,0.66)",
-                  borderRadius: 10,
-                  padding: "9px 10px",
+                  animationDelay: `${index * 45}ms`,
                 }}
               >
-                {discovered ? (
-                  <>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      {entry.type === ENEMY_TYPES.NORMAL ? (
-                        <NormalEnemyFigure />
-                      ) : (
-                        <div style={createFigureStyle(entry.type)} />
-                      )}
-                      <div style={{ fontSize: 14, color: "#e2e8f0", fontWeight: 800 }}>
-                        {entry.name}
+                <div
+                  style={{
+                    border: `1px solid ${discovered ? "#334155" : "#1f2937"}`,
+                    background: discovered ? "rgba(15,23,42,0.75)" : "rgba(2,6,23,0.66)",
+                    borderRadius: 10,
+                    padding: "9px 10px",
+                  }}
+                >
+                  {discovered ? (
+                    <>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {entry.type === ENEMY_TYPES.NORMAL ? (
+                          <NormalEnemyFigure />
+                        ) : (
+                          <div style={createFigureStyle(entry.type)} />
+                        )}
+                        <div style={{ fontSize: 14, color: "#e2e8f0", fontWeight: 800 }}>
+                          {entry.name}
+                        </div>
                       </div>
-                    </div>
-                    <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 3 }}>{entry.description}</div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ fontSize: 14, color: "#64748b", fontWeight: 800 }}>
-                      ❓ ？？？
-                    </div>
-                    <div style={{ fontSize: 12, color: "#475569", marginTop: 3 }}>未遭遇</div>
-                  </>
-                )}
+                      <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 3 }}>{entry.description}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 14, color: "#64748b", fontWeight: 800 }}>
+                        ❓ ？？？
+                      </div>
+                      <div style={{ fontSize: 12, color: "#475569", marginTop: 3 }}>未遭遇</div>
+                    </>
+                  )}
+                </div>
               </div>
             );
           })}

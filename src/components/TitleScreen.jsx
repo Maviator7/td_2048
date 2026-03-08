@@ -30,10 +30,14 @@ export function TitleScreen({
   const [isHowToOpen, setIsHowToOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [continueMessage, setContinueMessage] = useState("");
+  const isPauseModalOpen = isHowToOpen || isSettingsOpen;
 
   return (
     <div style={{ ...centeredFullscreenLayout, background:"linear-gradient(145deg,#0b1020 0%,#1a1a2e 50%,#0f172a 100%)" }}>
-      <div style={createPanelSurface({ maxWidth: 460, padding: "22px 16px" })}>
+      <div
+        className={`title-content-shell ${isPauseModalOpen ? "title-content-paused" : ""}`.trim()}
+        style={createPanelSurface({ maxWidth: 460, padding: "22px 16px" })}
+      >
         <h1 style={{margin:"0 0 6px",fontSize:30,color:"#f1c40f",textShadow:"0 0 14px rgba(241,196,15,0.55)"}}>🗼 MERGE FORTRESS 2048</h1>
         <div style={{fontSize:14,color:"#cbd5e1",marginBottom:14}}>砲塔を合体して、押し寄せる敵を迎え撃て</div>
         <div style={{marginBottom:14,padding:"10px 12px",borderRadius:12,background:"linear-gradient(135deg,rgba(30,41,59,0.95),rgba(15,23,42,0.9))",border:"1px solid #334155"}}>

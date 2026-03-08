@@ -33,7 +33,8 @@ function loadDiscoveredEnemyTypes() {
 
 export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, bgm }) {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
-  const [roleModal, setRoleModal] = useState(null);
+  const [roleModalData, setRoleModalData] = useState(null);
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
   const [isEnemyCodexOpen, setIsEnemyCodexOpen] = useState(false);
   const [saveStatusMessage, setSaveStatusMessage] = useState("");
@@ -102,6 +103,7 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, bgm }) {
   const tileHeight = isWideDesktop ? 62 : isDesktop ? 56 : 54;
   const laneHeight = isWideDesktop ? 160 : isDesktop ? 140 : 130;
   const canEditRoles = phase === GAME_PHASES.PLAYER;
+  const isPauseModalOpen = isMenuModalOpen || isEnemyCodexOpen || isRoleModalOpen;
 
   const openRoleModal = (tile) => {
     if (!canEditRoles) {
@@ -111,11 +113,12 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, bgm }) {
       return;
     }
 
-    setRoleModal(tile);
+    setRoleModalData(tile);
+    setIsRoleModalOpen(true);
   };
 
   const closeRoleModal = () => {
-    setRoleModal(null);
+    setIsRoleModalOpen(false);
   };
 
   const refreshSaveMeta = () => {
@@ -159,11 +162,11 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, bgm }) {
   };
 
   const selectRole = (nextRole) => {
-    if (!roleModal) {
+    if (!roleModalData) {
       return;
     }
 
-    setTileRoleAt(roleModal.row, roleModal.col, nextRole);
+    setTileRoleAt(roleModalData.row, roleModalData.col, nextRole);
     closeRoleModal();
   };
 
@@ -172,14 +175,23 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, bgm }) {
   };
 
   return (
-    <div className={isLifeLossActive ? "screen-life-loss-shake" : undefined} style={gameScreenShellStyle}>
+    <div
+      className={[
+        isLifeLossActive ? "screen-life-loss-shake" : null,
+        isPauseModalOpen ? "game-screen-paused" : null,
+      ].filter(Boolean).join(" ") || undefined}
+      style={gameScreenShellStyle}
+    >
       {isLifeLossActive && (
         <>
           <div className="life-loss-overlay" key={`life-overlay-${lifeLossFxKey}`} />
           <div className="life-loss-banner" key={`life-banner-${lifeLossFxKey}`}>⚠️ -{lifeLossAmount} LIFE</div>
         </>
       )}
-      <div style={createGameScreenContentStyle(isDesktop)}>
+      <div
+        className={`game-content-shell ${isPauseModalOpen ? "game-content-paused" : ""}`.trim()}
+        style={createGameScreenContentStyle(isDesktop)}
+      >
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
           <button
             type="button"
@@ -227,10 +239,11 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, bgm }) {
       </div>
 
       <RoleSelectModal
-        key={roleModal ? `${roleModal.row}-${roleModal.col}-${roleModal.value}` : "role-modal"}
-        roleModal={roleModal}
+        isOpen={isRoleModalOpen}
+        roleModal={roleModalData}
         onClose={closeRoleModal}
         onSelectRole={selectRole}
+        onExited={() => setRoleModalData(null)}
       />
       <GameMenuModal
         isOpen={isMenuModalOpen}
