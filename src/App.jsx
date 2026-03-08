@@ -17,6 +17,7 @@ export default function MergeTowerDefense() {
     phase: game.phase,
     score: game.score,
     wave: game.wave,
+    isRankable: !game.tampered,
   });
 
   const refreshSaveMeta = useCallback(() => {

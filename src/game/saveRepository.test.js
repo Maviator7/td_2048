@@ -88,6 +88,23 @@ describe("saveRepository", () => {
     expect(saveResult).toEqual({ ok: false, reason: "invalid_snapshot" });
   });
 
+  test("rejects inconsistent enemy boss flags", () => {
+    const invalidSnapshot = createValidSnapshot();
+    invalidSnapshot.enemies[0].type = "boss";
+    invalidSnapshot.enemies[0].isBoss = false;
+
+    const saveResult = saveGameSnapshot(invalidSnapshot);
+    expect(saveResult).toEqual({ ok: false, reason: "invalid_snapshot" });
+  });
+
+  test("rejects board cells with role or damage on empty tiles", () => {
+    const invalidSnapshot = createValidSnapshot();
+    invalidSnapshot.boardState.tileRoles[0][1] = TILE_ROLE_ORDER[0];
+
+    const saveResult = saveGameSnapshot(invalidSnapshot);
+    expect(saveResult).toEqual({ ok: false, reason: "invalid_snapshot" });
+  });
+
   test("clearSavedGame removes save data", () => {
     saveGameSnapshot(createValidSnapshot());
     clearSavedGame();

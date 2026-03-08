@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { GAME_PHASES } from "../game/config";
 import { rankingRepository } from "../game/rankingRepository";
 
-export function useRankings({ phase, score, wave }) {
+export function useRankings({ phase, score, wave, isRankable = true }) {
   const rankingState = useSyncExternalStore(
     rankingRepository.subscribe,
     rankingRepository.getSnapshot,
@@ -12,13 +12,13 @@ export function useRankings({ phase, score, wave }) {
   const didPersistCurrentRunRef = useRef(false);
 
   useEffect(() => {
-    if (phase !== GAME_PHASES.GAMEOVER || didPersistCurrentRunRef.current) {
+    if (phase !== GAME_PHASES.GAMEOVER || didPersistCurrentRunRef.current || !isRankable) {
       return;
     }
 
     rankingRepository.saveEntry({ score, wave });
     didPersistCurrentRunRef.current = true;
-  }, [phase, score, wave]);
+  }, [isRankable, phase, score, wave]);
 
   const refreshRankings = useCallback(() => {
     rankingRepository.refresh();

@@ -16,6 +16,7 @@ export function useGameCoreState() {
   const [movesLeft, setMovesLeft] = useState(MOVES_PER_TURN);
   const [log, setLog] = useState([INITIAL_LOG]);
   const [roleMetrics, setRoleMetrics] = useState(createRoleMetricsState);
+  const [tampered, setTampered] = useState(false);
 
   const pushLog = useCallback((message) => {
     setLog((currentLog) => [message, ...currentLog].slice(0, 8));
@@ -64,6 +65,7 @@ export function useGameCoreState() {
       movesLeft,
       log,
       roleMetrics,
+      tampered,
     },
     setters: {
       setBoardState,
@@ -76,6 +78,7 @@ export function useGameCoreState() {
       setMovesLeft,
       setLog,
       setRoleMetrics,
+      setTampered,
       setBoard,
     },
     helpers: {

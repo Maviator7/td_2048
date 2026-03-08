@@ -1,3 +1,4 @@
+import { useCallback, useEffect } from "react";
 import { useScheduledGameEffects } from "./gameState/useScheduledGameEffects";
 import { useGameDebugActions } from "./gameState/useGameDebugActions";
 import { useRoleAssignment } from "./gameState/useRoleAssignment";
@@ -23,6 +24,7 @@ export function useGameState() {
     movesLeft,
     log,
     roleMetrics,
+    tampered,
   } = state;
   const { grid, tileDamage, tileRoles } = boardState;
 
@@ -64,6 +66,7 @@ export function useGameState() {
       tileDamage,
       tileRoles,
       wave,
+      tampered,
     },
     setters,
     helpers,
@@ -80,7 +83,7 @@ export function useGameState() {
     enemies,
   });
 
-  const createSnapshot = () => ({
+  const createSnapshot = useCallback(() => ({
     boardState: {
       grid: grid.map((row) => [...row]),
       tileDamage: tileDamage.map((row) => [...row]),
@@ -97,7 +100,23 @@ export function useGameState() {
     roleMetrics: Object.fromEntries(
       Object.entries(roleMetrics).map(([roleKey, metrics]) => [roleKey, { ...metrics }]),
     ),
-  });
+  }), [enemies, grid, lives, log, movesLeft, movesPerTurn, phase, roleMetrics, score, tileDamage, tileRoles, wave]);
+
+  useEffect(() => {
+    if (tampered) {
+      return;
+    }
+
+    if (!saveRepository.isSnapshotValid(createSnapshot())) {
+      setters.setTampered(true);
+      helpers.pushLog("🚫 不正なゲーム状態を検知: セーブ整合性チェックに失敗");
+    }
+  }, [
+    createSnapshot,
+    helpers,
+    setters,
+    tampered,
+  ]);
 
   const applySnapshot = (snapshot) => {
     const shouldNormalizeResolving = snapshot.phase === GAME_PHASES.RESOLVING;
@@ -124,6 +143,7 @@ export function useGameState() {
     setters.setPhase(nextPhase);
     setters.setMovesPerTurn(snapshot.movesPerTurn);
     setters.setMovesLeft(nextMovesLeft);
+    setters.setTampered(false);
     setters.setLog(nextLog);
     setters.setRoleMetrics(snapshot.roleMetrics);
   };
@@ -174,6 +194,7 @@ export function useGameState() {
     colPower,
     tileRoles,
     roleMetrics,
+    tampered,
     nextSpawnEnemy,
     handleTouchStart,
     handleTouchEnd,

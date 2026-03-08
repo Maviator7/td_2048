@@ -1,5 +1,5 @@
-import { GAME_PHASES, TILE_ROLE_ORDER } from "./config";
-import { COLS, INIT_LIVES, MOVES_PER_TURN, ROWS } from "./constants";
+import { ENEMY_TYPES, GAME_PHASES, TILE_ROLE_ORDER } from "./config";
+import { COLS, ENEMY_MAX_STEPS, INIT_LIVES, MOVES_PER_TURN, ROWS } from "./constants";
 
 const STORAGE_KEY = "merge-fortress-2048:save-data:v1";
 const SIGNING_PEPPER = "mf2048-save-guard::v1";
@@ -7,6 +7,42 @@ const SAVE_VERSION = 1;
 
 const GAME_PHASE_VALUES = Object.values(GAME_PHASES);
 const TILE_ROLE_SET = new Set(TILE_ROLE_ORDER);
+const ALLOWED_ENEMY_TYPES = new Set(Object.values(ENEMY_TYPES));
+const SNAPSHOT_KEYS = new Set([
+  "boardState",
+  "enemies",
+  "lives",
+  "wave",
+  "score",
+  "phase",
+  "movesPerTurn",
+  "movesLeft",
+  "log",
+  "roleMetrics",
+]);
+const BOARD_STATE_KEYS = new Set(["grid", "tileDamage", "tileRoles"]);
+const ROLE_METRIC_KEYS = new Set(["dealt", "taken", "repair"]);
+const ENEMY_KEYS = new Set([
+  "id",
+  "type",
+  "lane",
+  "hp",
+  "maxHp",
+  "armor",
+  "speed",
+  "step",
+  "isBoss",
+  "slowTurns",
+  "laneOffsetPx",
+]);
+
+function hasOnlyKeys(value, allowedKeys) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return Object.keys(value).every((key) => allowedKeys.has(key));
+}
 
 function cloneSnapshot(snapshot) {
   return {
@@ -77,7 +113,7 @@ function isPowerOfTwo(value) {
 }
 
 function isValidBoardState(boardState) {
-  if (!boardState || typeof boardState !== "object") {
+  if (!hasOnlyKeys(boardState, BOARD_STATE_KEYS)) {
     return false;
   }
 
@@ -103,6 +139,10 @@ function isValidBoardState(boardState) {
       if (role !== null && !TILE_ROLE_SET.has(role)) {
         return false;
       }
+
+      if (value === 0 && (damage !== 0 || role !== null)) {
+        return false;
+      }
     }
   }
 
@@ -110,7 +150,7 @@ function isValidBoardState(boardState) {
 }
 
 function isValidEnemy(enemy) {
-  if (!enemy || typeof enemy !== "object") {
+  if (!hasOnlyKeys(enemy, ENEMY_KEYS)) {
     return false;
   }
 
@@ -129,8 +169,14 @@ function isValidEnemy(enemy) {
   if (typeof enemy.step !== "number" || Number.isNaN(enemy.step)) {
     return false;
   }
+  if (enemy.step < -200 || enemy.step > ENEMY_MAX_STEPS + 1) {
+    return false;
+  }
 
   if (typeof enemy.speed !== "number" || enemy.speed <= 0) {
+    return false;
+  }
+  if (enemy.speed > 4) {
     return false;
   }
 
@@ -138,7 +184,16 @@ function isValidEnemy(enemy) {
     return false;
   }
 
-  if (typeof enemy.type !== "string" || typeof enemy.isBoss !== "boolean") {
+  if (typeof enemy.type !== "string" || !ALLOWED_ENEMY_TYPES.has(enemy.type) || typeof enemy.isBoss !== "boolean") {
+    return false;
+  }
+  if ((enemy.type === ENEMY_TYPES.BOSS) !== enemy.isBoss) {
+    return false;
+  }
+  if (enemy.slowTurns !== undefined && (!isNonNegativeInteger(enemy.slowTurns) || enemy.slowTurns > 10)) {
+    return false;
+  }
+  if (enemy.laneOffsetPx !== undefined && (typeof enemy.laneOffsetPx !== "number" || Number.isNaN(enemy.laneOffsetPx) || Math.abs(enemy.laneOffsetPx) > 80)) {
     return false;
   }
 
@@ -146,13 +201,16 @@ function isValidEnemy(enemy) {
 }
 
 function isValidRoleMetrics(roleMetrics) {
-  if (!roleMetrics || typeof roleMetrics !== "object") {
+  if (!roleMetrics || typeof roleMetrics !== "object" || Array.isArray(roleMetrics)) {
+    return false;
+  }
+  if (!Object.keys(roleMetrics).every((roleKey) => TILE_ROLE_SET.has(roleKey))) {
     return false;
   }
 
   return TILE_ROLE_ORDER.every((roleKey) => {
     const item = roleMetrics[roleKey];
-    if (!item || typeof item !== "object") {
+    if (!hasOnlyKeys(item, ROLE_METRIC_KEYS)) {
       return false;
     }
 
@@ -163,7 +221,7 @@ function isValidRoleMetrics(roleMetrics) {
 }
 
 function validateSnapshot(snapshot) {
-  if (!snapshot || typeof snapshot !== "object") {
+  if (!hasOnlyKeys(snapshot, SNAPSHOT_KEYS)) {
     return false;
   }
 
@@ -172,6 +230,10 @@ function validateSnapshot(snapshot) {
   }
 
   if (!Array.isArray(snapshot.enemies) || !snapshot.enemies.every((enemy) => isValidEnemy(enemy))) {
+    return false;
+  }
+  const enemyIds = snapshot.enemies.map((enemy) => enemy.id);
+  if (new Set(enemyIds).size !== enemyIds.length) {
     return false;
   }
 
@@ -301,6 +363,10 @@ export function saveGameSnapshot(snapshot) {
   };
 }
 
+export function isSnapshotValid(snapshot) {
+  return validateSnapshot(snapshot);
+}
+
 export function loadGameSnapshot() {
   const record = readRecord();
   if (!record) {
@@ -340,4 +406,5 @@ export const saveRepository = {
   load: loadGameSnapshot,
   clear: clearSavedGame,
   getMeta: getSavedGameMeta,
+  isSnapshotValid,
 };

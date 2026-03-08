@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 
 import { INIT_LIVES, INITIAL_LOG, MOVES_PER_TURN } from "../../game/constants";
-import { GAME_PHASES, getWaveStartMessage } from "../../game/config";
+import { GAME_PHASES, getEnemyReward, getWaveStartMessage } from "../../game/config";
 import { resetEnemyIds, spawnWave } from "../../game/enemies";
 import {
   applyEngineerTurnRepair,
@@ -15,6 +15,17 @@ import {
 } from "./stateHelpers";
 import { resolveCombatPhase, resolveRetaliationPhase, resolveSlideStep } from "./turnFlowHelpers";
 import { getMasterVolume, getSeVolume } from "../../audio/settings";
+
+function getGridTotal(grid) {
+  return grid.reduce(
+    (sum, row) => sum + row.reduce((rowSum, value) => rowSum + Math.max(0, value), 0),
+    0,
+  );
+}
+
+function getMaxCombatScoreGain(enemies) {
+  return enemies.reduce((sum, enemy) => sum + getEnemyReward(enemy), 0);
+}
 
 export function useGameTurnFlow({
   effects,
@@ -57,6 +68,7 @@ export function useGameTurnFlow({
     setPhase,
     setRoleMetrics,
     setScore,
+    setTampered,
     setWave,
   } = setters;
   const {
@@ -76,6 +88,12 @@ export function useGameTurnFlow({
     audio.play().catch(() => {});
   }, []);
 
+  const flagTamper = useCallback((reason) => {
+    setTampered(true);
+    setPhase(GAME_PHASES.GAMEOVER);
+    pushLog(`🚫 不正なゲーム状態を検知: ${reason}`);
+  }, [pushLog, setPhase, setTampered]);
+
   const resolveTurn = useCallback((baseGrid, currentTileDamage, currentTileRoles, currentEnemies, currentLives, currentWave) => {
     const result = resolveCombatPhase({
       grid: baseGrid,
@@ -84,6 +102,18 @@ export function useGameTurnFlow({
       enemies: currentEnemies,
       lives: currentLives,
     });
+    const maxCombatScoreGain = getMaxCombatScoreGain(currentEnemies);
+    if (
+      !Number.isInteger(result.scoreGained)
+      || result.scoreGained < 0
+      || result.scoreGained > maxCombatScoreGain
+      || !Number.isInteger(result.nextLives)
+      || result.nextLives < 0
+      || result.nextLives > currentLives
+    ) {
+      flagTamper("戦闘スコアまたはライフ遷移が不正");
+      return;
+    }
 
     effects.setAtkCols(result.attackColumns);
     effects.setDmgMap(result.damageByLane);
@@ -148,7 +178,7 @@ export function useGameTurnFlow({
         pushLog(`🔄 新ターン！残り${movesPerTurn}手`);
       }, retaliationResult.hadRetaliation ? 260 : 80);
     }, result.effectDuration);
-  }, [addRoleMetrics, effects, movesPerTurn, pushLog, pushLogs, setBoard, setEnemies, setLives, setMovesLeft, setPhase, setScore]);
+  }, [addRoleMetrics, effects, flagTamper, movesPerTurn, pushLog, pushLogs, setBoard, setEnemies, setLives, setMovesLeft, setPhase, setScore]);
 
   const handleSlide = useCallback((direction) => {
     if (phase !== GAME_PHASES.PLAYER) {
@@ -171,6 +201,11 @@ export function useGameTurnFlow({
       direction,
     });
     if (!moved) {
+      return;
+    }
+    const maxSlideScoreGain = getGridTotal(grid);
+    if (!Number.isInteger(gainedScore) || gainedScore < 0 || gainedScore > maxSlideScoreGain) {
+      flagTamper("移動スコア増分が不正");
       return;
     }
 
@@ -210,7 +245,7 @@ export function useGameTurnFlow({
     }
 
     pushLog(`残り${nextMovesLeft}手`);
-  }, [addRoleMetrics, effects, enemies, grid, lives, movesLeft, phase, playMoveSe, pushLog, resolveTurn, setBoard, setMovesLeft, setPhase, setScore, tileDamage, tileRoles, wave]);
+  }, [addRoleMetrics, effects, enemies, flagTamper, grid, lives, movesLeft, phase, playMoveSe, pushLog, resolveTurn, setBoard, setMovesLeft, setPhase, setScore, tileDamage, tileRoles, wave]);
 
   const nextWave = useCallback(() => {
     const nextWaveNumber = wave + 1;
@@ -234,13 +269,14 @@ export function useGameTurnFlow({
     setMovesPerTurn(MOVES_PER_TURN);
     setMovesLeft(MOVES_PER_TURN);
     setPhase(GAME_PHASES.PLAYER);
+    setTampered(false);
     setLog([INITIAL_LOG]);
     setRoleMetrics(createRoleMetricsState());
     effects.clearCombatEffects();
     effects.clearRetaliationEffects();
     effects.clearRepairEffects();
     effects.setMergeHL([]);
-  }, [effects, setBoard, setEnemies, setLives, setLog, setMovesLeft, setMovesPerTurn, setPhase, setRoleMetrics, setScore, setWave]);
+  }, [effects, setBoard, setEnemies, setLives, setLog, setMovesLeft, setMovesPerTurn, setPhase, setRoleMetrics, setScore, setTampered, setWave]);
 
   return {
     handleSlide,
