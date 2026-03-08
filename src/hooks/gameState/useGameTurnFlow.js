@@ -14,6 +14,7 @@ import {
   createRoleMetricsState,
 } from "./stateHelpers";
 import { resolveCombatPhase, resolveRetaliationPhase, resolveSlideStep } from "./turnFlowHelpers";
+import { getMasterVolume, getSeVolume } from "../../audio/settings";
 
 export function useGameTurnFlow({
   effects,
@@ -70,6 +71,7 @@ export function useGameTurnFlow({
       return;
     }
 
+    audio.volume = Math.min(1, Math.max(0, 0.55 * getMasterVolume() * getSeVolume()));
     audio.currentTime = 0;
     audio.play().catch(() => {});
   }, []);

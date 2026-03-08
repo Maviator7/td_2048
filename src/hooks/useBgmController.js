@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-const STORAGE_KEYS = {
-  muted: "mf2048_bgm_muted_v1",
-  volume: "mf2048_bgm_volume_v1",
-};
+import { AUDIO_STORAGE_KEYS, clampVolume, DEFAULT_AUDIO_VOLUMES, loadStoredVolume } from "../audio/settings";
 
 const TRACK_DEFS = {
   title: { src: "/audio/bgm-title.mp3", gain: 0.78 },
@@ -18,25 +14,23 @@ function loadInitialMuted() {
     return false;
   }
 
-  return window.localStorage.getItem(STORAGE_KEYS.muted) === "true";
-}
-
-function loadInitialVolume() {
-  if (typeof window === "undefined") {
-    return 0.6;
-  }
-
-  const raw = Number(window.localStorage.getItem(STORAGE_KEYS.volume));
-  if (Number.isNaN(raw)) {
-    return 0.6;
-  }
-
-  return Math.min(1, Math.max(0, raw));
+  return window.localStorage.getItem(AUDIO_STORAGE_KEYS.bgmMuted) === "true";
 }
 
 export function useBgmController({ mode }) {
   const [bgmMuted, setBgmMuted] = useState(loadInitialMuted);
-  const [bgmVolume, setBgmVolume] = useState(loadInitialVolume);
+  const [masterVolume, setMasterVolume] = useState(() => loadStoredVolume(
+    AUDIO_STORAGE_KEYS.masterVolume,
+    DEFAULT_AUDIO_VOLUMES.master,
+  ));
+  const [bgmVolume, setBgmVolume] = useState(() => loadStoredVolume(
+    AUDIO_STORAGE_KEYS.bgmVolume,
+    DEFAULT_AUDIO_VOLUMES.bgm,
+  ));
+  const [seVolume, setSeVolume] = useState(() => loadStoredVolume(
+    AUDIO_STORAGE_KEYS.seVolume,
+    DEFAULT_AUDIO_VOLUMES.se,
+  ));
   const [isUnlocked, setIsUnlocked] = useState(false);
   const tracksRef = useRef({});
   const activeTrackRef = useRef(null);
@@ -71,8 +65,8 @@ export function useBgmController({ mode }) {
       return 0;
     }
     const gain = TRACK_DEFS[trackKey]?.gain ?? 1;
-    return Math.min(1, Math.max(0, bgmVolume * gain));
-  }, [bgmMuted, bgmVolume]);
+    return clampVolume(masterVolume * bgmVolume * gain);
+  }, [bgmMuted, bgmVolume, masterVolume]);
 
   const stopFadeTimer = useCallback(() => {
     if (!fadeTimerRef.current) {
@@ -166,10 +160,6 @@ export function useBgmController({ mode }) {
   }, [isUnlocked, mode, transitionTrack]);
 
   useEffect(() => {
-    if (!isUnlocked) {
-      return;
-    }
-
     const active = activeTrackRef.current;
     if (!active) {
       return;
@@ -181,21 +171,33 @@ export function useBgmController({ mode }) {
     }
 
     audio.volume = getTargetVolume(active);
-  }, [bgmMuted, bgmVolume, getTargetVolume, isUnlocked]);
+  }, [bgmMuted, bgmVolume, getTargetVolume, isUnlocked, masterVolume]);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.muted, String(bgmMuted));
+    window.localStorage.setItem(AUDIO_STORAGE_KEYS.bgmMuted, String(bgmMuted));
   }, [bgmMuted]);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.volume, String(bgmVolume));
+    window.localStorage.setItem(AUDIO_STORAGE_KEYS.masterVolume, String(clampVolume(masterVolume)));
+  }, [masterVolume]);
+
+  useEffect(() => {
+    window.localStorage.setItem(AUDIO_STORAGE_KEYS.bgmVolume, String(clampVolume(bgmVolume)));
   }, [bgmVolume]);
+
+  useEffect(() => {
+    window.localStorage.setItem(AUDIO_STORAGE_KEYS.seVolume, String(clampVolume(seVolume)));
+  }, [seVolume]);
 
   return useMemo(() => ({
     bgmMuted,
     setBgmMuted,
+    masterVolume,
+    setMasterVolume,
     bgmVolume,
     setBgmVolume,
+    seVolume,
+    setSeVolume,
     unlockAudio,
-  }), [bgmMuted, bgmVolume, unlockAudio]);
+  }), [bgmMuted, bgmVolume, masterVolume, seVolume, unlockAudio]);
 }

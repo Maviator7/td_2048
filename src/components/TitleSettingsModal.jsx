@@ -6,9 +6,13 @@ export function TitleSettingsModal({
   isOpen,
   onClose,
   bgmMuted,
+  masterVolume,
   bgmVolume,
+  seVolume,
   onToggleBgmMute,
+  onChangeMasterVolume,
   onChangeBgmVolume,
+  onChangeSeVolume,
   onUnlockAudio,
 }) {
   const dialogRef = useRef(null);
@@ -89,41 +93,88 @@ export function TitleSettingsModal({
           </button>
         </div>
         <div id={descriptionId} style={{ fontSize: 13, color: "#94a3b8", marginBottom: 10 }}>
-          BGMの再生状態と音量を調整できます。
+          マスター、BGM、SEの音量を調整できます。
         </div>
 
-        <div style={{ border: "1px solid #334155", borderRadius: 10, padding: "9px 10px", background: "rgba(15,23,42,0.74)" }}>
+        <div style={{ border: "1px solid #334155", borderRadius: 10, padding: "9px 10px", background: "rgba(15,23,42,0.74)", marginBottom: 8 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
-            <div style={{ fontSize: 13, color: "#cbd5e1", fontWeight: 700 }}>BGM</div>
-            <button
-              type="button"
-              onClick={() => {
-                onUnlockAudio?.();
-                onToggleBgmMute?.();
-              }}
-              style={{
-                border: "1px solid #475569",
-                borderRadius: 8,
-                padding: "5px 8px",
-                background: "#0f172a",
-                color: "#e2e8f0",
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              {bgmMuted ? "🔇 OFF" : "🔊 ON"}
-            </button>
+            <div style={{ fontSize: 13, color: "#cbd5e1", fontWeight: 700 }}>MASTER</div>
+            <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 700 }}>
+              {Math.round((masterVolume ?? 0.5) * 100)}%
+            </div>
           </div>
           <input
             type="range"
             min={0}
             max={1}
             step={0.01}
-            value={bgmVolume ?? 0.6}
+            value={masterVolume ?? 0.5}
+            onChange={(event) => {
+              onUnlockAudio?.();
+              onChangeMasterVolume?.(Number(event.target.value));
+            }}
+            style={{ width: "100%" }}
+          />
+        </div>
+
+        <div style={{ border: "1px solid #334155", borderRadius: 10, padding: "9px 10px", background: "rgba(15,23,42,0.74)", marginBottom: 8 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+            <div style={{ fontSize: 13, color: "#cbd5e1", fontWeight: 700 }}>BGM</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 700 }}>
+                {Math.round((bgmVolume ?? 0.5) * 100)}%
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onUnlockAudio?.();
+                  onToggleBgmMute?.();
+                }}
+                style={{
+                  border: "1px solid #475569",
+                  borderRadius: 8,
+                  padding: "5px 8px",
+                  background: "#0f172a",
+                  color: "#e2e8f0",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {bgmMuted ? "🔇 OFF" : "🔊 ON"}
+              </button>
+            </div>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={bgmVolume ?? 0.5}
             onChange={(event) => {
               onUnlockAudio?.();
               onChangeBgmVolume?.(Number(event.target.value));
+            }}
+            style={{ width: "100%" }}
+          />
+        </div>
+
+        <div style={{ border: "1px solid #334155", borderRadius: 10, padding: "9px 10px", background: "rgba(15,23,42,0.74)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+            <div style={{ fontSize: 13, color: "#cbd5e1", fontWeight: 700 }}>SE</div>
+            <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 700 }}>
+              {Math.round((seVolume ?? 0.5) * 100)}%
+            </div>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={seVolume ?? 0.5}
+            onChange={(event) => {
+              onUnlockAudio?.();
+              onChangeSeVolume?.(Number(event.target.value));
             }}
             style={{ width: "100%" }}
           />

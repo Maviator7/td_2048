@@ -78,9 +78,13 @@ export default function MergeTowerDefense() {
         onOpenRanking={openRanking}
         topScore={rankings.topScore}
         bgmMuted={bgm.bgmMuted}
+        masterVolume={bgm.masterVolume}
         bgmVolume={bgm.bgmVolume}
+        seVolume={bgm.seVolume}
         onToggleBgmMute={() => bgm.setBgmMuted((current) => !current)}
+        onChangeMasterVolume={(nextValue) => bgm.setMasterVolume(nextValue)}
         onChangeBgmVolume={(nextValue) => bgm.setBgmVolume(nextValue)}
+        onChangeSeVolume={(nextValue) => bgm.setSeVolume(nextValue)}
         onUnlockAudio={bgm.unlockAudio}
       />
     );

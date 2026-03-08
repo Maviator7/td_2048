@@ -24,9 +24,13 @@ export function GameMenuModal({
   onBackToTitle,
   onOpenEnemyCodex,
   bgmMuted,
+  masterVolume,
   bgmVolume,
+  seVolume,
   onToggleBgmMute,
+  onChangeMasterVolume,
   onChangeBgmVolume,
+  onChangeSeVolume,
   saveMeta,
   statusMessage,
 }) {
@@ -94,31 +98,67 @@ export function GameMenuModal({
         </div>
         <div style={{ marginBottom: 8, border: "1px solid #334155", borderRadius: 10, padding: "8px 9px", background: "rgba(15,23,42,0.66)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <div style={{ fontSize: 12, color: "#cbd5e1", fontWeight: 700 }}>BGM</div>
-            <button
-              type="button"
-              onClick={onToggleBgmMute}
-              style={{
-                border: "1px solid #475569",
-                borderRadius: 8,
-                padding: "4px 8px",
-                background: "#0f172a",
-                color: "#e2e8f0",
-                fontSize: 11,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              {bgmMuted ? "🔇 OFF" : "🔊 ON"}
-            </button>
+            <div style={{ fontSize: 12, color: "#cbd5e1", fontWeight: 700 }}>MASTER</div>
+            <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700 }}>
+              {Math.round((masterVolume ?? 0.5) * 100)}%
+            </div>
           </div>
           <input
             type="range"
             min={0}
             max={1}
             step={0.01}
-            value={bgmVolume ?? 0.6}
+            value={masterVolume ?? 0.5}
+            onChange={(event) => onChangeMasterVolume?.(Number(event.target.value))}
+            style={{ width: "100%", marginBottom: 8 }}
+          />
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <div style={{ fontSize: 12, color: "#cbd5e1", fontWeight: 700 }}>BGM</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700 }}>
+                {Math.round((bgmVolume ?? 0.5) * 100)}%
+              </div>
+              <button
+                type="button"
+                onClick={onToggleBgmMute}
+                style={{
+                  border: "1px solid #475569",
+                  borderRadius: 8,
+                  padding: "4px 8px",
+                  background: "#0f172a",
+                  color: "#e2e8f0",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {bgmMuted ? "🔇 OFF" : "🔊 ON"}
+              </button>
+            </div>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={bgmVolume ?? 0.5}
             onChange={(event) => onChangeBgmVolume?.(Number(event.target.value))}
+            style={{ width: "100%", marginBottom: 8 }}
+          />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <div style={{ fontSize: 12, color: "#cbd5e1", fontWeight: 700 }}>SE</div>
+            <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700 }}>
+              {Math.round((seVolume ?? 0.5) * 100)}%
+            </div>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={seVolume ?? 0.5}
+            onChange={(event) => onChangeSeVolume?.(Number(event.target.value))}
             style={{ width: "100%" }}
           />
         </div>
