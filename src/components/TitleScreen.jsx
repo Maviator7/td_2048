@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { TitleHowToModal } from "./TitleHowToModal";
+import { TitleSettingsModal } from "./TitleSettingsModal";
 import { centeredFullscreenLayout, createPanelSurface, createPrimaryButtonStyle } from "./ui/styles";
 
 const FEATURE_CARDS = [
@@ -9,8 +10,21 @@ const FEATURE_CARDS = [
   ["🛡️ 装甲敵", "火力不足だと弾かれる"],
 ];
 
-export function TitleScreen({ onStart, onContinue, canContinue, continueMeta, onOpenRanking, topScore }) {
+export function TitleScreen({
+  onStart,
+  onContinue,
+  canContinue,
+  continueMeta,
+  onOpenRanking,
+  topScore,
+  bgmMuted,
+  bgmVolume,
+  onToggleBgmMute,
+  onChangeBgmVolume,
+  onUnlockAudio,
+}) {
   const [isHowToOpen, setIsHowToOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [continueMessage, setContinueMessage] = useState("");
 
   return (
@@ -92,6 +106,23 @@ export function TitleScreen({ onStart, onContinue, canContinue, continueMeta, on
         </button>
         <button
           type="button"
+          onClick={() => setIsSettingsOpen(true)}
+          style={createPrimaryButtonStyle({
+            marginTop: 8,
+            border: "1px solid #475569",
+            borderRadius: 10,
+            padding: "10px",
+            background: "#0f172a",
+            color: "#e2e8f0",
+            fontSize: 14,
+            fontWeight: 700,
+            boxShadow: "none",
+          })}
+        >
+          ⚙️ 設定
+        </button>
+        <button
+          type="button"
           onClick={() => setIsHowToOpen(true)}
           style={createPrimaryButtonStyle({
             marginTop: 8,
@@ -109,6 +140,15 @@ export function TitleScreen({ onStart, onContinue, canContinue, continueMeta, on
         </button>
         <div style={{marginTop:10,fontSize:12,color:"#94a3b8"}}>矢印キー / スワイプで操作</div>
       </div>
+      <TitleSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        bgmMuted={bgmMuted}
+        bgmVolume={bgmVolume}
+        onToggleBgmMute={onToggleBgmMute}
+        onChangeBgmVolume={onChangeBgmVolume}
+        onUnlockAudio={onUnlockAudio}
+      />
       <TitleHowToModal isOpen={isHowToOpen} onClose={() => setIsHowToOpen(false)} />
     </div>
   );

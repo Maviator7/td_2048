@@ -23,6 +23,10 @@ export function GameMenuModal({
   onLoad,
   onBackToTitle,
   onOpenEnemyCodex,
+  bgmMuted,
+  bgmVolume,
+  onToggleBgmMute,
+  onChangeBgmVolume,
   saveMeta,
   statusMessage,
 }) {
@@ -87,6 +91,36 @@ export function GameMenuModal({
         </div>
         <div style={{ fontSize: 12, color: "#e2e8f0", marginBottom: 8 }}>
           最終保存: {formatSavedAt(saveMeta?.savedAt)}
+        </div>
+        <div style={{ marginBottom: 8, border: "1px solid #334155", borderRadius: 10, padding: "8px 9px", background: "rgba(15,23,42,0.66)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <div style={{ fontSize: 12, color: "#cbd5e1", fontWeight: 700 }}>BGM</div>
+            <button
+              type="button"
+              onClick={onToggleBgmMute}
+              style={{
+                border: "1px solid #475569",
+                borderRadius: 8,
+                padding: "4px 8px",
+                background: "#0f172a",
+                color: "#e2e8f0",
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              {bgmMuted ? "🔇 OFF" : "🔊 ON"}
+            </button>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={bgmVolume ?? 0.6}
+            onChange={(event) => onChangeBgmVolume?.(Number(event.target.value))}
+            style={{ width: "100%" }}
+          />
         </div>
         <button
           type="button"

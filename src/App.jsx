@@ -6,7 +6,8 @@ import { TitleScreen } from "./components/TitleScreen";
 import { RankingScreen } from "./components/RankingScreen";
 import { useGameState } from "./hooks/useGameState";
 import { useRankings } from "./hooks/useRankings";
-import { GAME_PHASES } from "./game/config";
+import { ENEMY_TYPES, GAME_PHASES } from "./game/config";
+import { useBgmController } from "./hooks/useBgmController";
 
 export default function MergeTowerDefense() {
   const [screen, setScreen] = useState(APP_SCREENS.TITLE);
@@ -23,6 +24,7 @@ export default function MergeTowerDefense() {
   }, [game]);
 
   const startGame = () => {
+    bgm.unlockAudio();
     rankings.prepareForNewRun();
     game.restart();
     refreshSaveMeta();
@@ -30,6 +32,7 @@ export default function MergeTowerDefense() {
   };
 
   const continueGame = () => {
+    bgm.unlockAudio();
     const loaded = game.loadGame();
     refreshSaveMeta();
     if (!loaded.ok) {
@@ -55,6 +58,15 @@ export default function MergeTowerDefense() {
   const activeScreen = screen === APP_SCREENS.GAME && game.phase === GAME_PHASES.GAMEOVER
     ? APP_SCREENS.RANKING
     : screen;
+  const hasActiveBossEnemy = game.enemies?.some(
+    (enemy) => (enemy?.isBoss || enemy?.type === ENEMY_TYPES.BOSS) && enemy?.step > 0,
+  );
+  const isBossSpawningSoon = game.nextSpawnEnemy?.isBoss || game.nextSpawnEnemy?.type === ENEMY_TYPES.BOSS;
+  const shouldUseBossBgm = hasActiveBossEnemy || isBossSpawningSoon;
+  const bgmMode = activeScreen === APP_SCREENS.GAME
+    ? shouldUseBossBgm ? "boss" : "battle"
+    : "title";
+  const bgm = useBgmController({ mode: bgmMode });
 
   if (activeScreen === APP_SCREENS.TITLE) {
     return (
@@ -65,6 +77,11 @@ export default function MergeTowerDefense() {
         continueMeta={saveMeta.summary}
         onOpenRanking={openRanking}
         topScore={rankings.topScore}
+        bgmMuted={bgm.bgmMuted}
+        bgmVolume={bgm.bgmVolume}
+        onToggleBgmMute={() => bgm.setBgmMuted((current) => !current)}
+        onChangeBgmVolume={(nextValue) => bgm.setBgmVolume(nextValue)}
+        onUnlockAudio={bgm.unlockAudio}
       />
     );
   }
@@ -80,5 +97,12 @@ export default function MergeTowerDefense() {
     );
   }
 
-  return <GameScreen game={game} onSaveMetaUpdated={refreshSaveMeta} onBackToTitle={backToTitle} />;
+  return (
+    <GameScreen
+      game={game}
+      onSaveMetaUpdated={refreshSaveMeta}
+      onBackToTitle={backToTitle}
+      bgm={bgm}
+    />
+  );
 }

@@ -31,7 +31,7 @@ function loadDiscoveredEnemyTypes() {
   }
 }
 
-export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle }) {
+export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, bgm }) {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [roleModal, setRoleModal] = useState(null);
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
@@ -245,6 +245,10 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle }) {
           setIsMenuModalOpen(false);
           setIsEnemyCodexOpen(true);
         }}
+        bgmMuted={bgm?.bgmMuted}
+        bgmVolume={bgm?.bgmVolume}
+        onToggleBgmMute={() => bgm?.setBgmMuted((current) => !current)}
+        onChangeBgmVolume={(nextValue) => bgm?.setBgmVolume(nextValue)}
         saveMeta={saveMeta}
         statusMessage={saveStatusMessage}
       />
