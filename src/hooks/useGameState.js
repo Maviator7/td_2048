@@ -5,6 +5,8 @@ import { useGameDerivedState } from "./gameState/useGameDerivedState";
 import { useGameInput } from "./gameState/useGameInput";
 import { useGameTurnFlow } from "./gameState/useGameTurnFlow";
 import { useGameCoreState } from "./gameState/useGameCoreState";
+import { resetEnemyIds, syncEnemyIdCounter } from "../game/enemies";
+import { saveRepository } from "../game/saveRepository";
 
 export function useGameState() {
   const { state, setters, helpers } = useGameCoreState();
@@ -77,6 +79,67 @@ export function useGameState() {
     enemies,
   });
 
+  const createSnapshot = () => ({
+    boardState: {
+      grid: grid.map((row) => [...row]),
+      tileDamage: tileDamage.map((row) => [...row]),
+      tileRoles: tileRoles.map((row) => [...row]),
+    },
+    enemies: enemies.map((enemy) => ({ ...enemy })),
+    lives,
+    wave,
+    score,
+    phase,
+    movesPerTurn,
+    movesLeft,
+    log: [...log],
+    roleMetrics: Object.fromEntries(
+      Object.entries(roleMetrics).map(([roleKey, metrics]) => [roleKey, { ...metrics }]),
+    ),
+  });
+
+  const applySnapshot = (snapshot) => {
+    effects.clearScheduledTimeouts();
+    effects.clearCombatEffects();
+    effects.clearRetaliationEffects();
+    effects.clearRepairEffects();
+    effects.setMergeHL([]);
+    resetEnemyIds();
+    syncEnemyIdCounter(snapshot.enemies);
+    setters.setBoard(snapshot.boardState.grid, snapshot.boardState.tileDamage, snapshot.boardState.tileRoles);
+    setters.setEnemies(snapshot.enemies);
+    setters.setLives(snapshot.lives);
+    setters.setWave(snapshot.wave);
+    setters.setScore(snapshot.score);
+    setters.setPhase(snapshot.phase);
+    setters.setMovesPerTurn(snapshot.movesPerTurn);
+    setters.setMovesLeft(snapshot.movesLeft);
+    setters.setLog(snapshot.log);
+    setters.setRoleMetrics(snapshot.roleMetrics);
+  };
+
+  const saveGame = () => saveRepository.save(createSnapshot());
+
+  const loadGame = () => {
+    const result = saveRepository.load();
+    if (!result.ok) {
+      return result;
+    }
+
+    applySnapshot(result.snapshot);
+    return {
+      ok: true,
+      savedAt: result.savedAt,
+      summary: {
+        wave: result.snapshot.wave,
+        score: result.snapshot.score,
+        phase: result.snapshot.phase,
+      },
+    };
+  };
+
+  const getSaveMeta = () => saveRepository.getMeta();
+
   return {
     grid,
     tileDamage,
@@ -106,6 +169,9 @@ export function useGameState() {
     handleTouchEnd,
     nextWave,
     restart,
+    saveGame,
+    loadGame,
+    getSaveMeta,
     setTileRoleAt,
     debug,
   };

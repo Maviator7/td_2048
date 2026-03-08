@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { APP_SCREENS } from "./constants/screens";
 import { GameScreen } from "./components/GameScreen";
@@ -11,20 +11,39 @@ import { GAME_PHASES } from "./game/config";
 export default function MergeTowerDefense() {
   const [screen, setScreen] = useState(APP_SCREENS.TITLE);
   const game = useGameState();
+  const [saveMeta, setSaveMeta] = useState(() => game.getSaveMeta());
   const rankings = useRankings({
     phase: game.phase,
     score: game.score,
     wave: game.wave,
   });
 
+  const refreshSaveMeta = useCallback(() => {
+    setSaveMeta(game.getSaveMeta());
+  }, [game]);
+
   const startGame = () => {
     rankings.prepareForNewRun();
     game.restart();
+    refreshSaveMeta();
     setScreen(APP_SCREENS.GAME);
+  };
+
+  const continueGame = () => {
+    const loaded = game.loadGame();
+    refreshSaveMeta();
+    if (!loaded.ok) {
+      return false;
+    }
+
+    rankings.prepareForNewRun();
+    setScreen(APP_SCREENS.GAME);
+    return true;
   };
 
   const backToTitle = () => {
     rankings.dismissLatestRankingHighlight();
+    refreshSaveMeta();
     setScreen(APP_SCREENS.TITLE);
   };
 
@@ -38,7 +57,16 @@ export default function MergeTowerDefense() {
     : screen;
 
   if (activeScreen === APP_SCREENS.TITLE) {
-    return <TitleScreen onStart={startGame} onOpenRanking={openRanking} topScore={rankings.topScore} />;
+    return (
+      <TitleScreen
+        onStart={startGame}
+        onContinue={continueGame}
+        canContinue={saveMeta.exists}
+        continueMeta={saveMeta.summary}
+        onOpenRanking={openRanking}
+        topScore={rankings.topScore}
+      />
+    );
   }
 
   if (activeScreen === APP_SCREENS.RANKING) {
@@ -52,5 +80,5 @@ export default function MergeTowerDefense() {
     );
   }
 
-  return <GameScreen game={game} />;
+  return <GameScreen game={game} onSaveMetaUpdated={refreshSaveMeta} />;
 }

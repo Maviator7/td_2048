@@ -9,8 +9,9 @@ const FEATURE_CARDS = [
   ["🛡️ 装甲敵", "火力不足だと弾かれる"],
 ];
 
-export function TitleScreen({ onStart, onOpenRanking, topScore }) {
+export function TitleScreen({ onStart, onContinue, canContinue, continueMeta, onOpenRanking, topScore }) {
   const [isHowToOpen, setIsHowToOpen] = useState(false);
+  const [continueMessage, setContinueMessage] = useState("");
 
   return (
     <div style={{ ...centeredFullscreenLayout, background:"linear-gradient(145deg,#0b1020 0%,#1a1a2e 50%,#0f172a 100%)" }}>
@@ -45,6 +46,37 @@ export function TitleScreen({ onStart, onOpenRanking, topScore }) {
         >
           ▶ ゲームスタート
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            const ok = onContinue?.();
+            setContinueMessage(ok ? "" : "ロードに失敗しました（データが無効です）");
+          }}
+          disabled={!canContinue}
+          style={{
+            ...createPrimaryButtonStyle({
+              marginTop: 8,
+              border: "1px solid #315a38",
+              background: "linear-gradient(90deg,#0f2a1f 0%,#14532d 100%)",
+              color: "#dcfce7",
+              padding: "11px 10px",
+            }),
+            opacity: canContinue ? 1 : 0.45,
+            cursor: canContinue ? "pointer" : "not-allowed",
+          }}
+        >
+          ⏯ 続きから
+        </button>
+        {canContinue && continueMeta && (
+          <div style={{ marginTop: 6, fontSize: 12, color: "#86efac" }}>
+            Wave {continueMeta.wave} / Score {continueMeta.score.toLocaleString()}
+          </div>
+        )}
+        {continueMessage && (
+          <div style={{ marginTop: 6, fontSize: 12, color: "#fca5a5" }}>
+            {continueMessage}
+          </div>
+        )}
         <button
           type="button"
           onClick={onOpenRanking}

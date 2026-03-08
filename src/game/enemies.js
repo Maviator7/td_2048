@@ -72,6 +72,33 @@ export function resetEnemyIds() {
   enemyIdCounter = 0;
 }
 
+export function syncEnemyIdCounter(enemies) {
+  if (!Array.isArray(enemies) || !enemies.length) {
+    enemyIdCounter = Math.max(enemyIdCounter, 0);
+    return;
+  }
+
+  const maxId = enemies.reduce((currentMax, enemy) => {
+    if (typeof enemy?.id !== "string") {
+      return currentMax;
+    }
+
+    const matched = enemy.id.match(/^e(\d+)$/);
+    if (!matched) {
+      return currentMax;
+    }
+
+    const numericId = Number.parseInt(matched[1], 10);
+    if (Number.isNaN(numericId)) {
+      return currentMax;
+    }
+
+    return Math.max(currentMax, numericId);
+  }, -1);
+
+  enemyIdCounter = Math.max(enemyIdCounter, maxId + 1);
+}
+
 export function getQueuedEnemies(enemies) {
   return enemies.filter((enemy) => enemy.step <= 0);
 }

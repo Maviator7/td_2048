@@ -3,15 +3,19 @@ import { useEffect, useRef, useState } from "react";
 import { GAME_PHASES, canSelectRoleByTileValue } from "../game/config";
 import { GameBoardSection } from "./GameBoardSection";
 import { GameHeader } from "./GameHeader";
+import { GameMenuModal } from "./GameMenuModal";
 import { RoleSelectModal } from "./RoleSelectModal";
 import {
   createGameScreenContentStyle,
   gameScreenShellStyle,
 } from "./ui/styles";
 
-export function GameScreen({ game }) {
+export function GameScreen({ game, onSaveMetaUpdated }) {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [roleModal, setRoleModal] = useState(null);
+  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
+  const [saveStatusMessage, setSaveStatusMessage] = useState("");
+  const [saveMeta, setSaveMeta] = useState(() => game.getSaveMeta());
   const isDebugMode = import.meta.env.VITE_ENABLE_DEBUG_PANEL === "true";
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(() => isDebugMode);
   const [debugBoostTarget, setDebugBoostTarget] = useState({ row: 0, col: 0 });
@@ -72,6 +76,46 @@ export function GameScreen({ game }) {
     setRoleModal(null);
   };
 
+  const refreshSaveMeta = () => {
+    const nextMeta = game.getSaveMeta();
+    setSaveMeta(nextMeta);
+    onSaveMetaUpdated?.();
+    return nextMeta;
+  };
+
+  const openMenuModal = () => {
+    refreshSaveMeta();
+    setSaveStatusMessage("");
+    setIsMenuModalOpen(true);
+  };
+
+  const closeMenuModal = () => {
+    setIsMenuModalOpen(false);
+  };
+
+  const handleSaveGame = () => {
+    const result = game.saveGame();
+    if (!result.ok) {
+      setSaveStatusMessage("セーブに失敗しました。");
+      return;
+    }
+
+    refreshSaveMeta();
+    setSaveStatusMessage(`保存しました（Wave ${result.summary.wave} / Score ${result.summary.score.toLocaleString()}）`);
+  };
+
+  const handleLoadGame = () => {
+    const result = game.loadGame();
+    if (!result.ok) {
+      setSaveStatusMessage("ロードに失敗しました（データ破損または改ざんを検知）。");
+      refreshSaveMeta();
+      return;
+    }
+
+    refreshSaveMeta();
+    setSaveStatusMessage(`ロードしました（Wave ${result.summary.wave} / Score ${result.summary.score.toLocaleString()}）`);
+  };
+
   const selectRole = (nextRole) => {
     if (!roleModal) {
       return;
@@ -94,6 +138,24 @@ export function GameScreen({ game }) {
         </>
       )}
       <div style={createGameScreenContentStyle(isDesktop)}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+          <button
+            type="button"
+            onClick={openMenuModal}
+            style={{
+              border: "1px solid #334155",
+              borderRadius: 10,
+              padding: "8px 12px",
+              background: "rgba(15,23,42,0.92)",
+              color: "#e2e8f0",
+              fontWeight: 800,
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            ☰ メニュー
+          </button>
+        </div>
         <GameHeader
           lives={lives}
           wave={wave}
@@ -127,6 +189,14 @@ export function GameScreen({ game }) {
         roleModal={roleModal}
         onClose={closeRoleModal}
         onSelectRole={selectRole}
+      />
+      <GameMenuModal
+        isOpen={isMenuModalOpen}
+        onClose={closeMenuModal}
+        onSave={handleSaveGame}
+        onLoad={handleLoadGame}
+        saveMeta={saveMeta}
+        statusMessage={saveStatusMessage}
       />
     </div>
   );
