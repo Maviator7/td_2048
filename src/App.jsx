@@ -80,5 +80,5 @@ export default function MergeTowerDefense() {
     );
   }
 
-  return <GameScreen game={game} onSaveMetaUpdated={refreshSaveMeta} />;
+  return <GameScreen game={game} onSaveMetaUpdated={refreshSaveMeta} onBackToTitle={backToTitle} />;
 }

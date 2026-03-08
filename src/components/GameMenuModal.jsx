@@ -21,6 +21,7 @@ export function GameMenuModal({
   onClose,
   onSave,
   onLoad,
+  onBackToTitle,
   onOpenEnemyCodex,
   saveMeta,
   statusMessage,
@@ -130,6 +131,19 @@ export function GameMenuModal({
           }}
         >
           📂 ロード
+        </button>
+        <button
+          type="button"
+          onClick={onBackToTitle}
+          style={createPrimaryButtonStyle({
+            marginTop: 8,
+            background: "linear-gradient(90deg,#7f1d1d 0%,#991b1b 100%)",
+            color: "#fee2e2",
+            fontSize: 15,
+            padding: "10px 10px",
+          })}
+        >
+          🏠 タイトルへ戻る
         </button>
         {statusMessage && (
           <div style={{ marginTop: 10, fontSize: 12, color: "#f8fafc", minHeight: 18 }}>

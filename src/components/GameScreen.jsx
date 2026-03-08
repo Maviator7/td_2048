@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { GAME_PHASES, canSelectRoleByTileValue } from "../game/config";
 import { GameBoardSection } from "./GameBoardSection";
@@ -31,14 +31,14 @@ function loadDiscoveredEnemyTypes() {
   }
 }
 
-export function GameScreen({ game, onSaveMetaUpdated }) {
+export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle }) {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [roleModal, setRoleModal] = useState(null);
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
   const [isEnemyCodexOpen, setIsEnemyCodexOpen] = useState(false);
   const [saveStatusMessage, setSaveStatusMessage] = useState("");
   const [saveMeta, setSaveMeta] = useState(() => game.getSaveMeta());
-  const [discoveredEnemyTypes, setDiscoveredEnemyTypes] = useState(loadDiscoveredEnemyTypes);
+  const initialDiscoveredEnemyTypes = useMemo(() => loadDiscoveredEnemyTypes(), []);
   const isDebugMode = import.meta.env.VITE_ENABLE_DEBUG_PANEL === "true";
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(() => isDebugMode);
   const [debugBoostTarget, setDebugBoostTarget] = useState({ row: 0, col: 0 });
@@ -79,32 +79,23 @@ export function GameScreen({ game, onSaveMetaUpdated }) {
     return undefined;
   }, [lives]);
 
-  useEffect(() => {
-    if (!enemies?.length) {
-      return;
-    }
-
-    setDiscoveredEnemyTypes((current) => {
-      const nextSet = new Set(current);
-      enemies.forEach((enemy) => {
-        if (enemy?.type) {
-          nextSet.add(enemy.type);
-        }
-      });
-      const next = Array.from(nextSet);
-      if (next.length === current.length) {
-        return current;
+  const discoveredEnemyTypes = useMemo(() => {
+    const nextSet = new Set(initialDiscoveredEnemyTypes);
+    enemies.forEach((enemy) => {
+      if (enemy?.type) {
+        nextSet.add(enemy.type);
       }
-
-      try {
-        window.localStorage.setItem(ENEMY_CODEX_STORAGE_KEY, JSON.stringify(next));
-      } catch {
-        // Ignore storage failures and keep runtime state.
-      }
-
-      return next;
     });
-  }, [enemies]);
+    return Array.from(nextSet);
+  }, [enemies, initialDiscoveredEnemyTypes]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(ENEMY_CODEX_STORAGE_KEY, JSON.stringify(discoveredEnemyTypes));
+    } catch {
+      // Ignore storage failures and keep runtime state.
+    }
+  }, [discoveredEnemyTypes]);
 
   const isDesktop = viewportWidth >= 768;
   const isWideDesktop = viewportWidth >= 1200;
@@ -246,6 +237,10 @@ export function GameScreen({ game, onSaveMetaUpdated }) {
         onClose={closeMenuModal}
         onSave={handleSaveGame}
         onLoad={handleLoadGame}
+        onBackToTitle={() => {
+          setIsMenuModalOpen(false);
+          onBackToTitle?.();
+        }}
         onOpenEnemyCodex={() => {
           setIsMenuModalOpen(false);
           setIsEnemyCodexOpen(true);
