@@ -5,6 +5,7 @@ import { useGameDerivedState } from "./gameState/useGameDerivedState";
 import { useGameInput } from "./gameState/useGameInput";
 import { useGameTurnFlow } from "./gameState/useGameTurnFlow";
 import { useGameCoreState } from "./gameState/useGameCoreState";
+import { GAME_PHASES } from "../game/config";
 import { resetEnemyIds, syncEnemyIdCounter } from "../game/enemies";
 import { saveRepository } from "../game/saveRepository";
 
@@ -99,6 +100,15 @@ export function useGameState() {
   });
 
   const applySnapshot = (snapshot) => {
+    const shouldNormalizeResolving = snapshot.phase === GAME_PHASES.RESOLVING;
+    const nextPhase = shouldNormalizeResolving ? GAME_PHASES.PLAYER : snapshot.phase;
+    const nextMovesLeft = shouldNormalizeResolving
+      ? Math.max(1, snapshot.movesPerTurn)
+      : snapshot.movesLeft;
+    const nextLog = shouldNormalizeResolving
+      ? ["📂 ロード: 解決中ターンを安全に再開しました。", ...snapshot.log].slice(0, 8)
+      : snapshot.log;
+
     effects.clearScheduledTimeouts();
     effects.clearCombatEffects();
     effects.clearRetaliationEffects();
@@ -111,10 +121,10 @@ export function useGameState() {
     setters.setLives(snapshot.lives);
     setters.setWave(snapshot.wave);
     setters.setScore(snapshot.score);
-    setters.setPhase(snapshot.phase);
+    setters.setPhase(nextPhase);
     setters.setMovesPerTurn(snapshot.movesPerTurn);
-    setters.setMovesLeft(snapshot.movesLeft);
-    setters.setLog(snapshot.log);
+    setters.setMovesLeft(nextMovesLeft);
+    setters.setLog(nextLog);
     setters.setRoleMetrics(snapshot.roleMetrics);
   };
 
