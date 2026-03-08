@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const WAVE_TRANSITION_DELAY_MS = 260;
+const WAVE_TRANSITION_DELAY_MS = 840;
 
 export function WaveClearBanner({ wave, onNextWave }) {
   const [isEngaging, setIsEngaging] = useState(false);
@@ -26,6 +26,12 @@ export function WaveClearBanner({ wave, onNextWave }) {
       key={`wave-clear-${wave}`}
     >
       {isEngaging && <div className="wave-engage-flash" aria-hidden="true" />}
+      {isEngaging && (
+        <div className="wave-engage-overlay" aria-hidden="true">
+          <div className="wave-engage-streaks" />
+          <div className="wave-engage-label">WAVE {wave + 1}</div>
+        </div>
+      )}
       <div className="wave-clear-confetti" aria-hidden="true">
         {Array.from({ length: 14 }).map((_, index) => (
           <span
@@ -45,8 +51,12 @@ export function WaveClearBanner({ wave, onNextWave }) {
       <div style={{ fontSize: 12, color: "#d5e9da", marginTop: 3, marginBottom: 8 }}>
         次のウェーブへ進めます
       </div>
-      <button className="wave-next-btn" onClick={handleNextWave} disabled={isEngaging}>
-        ▶ 次のウェーブへ進む (Wave {wave + 1})
+      <button
+        className={`wave-next-btn ${isEngaging ? "wave-next-btn-engaging" : ""}`}
+        onClick={handleNextWave}
+        disabled={isEngaging}
+      >
+        {isEngaging ? `▶ 進軍中... (Wave ${wave + 1})` : `▶ 次のウェーブへ進む (Wave ${wave + 1})`}
       </button>
     </div>
   );

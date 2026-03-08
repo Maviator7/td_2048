@@ -186,7 +186,7 @@ body {
 }
 
 .wave-clear-engaging {
-  animation: wave-clear-engage-shift 280ms ease forwards;
+  animation: wave-clear-engage-shift 840ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .wave-engage-flash {
@@ -196,12 +196,58 @@ body {
   pointer-events: none;
   background:
     radial-gradient(circle at 50% 52%, rgba(134, 239, 172, 0.28), rgba(74, 222, 128, 0.1) 42%, transparent 72%);
-  animation: wave-engage-flash 280ms ease-out forwards;
+  animation: wave-engage-flash 840ms ease-out forwards;
+}
+
+.wave-engage-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 58%, rgba(74, 222, 128, 0.2), rgba(74, 222, 128, 0.05) 32%, transparent 64%),
+    linear-gradient(180deg, rgba(11, 15, 26, 0.1), rgba(11, 15, 26, 0.5));
+  animation: wave-engage-overlay-fade 840ms ease-out forwards;
+}
+
+.wave-engage-streaks {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      98deg,
+      rgba(167, 243, 208, 0) 0,
+      rgba(167, 243, 208, 0) 14px,
+      rgba(167, 243, 208, 0.2) 15px,
+      rgba(167, 243, 208, 0) 18px
+    );
+  transform: translateX(-12%);
+  animation: wave-engage-streak-flow 840ms ease-out forwards;
+}
+
+.wave-engage-label {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  color: #dcfce7;
+  font-size: clamp(22px, 5vw, 34px);
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-shadow: 0 0 18px rgba(74, 222, 128, 0.52);
+  animation: wave-engage-label-pop 840ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .wave-next-btn:disabled {
   cursor: default;
   opacity: 0.78;
+}
+
+.wave-next-btn-engaging {
+  filter: brightness(1.06);
+  box-shadow:
+    0 0 0 1px rgba(167, 243, 208, 0.4) inset,
+    0 10px 24px rgba(74, 222, 128, 0.34);
 }
 
 h1 {
@@ -459,7 +505,7 @@ button:focus-visible {
   0% {
     opacity: 0;
   }
-  30% {
+  28% {
     opacity: 1;
   }
   100% {
@@ -473,8 +519,52 @@ button:focus-visible {
     opacity: 1;
   }
   100% {
-    transform: translateY(-6px) scale(0.994);
-    opacity: 0.9;
+    transform: translateY(-18px) scale(0.962);
+    filter: saturate(1.14) brightness(1.08);
+    opacity: 0.82;
+  }
+}
+
+@keyframes wave-engage-overlay-fade {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes wave-engage-streak-flow {
+  0% {
+    opacity: 0;
+    transform: translateX(-16%) scale(1.04);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(9%) scale(1);
+  }
+}
+
+@keyframes wave-engage-label-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -30%) scale(1.2);
+    filter: blur(4px);
+  }
+  24% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -58%) scale(0.97);
   }
 }
 
@@ -749,6 +839,9 @@ button:focus-visible {
   .codex-entry-stagger,
   .wave-clear-engaging,
   .wave-engage-flash,
+  .wave-engage-overlay,
+  .wave-engage-streaks,
+  .wave-engage-label,
   .life-loss-overlay,
   .life-loss-banner,
   .hud-life-loss-pulse,
