@@ -1,10 +1,45 @@
-import { memo } from "react";
+import { memo, useEffect, useRef } from "react";
+import { getMasterVolume, getSeVolume } from "../audio/settings";
 
 export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEnemy, laneColors, laneNames }) {
+  const bossAlertSeRef = useRef(null);
+  const lastAlertedBossIdRef = useRef(null);
   const isBossNext = Boolean(nextSpawnEnemy?.isBoss);
   const isFastNext = nextSpawnEnemy?.type === "fast";
   const isSplitterNext = nextSpawnEnemy?.type === "splitter";
   const isSplitChildNext = nextSpawnEnemy?.type === "split_child";
+
+  useEffect(() => {
+    const audio = new Audio("/se/boss_alert.mp3");
+    audio.preload = "auto";
+    bossAlertSeRef.current = audio;
+
+    return () => {
+      audio.pause();
+      bossAlertSeRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isBossNext || !nextSpawnEnemy?.id) {
+      return;
+    }
+
+    if (lastAlertedBossIdRef.current === nextSpawnEnemy.id) {
+      return;
+    }
+
+    lastAlertedBossIdRef.current = nextSpawnEnemy.id;
+    const audio = bossAlertSeRef.current;
+    if (!audio) {
+      return;
+    }
+
+    audio.volume = Math.min(1, Math.max(0, 0.7 * getMasterVolume() * getSeVolume()));
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }, [isBossNext, nextSpawnEnemy?.id]);
+
   const nextLaneColor = nextSpawnEnemy ? laneColors[nextSpawnEnemy.lane] : "#1e2a3a";
   const typeAccentColor = isBossNext
     ? "#f1c40f"
