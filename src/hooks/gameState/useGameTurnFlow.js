@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { INIT_LIVES, INITIAL_LOG, MOVES_PER_TURN } from "../../game/constants";
 import { GAME_PHASES, getWaveStartMessage } from "../../game/config";
@@ -21,6 +21,20 @@ export function useGameTurnFlow({
   setters,
   helpers,
 }) {
+  const moveSeRef = useRef(null);
+
+  useEffect(() => {
+    const audio = new Audio("/se/move_tile.mp3");
+    audio.preload = "auto";
+    audio.volume = 0.55;
+    moveSeRef.current = audio;
+
+    return () => {
+      audio.pause();
+      moveSeRef.current = null;
+    };
+  }, []);
+
   const {
     enemies,
     grid,
@@ -49,6 +63,16 @@ export function useGameTurnFlow({
     pushLog,
     pushLogs,
   } = helpers;
+
+  const playMoveSe = useCallback(() => {
+    const audio = moveSeRef.current;
+    if (!audio) {
+      return;
+    }
+
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }, []);
 
   const resolveTurn = useCallback((baseGrid, currentTileDamage, currentTileRoles, currentEnemies, currentLives, currentWave) => {
     const result = resolveCombatPhase({
@@ -148,6 +172,7 @@ export function useGameTurnFlow({
       return;
     }
 
+    playMoveSe();
     setBoard(nextTurnGrid, nextTurnTileDamage, nextTurnTileRoles);
     if (repairedAmount > 0) {
       effects.setRepairHighlights(repairedCells);
@@ -183,7 +208,7 @@ export function useGameTurnFlow({
     }
 
     pushLog(`残り${nextMovesLeft}手`);
-  }, [addRoleMetrics, effects, enemies, grid, lives, movesLeft, phase, pushLog, resolveTurn, setBoard, setMovesLeft, setPhase, setScore, tileDamage, tileRoles, wave]);
+  }, [addRoleMetrics, effects, enemies, grid, lives, movesLeft, phase, playMoveSe, pushLog, resolveTurn, setBoard, setMovesLeft, setPhase, setScore, tileDamage, tileRoles, wave]);
 
   const nextWave = useCallback(() => {
     const nextWaveNumber = wave + 1;
