@@ -48,6 +48,7 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanki
   const [lifeLossFxKey, setLifeLossFxKey] = useState(0);
   const prevLivesRef = useRef(game.lives);
   const lifeLossSeRef = useRef(null);
+  const lifeLossSeFallbackRef = useRef(null);
 
   const {
     lives,
@@ -71,10 +72,16 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanki
     audio.preload = "auto";
     audio.volume = 0.72;
     lifeLossSeRef.current = audio;
+    const fallbackAudio = new Audio("/se/move_tile.mp3");
+    fallbackAudio.preload = "auto";
+    fallbackAudio.volume = 0.5;
+    lifeLossSeFallbackRef.current = fallbackAudio;
 
     return () => {
       audio.pause();
       lifeLossSeRef.current = null;
+      fallbackAudio.pause();
+      lifeLossSeFallbackRef.current = null;
     };
   }, []);
 
@@ -85,12 +92,22 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanki
       setLifeLossFxKey((current) => current + 1);
       setIsLifeLossActive(true);
       const seAudio = lifeLossSeRef.current;
+      const fallbackAudio = lifeLossSeFallbackRef.current;
       if (seAudio) {
         const masterVolume = Math.min(1, Math.max(0, Number(bgm?.masterVolume ?? 0.5)));
         const seVolume = Math.min(1, Math.max(0, Number(bgm?.seVolume ?? 0.7)));
-        seAudio.volume = Math.min(1, Math.max(0, 0.72 * masterVolume * seVolume));
+        const targetVolume = Math.min(1, Math.max(0, 0.72 * masterVolume * seVolume));
+        const fallbackVolume = Math.min(1, Math.max(0, 0.5 * masterVolume * seVolume));
+        seAudio.volume = targetVolume;
         seAudio.currentTime = 0;
-        seAudio.play().catch(() => {});
+        seAudio.play().catch(() => {
+          if (!fallbackAudio) {
+            return;
+          }
+          fallbackAudio.volume = fallbackVolume;
+          fallbackAudio.currentTime = 0;
+          fallbackAudio.play().catch(() => {});
+        });
       }
       const timeoutId = window.setTimeout(() => setIsLifeLossActive(false), 900);
       prevLivesRef.current = lives;

@@ -36,6 +36,8 @@ export function useGameTurnFlow({
   const moveSeRef = useRef(null);
   const attackSeRef = useRef(null);
   const attackSeFallbackRef = useRef(null);
+  const waveClearSeRef = useRef(null);
+  const waveClearSeFallbackRef = useRef(null);
 
   useEffect(() => {
     const audio = new Audio("/se/move_tile.mp3");
@@ -53,6 +55,16 @@ export function useGameTurnFlow({
     attackFallbackAudio.volume = 0.5;
     attackSeFallbackRef.current = attackFallbackAudio;
 
+    const waveClearAudio = new Audio("/se/wave_clear.mp3");
+    waveClearAudio.preload = "auto";
+    waveClearAudio.volume = 0.7;
+    waveClearSeRef.current = waveClearAudio;
+
+    const waveClearFallbackAudio = new Audio("/se/move_tile.mp3");
+    waveClearFallbackAudio.preload = "auto";
+    waveClearFallbackAudio.volume = 0.5;
+    waveClearSeFallbackRef.current = waveClearFallbackAudio;
+
     return () => {
       audio.pause();
       moveSeRef.current = null;
@@ -60,6 +72,10 @@ export function useGameTurnFlow({
       attackSeRef.current = null;
       attackFallbackAudio.pause();
       attackSeFallbackRef.current = null;
+      waveClearAudio.pause();
+      waveClearSeRef.current = null;
+      waveClearFallbackAudio.pause();
+      waveClearSeFallbackRef.current = null;
     };
   }, []);
 
@@ -133,6 +149,33 @@ export function useGameTurnFlow({
     fallbackAudio.play().catch(() => {});
   }, []);
 
+  const playWaveClearSe = useCallback(() => {
+    const audio = waveClearSeRef.current;
+    const fallbackAudio = waveClearSeFallbackRef.current;
+    if (!audio) {
+      if (!fallbackAudio) {
+        return;
+      }
+      fallbackAudio.volume = Math.min(1, Math.max(0, 0.5 * getMasterVolume() * getSeVolume()));
+      fallbackAudio.currentTime = 0;
+      fallbackAudio.play().catch(() => {});
+      return;
+    }
+
+    const targetVolume = Math.min(1, Math.max(0, 0.7 * getMasterVolume() * getSeVolume()));
+    const fallbackVolume = Math.min(1, Math.max(0, 0.5 * getMasterVolume() * getSeVolume()));
+    audio.volume = targetVolume;
+    audio.currentTime = 0;
+    audio.play().catch(() => {
+      if (!fallbackAudio) {
+        return;
+      }
+      fallbackAudio.volume = fallbackVolume;
+      fallbackAudio.currentTime = 0;
+      fallbackAudio.play().catch(() => {});
+    });
+  }, []);
+
   const flagTamper = useCallback((reason) => {
     setTampered(true);
     setPhase(GAME_PHASES.GAMEOVER);
@@ -190,6 +233,7 @@ export function useGameTurnFlow({
         addRoleMetrics(buildRoleMetricDeltaFromCells(engineerRepairResult.repairedCells, "repair"));
         pushLog(`🛠️ 整備士修復 +${engineerRepairResult.repairedAmount}`);
       }
+      playWaveClearSe();
       setPhase(GAME_PHASES.WAVECLEAR);
       pushLog(`🎉 Wave ${currentWave} クリア！`);
       return;
@@ -226,7 +270,7 @@ export function useGameTurnFlow({
         pushLog(`🔄 新ターン！残り${movesPerTurn}手`);
       }, retaliationResult.hadRetaliation ? 260 : 80);
     }, result.effectDuration);
-  }, [addRoleMetrics, effects, flagTamper, movesPerTurn, playAttackSe, pushLog, pushLogs, setBoard, setEnemies, setLives, setMovesLeft, setPhase, setScore]);
+  }, [addRoleMetrics, effects, flagTamper, movesPerTurn, playAttackSe, playWaveClearSe, pushLog, pushLogs, setBoard, setEnemies, setLives, setMovesLeft, setPhase, setScore]);
 
   const handleSlide = useCallback((direction) => {
     if (phase !== GAME_PHASES.PLAYER) {
