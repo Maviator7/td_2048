@@ -20,8 +20,6 @@ function formatSavedAt(savedAt) {
 export function GameMenuModal({
   isOpen,
   onClose,
-  onSave,
-  onLoad,
   onBackToTitle,
   onOpenEnemyCodex,
   bgmMuted,
@@ -33,7 +31,6 @@ export function GameMenuModal({
   onChangeBgmVolume,
   onChangeSeVolume,
   saveMeta,
-  statusMessage,
 }) {
   const dialogRef = useRef(null);
   const titleId = useId();
@@ -95,7 +92,7 @@ export function GameMenuModal({
           ゲームメニュー
         </div>
         <div id={descId} style={{ fontSize: 13, color: "#94a3b8", marginBottom: 12, lineHeight: 1.5 }}>
-          セーブデータは署名付きで保存され、読み込み時に整合性を検証します。
+          オートセーブは1手ごととターン解決後に実行されます。
         </div>
         <div style={{ fontSize: 12, color: "#e2e8f0", marginBottom: 8 }}>
           最終保存: {formatSavedAt(saveMeta?.savedAt)}
@@ -181,37 +178,6 @@ export function GameMenuModal({
         </button>
         <button
           type="button"
-          onClick={onSave}
-          style={createPrimaryButtonStyle({
-            marginTop: 8,
-            background: "linear-gradient(90deg,#0ea5e9 0%,#0284c7 100%)",
-            color: "#f8fafc",
-            fontSize: 15,
-            padding: "10px 10px",
-          })}
-        >
-          💾 セーブ
-        </button>
-        <button
-          type="button"
-          onClick={onLoad}
-          disabled={!saveMeta?.exists}
-          style={{
-            ...createPrimaryButtonStyle({
-              marginTop: 8,
-              background: "linear-gradient(90deg,#14532d 0%,#166534 100%)",
-              color: "#dcfce7",
-              fontSize: 15,
-              padding: "10px 10px",
-            }),
-            opacity: saveMeta?.exists ? 1 : 0.45,
-            cursor: saveMeta?.exists ? "pointer" : "not-allowed",
-          }}
-        >
-          📂 ロード
-        </button>
-        <button
-          type="button"
           onClick={onBackToTitle}
           style={createPrimaryButtonStyle({
             marginTop: 8,
@@ -223,11 +189,6 @@ export function GameMenuModal({
         >
           🏠 タイトルへ戻る
         </button>
-        {statusMessage && (
-          <div style={{ marginTop: 10, fontSize: 12, color: "#f8fafc", minHeight: 18 }}>
-            {statusMessage}
-          </div>
-        )}
         <button
           type="button"
           onClick={onClose}

@@ -38,7 +38,6 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanki
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
   const [isEnemyCodexOpen, setIsEnemyCodexOpen] = useState(false);
-  const [saveStatusMessage, setSaveStatusMessage] = useState("");
   const [saveMeta, setSaveMeta] = useState(() => game.getSaveMeta());
   const initialDiscoveredEnemyTypes = useMemo(() => loadDiscoveredEnemyTypes(), []);
   const isDebugMode = import.meta.env.VITE_ENABLE_DEBUG_PANEL === "true";
@@ -135,35 +134,11 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanki
       return;
     }
     refreshSaveMeta();
-    setSaveStatusMessage("");
     setIsMenuModalOpen(true);
   };
 
   const closeMenuModal = () => {
     setIsMenuModalOpen(false);
-  };
-
-  const handleSaveGame = () => {
-    const result = game.saveGame();
-    if (!result.ok) {
-      setSaveStatusMessage("セーブに失敗しました。");
-      return;
-    }
-
-    refreshSaveMeta();
-    setSaveStatusMessage(`保存しました（Wave ${result.summary.wave} / Score ${result.summary.score.toLocaleString()}）`);
-  };
-
-  const handleLoadGame = () => {
-    const result = game.loadGame();
-    if (!result.ok) {
-      setSaveStatusMessage("ロードに失敗しました（データ破損または改ざんを検知）。");
-      refreshSaveMeta();
-      return;
-    }
-
-    refreshSaveMeta();
-    setSaveStatusMessage(`ロードしました（Wave ${result.summary.wave} / Score ${result.summary.score.toLocaleString()}）`);
   };
 
   const selectRole = (nextRole) => {
@@ -255,8 +230,6 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanki
       <GameMenuModal
         isOpen={isMenuModalOpen}
         onClose={closeMenuModal}
-        onSave={handleSaveGame}
-        onLoad={handleLoadGame}
         onBackToTitle={() => {
           setIsMenuModalOpen(false);
           onBackToTitle?.();
@@ -274,7 +247,6 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanki
         onChangeBgmVolume={(nextValue) => bgm?.setBgmVolume(nextValue)}
         onChangeSeVolume={(nextValue) => bgm?.setSeVolume(nextValue)}
         saveMeta={saveMeta}
-        statusMessage={saveStatusMessage}
       />
       <EnemyCodexModal
         isOpen={isEnemyCodexOpen}
