@@ -128,10 +128,11 @@ export function useGameState() {
     }
 
     const wasResolving = prevPhaseRef.current === GAME_PHASES.RESOLVING;
+    const wasWaveClear = prevPhaseRef.current === GAME_PHASES.WAVECLEAR;
     const enteredPlayer = phase === GAME_PHASES.PLAYER;
     prevPhaseRef.current = phase;
 
-    if (tampered || !wasResolving || !enteredPlayer) {
+    if (tampered || (!wasResolving && !wasWaveClear) || !enteredPlayer) {
       return;
     }
 

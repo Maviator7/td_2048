@@ -230,6 +230,7 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
   }
 
   const defeatedEnemies = nextEnemies.filter((enemy) => enemy.hp <= 0);
+  const bossDefeated = defeatedEnemies.some((enemy) => enemy.isBoss || enemy.type === ENEMY_TYPES.BOSS);
   const spawnedChildren = [];
   defeatedEnemies.forEach((enemy) => {
     const reward = getEnemyReward(enemy);
@@ -281,6 +282,7 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
   return {
     nextEnemies,
     nextLives,
+    bossDefeated,
     scoreGained,
     attackColumns,
     damageByLane,

@@ -27,6 +27,8 @@ function getMaxCombatScoreGain(enemies) {
   return enemies.reduce((sum, enemy) => sum + getEnemyReward(enemy), 0);
 }
 
+const AUTO_NEXT_WAVE_DELAY_MS = 3840;
+
 export function useGameTurnFlow({
   effects,
   state,
@@ -226,16 +228,28 @@ export function useGameTurnFlow({
       return;
     }
 
-    if (result.nextEnemies.length === 0) {
+    if (result.bossDefeated || result.nextEnemies.length === 0) {
       const engineerRepairResult = applyEngineerTurnRepair(baseGrid, currentTileDamage, currentTileRoles);
       if (engineerRepairResult.repairedAmount > 0) {
         setBoard(engineerRepairResult.grid, engineerRepairResult.tileDamage, engineerRepairResult.tileRoles);
         addRoleMetrics(buildRoleMetricDeltaFromCells(engineerRepairResult.repairedCells, "repair"));
         pushLog(`🛠️ 整備士修復 +${engineerRepairResult.repairedAmount}`);
       }
+      if (result.bossDefeated) {
+        setEnemies([]);
+      }
       playWaveClearSe();
       setPhase(GAME_PHASES.WAVECLEAR);
       pushLog(`🎉 Wave ${currentWave} クリア！`);
+      effects.scheduleTimeout(() => {
+        const nextWaveNumber = currentWave + 1;
+        setWave(nextWaveNumber);
+        setEnemies(spawnWave(nextWaveNumber - 1));
+        setMovesLeft(movesPerTurn);
+        setPhase(GAME_PHASES.PLAYER);
+        effects.clearCombatEffects();
+        pushLog(getWaveStartMessage(nextWaveNumber));
+      }, AUTO_NEXT_WAVE_DELAY_MS);
       return;
     }
 

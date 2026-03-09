@@ -1,24 +1,19 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
-const WAVE_TRANSITION_DELAY_MS = 840;
+const WAVE_TRANSITION_TOTAL_DELAY_MS = 3840;
+const WAVE_TRANSITION_ANIMATION_MS = 840;
 
-export function WaveClearBanner({ wave, onNextWave }) {
+export function WaveClearBanner({ wave }) {
   const [isEngaging, setIsEngaging] = useState(false);
-  const timerRef = useRef(null);
 
-  useEffect(() => () => window.clearTimeout(timerRef.current), []);
+  useEffect(() => {
+    setIsEngaging(false);
+    const engageTimer = window.setTimeout(() => {
+      setIsEngaging(true);
+    }, WAVE_TRANSITION_TOTAL_DELAY_MS - WAVE_TRANSITION_ANIMATION_MS);
 
-  const handleNextWave = () => {
-    if (isEngaging) {
-      return;
-    }
-
-    setIsEngaging(true);
-    timerRef.current = window.setTimeout(() => {
-      onNextWave?.();
-      setIsEngaging(false);
-    }, WAVE_TRANSITION_DELAY_MS);
-  };
+    return () => window.clearTimeout(engageTimer);
+  }, [wave]);
 
   return (
     <div
@@ -49,15 +44,8 @@ export function WaveClearBanner({ wave, onNextWave }) {
         🎉 Wave {wave} クリア！
       </div>
       <div style={{ fontSize: 12, color: "#d5e9da", marginTop: 3, marginBottom: 8 }}>
-        次のウェーブへ進めます
+        {isEngaging ? `▶ 進軍中... (Wave ${wave + 1})` : `3秒後に Wave ${wave + 1} へ進みます...`}
       </div>
-      <button
-        className={`wave-next-btn ${isEngaging ? "wave-next-btn-engaging" : ""}`}
-        onClick={handleNextWave}
-        disabled={isEngaging}
-      >
-        {isEngaging ? `▶ 進軍中... (Wave ${wave + 1})` : `▶ 次のウェーブへ進む (Wave ${wave + 1})`}
-      </button>
     </div>
   );
 }

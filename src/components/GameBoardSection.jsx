@@ -88,7 +88,7 @@ export function GameBoardSection({
         </div>
       )}
 
-      {phase === GAME_PHASES.WAVECLEAR && <WaveClearBanner wave={wave} onNextWave={nextWave} />}
+      {phase === GAME_PHASES.WAVECLEAR && <WaveClearBanner wave={wave} />}
 
       <NextSpawnIndicator nextSpawnEnemy={nextSpawnEnemy} laneColors={LANE_COLORS} laneNames={LANE_NAMES} />
       <ColumnPowerLabels
