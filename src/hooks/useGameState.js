@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useScheduledGameEffects } from "./gameState/useScheduledGameEffects";
 import { useGameDebugActions } from "./gameState/useGameDebugActions";
 import { useRoleAssignment } from "./gameState/useRoleAssignment";
@@ -11,6 +11,8 @@ import { resetEnemyIds, syncEnemyIdCounter } from "../game/enemies";
 import { saveRepository } from "../game/saveRepository";
 
 export function useGameState() {
+  const prevMovesLeftRef = useRef(null);
+  const prevPhaseRef = useRef(null);
   const { state, setters, helpers } = useGameCoreState();
   const effects = useScheduledGameEffects();
   const {
@@ -103,6 +105,40 @@ export function useGameState() {
   }), [enemies, grid, lives, log, movesLeft, movesPerTurn, phase, roleMetrics, score, tileDamage, tileRoles, wave]);
 
   useEffect(() => {
+    if (prevMovesLeftRef.current === null) {
+      prevMovesLeftRef.current = movesLeft;
+      return;
+    }
+
+    const didSpendMove = movesLeft < prevMovesLeftRef.current;
+    prevMovesLeftRef.current = movesLeft;
+
+    // Resolve phase snapshots are normalized on load; avoid autosaving there to prevent turn rollback.
+    if (tampered || !didSpendMove || phase !== GAME_PHASES.PLAYER) {
+      return;
+    }
+
+    saveRepository.save(createSnapshot());
+  }, [createSnapshot, movesLeft, phase, tampered]);
+
+  useEffect(() => {
+    if (prevPhaseRef.current === null) {
+      prevPhaseRef.current = phase;
+      return;
+    }
+
+    const wasResolving = prevPhaseRef.current === GAME_PHASES.RESOLVING;
+    const enteredPlayer = phase === GAME_PHASES.PLAYER;
+    prevPhaseRef.current = phase;
+
+    if (tampered || !wasResolving || !enteredPlayer) {
+      return;
+    }
+
+    saveRepository.save(createSnapshot());
+  }, [createSnapshot, phase, tampered]);
+
+  useEffect(() => {
     if (tampered) {
       return;
     }
@@ -122,7 +158,7 @@ export function useGameState() {
     const shouldNormalizeResolving = snapshot.phase === GAME_PHASES.RESOLVING;
     const nextPhase = shouldNormalizeResolving ? GAME_PHASES.PLAYER : snapshot.phase;
     const nextMovesLeft = shouldNormalizeResolving
-      ? Math.max(1, snapshot.movesPerTurn)
+      ? Math.max(1, snapshot.movesLeft)
       : snapshot.movesLeft;
     const nextLog = shouldNormalizeResolving
       ? ["📂 ロード: 解決中ターンを安全に再開しました。", ...snapshot.log].slice(0, 8)
