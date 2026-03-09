@@ -4,6 +4,7 @@ import { GAME_PHASES, canSelectRoleByTileValue } from "../game/config";
 import { GameBoardSection } from "./GameBoardSection";
 import { EnemyCodexModal } from "./EnemyCodexModal";
 import { GameHeader } from "./GameHeader";
+import { GameOverModal } from "./GameOverModal";
 import { GameMenuModal } from "./GameMenuModal";
 import { RoleSelectModal } from "./RoleSelectModal";
 import {
@@ -31,7 +32,7 @@ function loadDiscoveredEnemyTypes() {
   }
 }
 
-export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, bgm }) {
+export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanking, bgm }) {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [roleModalData, setRoleModalData] = useState(null);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
@@ -103,6 +104,7 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, bgm }) {
   const tileHeight = isWideDesktop ? 62 : isDesktop ? 56 : 54;
   const laneHeight = isWideDesktop ? 160 : isDesktop ? 140 : 130;
   const canEditRoles = phase === GAME_PHASES.PLAYER;
+  const isGameOver = phase === GAME_PHASES.GAMEOVER;
   const isPauseModalOpen = isMenuModalOpen || isEnemyCodexOpen || isRoleModalOpen;
 
   const openRoleModal = (tile) => {
@@ -129,6 +131,9 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, bgm }) {
   };
 
   const openMenuModal = () => {
+    if (isGameOver) {
+      return;
+    }
     refreshSaveMeta();
     setSaveStatusMessage("");
     setIsMenuModalOpen(true);
@@ -196,6 +201,7 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, bgm }) {
           <button
             type="button"
             onClick={openMenuModal}
+            disabled={isGameOver}
             style={{
               border: "1px solid #334155",
               borderRadius: 10,
@@ -204,7 +210,8 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, bgm }) {
               color: "#e2e8f0",
               fontWeight: 800,
               fontSize: 13,
-              cursor: "pointer",
+              cursor: isGameOver ? "not-allowed" : "pointer",
+              opacity: isGameOver ? 0.55 : 1,
             }}
           >
             ☰ メニュー
@@ -273,6 +280,13 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, bgm }) {
         isOpen={isEnemyCodexOpen}
         discoveredEnemyTypes={discoveredEnemyTypes}
         onClose={() => setIsEnemyCodexOpen(false)}
+      />
+      <GameOverModal
+        isOpen={isGameOver}
+        score={score}
+        wave={wave}
+        onOpenRanking={() => onOpenRanking?.()}
+        onBackToTitle={() => onBackToTitle?.()}
       />
     </div>
   );

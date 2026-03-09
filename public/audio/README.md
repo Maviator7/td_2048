@@ -3,6 +3,7 @@ Place your BGM files in this directory with these exact names:
 - bgm-title.mp3
 - bgm-battle.mp3
 - bgm-boss.mp3
+- bgm-gameover.mp3
 
 Recommended:
 

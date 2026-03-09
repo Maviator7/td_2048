@@ -82,9 +82,12 @@ export default function MergeTowerDefense() {
     setScreen(APP_SCREENS.RANKING);
   };
 
-  const activeScreen = screen === APP_SCREENS.GAME && game.phase === GAME_PHASES.GAMEOVER
-    ? APP_SCREENS.RANKING
-    : screen;
+  const openRankingFromGameOver = () => {
+    rankings.refreshRankings();
+    setScreen(APP_SCREENS.RANKING);
+  };
+
+  const activeScreen = screen;
 
   useEffect(() => {
     window.clearTimeout(exitStartTimerRef.current);
@@ -133,8 +136,10 @@ export default function MergeTowerDefense() {
   );
   const isBossSpawningSoon = game.nextSpawnEnemy?.isBoss || game.nextSpawnEnemy?.type === ENEMY_TYPES.BOSS;
   const shouldUseBossBgm = hasActiveBossEnemy || isBossSpawningSoon;
-  const bgmMode = renderedScreen === APP_SCREENS.GAME
-    ? shouldUseBossBgm ? "boss" : "battle"
+  const bgmMode = screen === APP_SCREENS.GAME
+    ? game.phase === GAME_PHASES.GAMEOVER
+      ? "gameover"
+      : shouldUseBossBgm ? "boss" : "battle"
     : "title";
   const bgm = useBgmController({ mode: bgmMode });
 
@@ -168,6 +173,7 @@ export default function MergeTowerDefense() {
       game={game}
       onSaveMetaUpdated={refreshSaveMeta}
       onBackToTitle={backToTitle}
+      onOpenRanking={openRankingFromGameOver}
       bgm={bgm}
     />
   );
