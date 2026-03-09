@@ -5,6 +5,7 @@ const TRACK_DEFS = {
   title: { src: "/audio/bgm-title.mp3", gain: 0.78 },
   battle: { src: "/audio/bgm-battle.mp3", gain: 0.72 },
   boss: { src: "/audio/bgm-boss.mp3", gain: 0.82 },
+  gameover: { src: "/audio/bgm-gameover.mp3", gain: 0.78 },
 };
 
 const FADE_DURATION_MS = 420;
@@ -99,6 +100,20 @@ export function useBgmController({ mode }) {
     }
 
     if (!nextAudio) {
+      return;
+    }
+
+    if (nextTrackKey === "gameover") {
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        currentAudio.volume = 0;
+      }
+      nextAudio.pause();
+      nextAudio.currentTime = 0;
+      nextAudio.volume = getTargetVolume(nextTrackKey);
+      nextAudio.play().catch(() => {});
+      activeTrackRef.current = nextTrackKey;
       return;
     }
 
