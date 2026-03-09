@@ -307,6 +307,10 @@ export function useGameTurnFlow({
       direction,
     });
     if (!moved) {
+      if (!canMove(grid)) {
+        setPhase(GAME_PHASES.GAMEOVER);
+        pushLog("💀 グリッド満杯！ゲームオーバー！");
+      }
       return;
     }
     const maxSlideScoreGain = getGridTotal(grid);
