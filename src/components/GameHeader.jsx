@@ -11,6 +11,8 @@ export function GameHeader({
   isLifeLossActive,
   lifeLossAmount,
   lifeLossFxKey,
+  onOpenMenu,
+  isMenuDisabled,
 }) {
   return (
     <>
@@ -21,6 +23,8 @@ export function GameHeader({
         isLifeLossActive={isLifeLossActive}
         lifeLossAmount={lifeLossAmount}
         lifeLossFxKey={lifeLossFxKey}
+        onOpenMenu={onOpenMenu}
+        isMenuDisabled={isMenuDisabled}
       />
       <MovesIndicator movesLeft={movesLeft} totalMoves={movesPerTurn} isResolving={isResolving} />
     </>

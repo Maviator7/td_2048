@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { GAME_PHASES, canSelectRoleByTileValue } from "../game/config";
 import { GameBoardSection } from "./GameBoardSection";
@@ -13,6 +13,8 @@ import {
 } from "./ui/styles";
 
 const ENEMY_CODEX_STORAGE_KEY = "mf2048_enemy_codex_seen_v1";
+const MIN_CONTENT_SCALE_X = 0.72;
+const MIN_CONTENT_SCALE_Y = 0.72;
 
 function loadDiscoveredEnemyTypes() {
   if (typeof window === "undefined") {
@@ -34,6 +36,8 @@ function loadDiscoveredEnemyTypes() {
 
 export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanking, bgm }) {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+  const [contentScale, setContentScale] = useState({ x: 1, y: 1 });
+  const [contentSize, setContentSize] = useState({ width: 0, height: 0 });
   const [roleModalData, setRoleModalData] = useState(null);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
@@ -49,6 +53,7 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanki
   const prevLivesRef = useRef(game.lives);
   const lifeLossSeRef = useRef(null);
   const lifeLossSeFallbackRef = useRef(null);
+  const scaledContentRef = useRef(null);
 
   const {
     lives,
@@ -66,6 +71,45 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanki
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  const recalcContentScale = useCallback(() => {
+    const contentEl = scaledContentRef.current;
+    if (!contentEl) {
+      return;
+    }
+
+    const rawWidth = contentEl.offsetWidth;
+    const rawHeight = contentEl.offsetHeight;
+    if (rawWidth <= 0 || rawHeight <= 0) {
+      return;
+    }
+
+    const availableWidth = Math.max(1, window.innerWidth - 16);
+    const availableHeight = Math.max(1, window.innerHeight - 24);
+    const fitScaleX = Math.min(1, availableWidth / rawWidth);
+    const fitScaleY = Math.min(1, availableHeight / rawHeight);
+    const nextScaleX = Math.max(MIN_CONTENT_SCALE_X, fitScaleX);
+    const nextScaleY = Math.max(MIN_CONTENT_SCALE_Y, fitScaleY);
+    setContentScale({ x: nextScaleX, y: nextScaleY });
+    setContentSize({ width: rawWidth, height: rawHeight });
+  }, []);
+
+  useEffect(() => {
+    recalcContentScale();
+  }, [recalcContentScale, viewportWidth, phase, isDebugPanelOpen, isMenuModalOpen, isEnemyCodexOpen, isRoleModalOpen]);
+
+  useEffect(() => {
+    const contentEl = scaledContentRef.current;
+    if (!contentEl) {
+      return undefined;
+    }
+
+    const observer = new ResizeObserver(() => {
+      recalcContentScale();
+    });
+    observer.observe(contentEl);
+    return () => observer.disconnect();
+  }, [recalcContentScale]);
 
   useEffect(() => {
     const audio = new Audio("/se/life_lost.mp3");
@@ -208,53 +252,47 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanki
       )}
       <div
         className={`game-content-shell ${isPauseModalOpen ? "game-content-paused" : ""}`.trim()}
-        style={createGameScreenContentStyle(isDesktop)}
+        style={{
+          width: contentSize.width ? contentSize.width * contentScale.x : "100%",
+          height: contentSize.height ? contentSize.height * contentScale.y : "auto",
+        }}
       >
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-          <button
-            type="button"
-            onClick={openMenuModal}
-            disabled={isGameOver}
-            style={{
-              border: "1px solid #334155",
-              borderRadius: 10,
-              padding: "8px 12px",
-              background: "rgba(15,23,42,0.92)",
-              color: "#e2e8f0",
-              fontWeight: 800,
-              fontSize: 13,
-              cursor: isGameOver ? "not-allowed" : "pointer",
-              opacity: isGameOver ? 0.55 : 1,
-            }}
-          >
-            ☰ メニュー
-          </button>
-        </div>
-        <GameHeader
-          lives={lives}
-          wave={wave}
-          score={score}
-          movesLeft={movesLeft}
-          movesPerTurn={movesPerTurn}
-          isResolving={phase === GAME_PHASES.RESOLVING}
-          isLifeLossActive={isLifeLossActive}
-          lifeLossAmount={lifeLossAmount}
-          lifeLossFxKey={lifeLossFxKey}
-        />
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12, alignItems: "start" }}>
-          <GameBoardSection
-            game={game}
-            isDesktop={isDesktop}
-            laneHeight={laneHeight}
-            tileHeight={tileHeight}
-            isDebugMode={isDebugMode}
-            isDebugPanelOpen={isDebugPanelOpen}
-            onToggleDebugPanel={() => setIsDebugPanelOpen((current) => !current)}
-            debugBoostTarget={debugBoostTarget}
-            onOpenRoleModal={openRoleModal}
-            onAnyTileClick={handleTileClick}
+        <div
+          ref={scaledContentRef}
+          style={{
+            ...createGameScreenContentStyle(isDesktop),
+            transform: `scale(${contentScale.x}, ${contentScale.y})`,
+            transformOrigin: "top left",
+          }}
+        >
+          <GameHeader
+            lives={lives}
+            wave={wave}
+            score={score}
+            movesLeft={movesLeft}
+            movesPerTurn={movesPerTurn}
+            isResolving={phase === GAME_PHASES.RESOLVING}
+            isLifeLossActive={isLifeLossActive}
+            lifeLossAmount={lifeLossAmount}
+            lifeLossFxKey={lifeLossFxKey}
+            onOpenMenu={openMenuModal}
+            isMenuDisabled={isGameOver}
           />
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12, alignItems: "start" }}>
+            <GameBoardSection
+              game={game}
+              isDesktop={isDesktop}
+              laneHeight={laneHeight}
+              tileHeight={tileHeight}
+              isDebugMode={isDebugMode}
+              isDebugPanelOpen={isDebugPanelOpen}
+              onToggleDebugPanel={() => setIsDebugPanelOpen((current) => !current)}
+              debugBoostTarget={debugBoostTarget}
+              onOpenRoleModal={openRoleModal}
+              onAnyTileClick={handleTileClick}
+            />
+          </div>
         </div>
       </div>
 
