@@ -47,6 +47,7 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanki
   const [lifeLossAmount, setLifeLossAmount] = useState(0);
   const [lifeLossFxKey, setLifeLossFxKey] = useState(0);
   const prevLivesRef = useRef(game.lives);
+  const lifeLossSeRef = useRef(null);
 
   const {
     lives,
@@ -66,11 +67,31 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanki
   }, []);
 
   useEffect(() => {
+    const audio = new Audio("/se/life_lost.mp3");
+    audio.preload = "auto";
+    audio.volume = 0.72;
+    lifeLossSeRef.current = audio;
+
+    return () => {
+      audio.pause();
+      lifeLossSeRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
     if (lives < prevLivesRef.current) {
       const loss = prevLivesRef.current - lives;
       setLifeLossAmount(loss);
       setLifeLossFxKey((current) => current + 1);
       setIsLifeLossActive(true);
+      const seAudio = lifeLossSeRef.current;
+      if (seAudio) {
+        const masterVolume = Math.min(1, Math.max(0, Number(bgm?.masterVolume ?? 0.5)));
+        const seVolume = Math.min(1, Math.max(0, Number(bgm?.seVolume ?? 0.7)));
+        seAudio.volume = Math.min(1, Math.max(0, 0.72 * masterVolume * seVolume));
+        seAudio.currentTime = 0;
+        seAudio.play().catch(() => {});
+      }
       const timeoutId = window.setTimeout(() => setIsLifeLossActive(false), 900);
       prevLivesRef.current = lives;
       return () => window.clearTimeout(timeoutId);
@@ -78,7 +99,7 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanki
 
     prevLivesRef.current = lives;
     return undefined;
-  }, [lives]);
+  }, [bgm?.masterVolume, bgm?.seVolume, lives]);
 
   const discoveredEnemyTypes = useMemo(() => {
     const nextSet = new Set(initialDiscoveredEnemyTypes);
