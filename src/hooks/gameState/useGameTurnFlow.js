@@ -34,6 +34,8 @@ export function useGameTurnFlow({
   helpers,
 }) {
   const moveSeRef = useRef(null);
+  const attackSeRef = useRef(null);
+  const attackSeFallbackRef = useRef(null);
 
   useEffect(() => {
     const audio = new Audio("/se/move_tile.mp3");
@@ -41,9 +43,23 @@ export function useGameTurnFlow({
     audio.volume = 0.55;
     moveSeRef.current = audio;
 
+    const attackAudio = new Audio("/se/attack.mp3");
+    attackAudio.preload = "auto";
+    attackAudio.volume = 0.62;
+    attackSeRef.current = attackAudio;
+
+    const attackFallbackAudio = new Audio("/se/move_tile.mp3");
+    attackFallbackAudio.preload = "auto";
+    attackFallbackAudio.volume = 0.5;
+    attackSeFallbackRef.current = attackFallbackAudio;
+
     return () => {
       audio.pause();
       moveSeRef.current = null;
+      attackAudio.pause();
+      attackSeRef.current = null;
+      attackFallbackAudio.pause();
+      attackSeFallbackRef.current = null;
     };
   }, []);
 
@@ -88,6 +104,35 @@ export function useGameTurnFlow({
     audio.play().catch(() => {});
   }, []);
 
+  const playAttackSe = useCallback(() => {
+    const attackAudio = attackSeRef.current;
+    const fallbackAudio = attackSeFallbackRef.current;
+    const attackVolume = Math.min(1, Math.max(0, 0.62 * getMasterVolume() * getSeVolume()));
+    const fallbackVolume = Math.min(1, Math.max(0, 0.5 * getMasterVolume() * getSeVolume()));
+
+    if (attackAudio) {
+      attackAudio.volume = attackVolume;
+      attackAudio.currentTime = 0;
+      attackAudio.play().catch(() => {
+        if (!fallbackAudio) {
+          return;
+        }
+        fallbackAudio.volume = fallbackVolume;
+        fallbackAudio.currentTime = 0;
+        fallbackAudio.play().catch(() => {});
+      });
+      return;
+    }
+
+    if (!fallbackAudio) {
+      return;
+    }
+
+    fallbackAudio.volume = fallbackVolume;
+    fallbackAudio.currentTime = 0;
+    fallbackAudio.play().catch(() => {});
+  }, []);
+
   const flagTamper = useCallback((reason) => {
     setTampered(true);
     setPhase(GAME_PHASES.GAMEOVER);
@@ -122,6 +167,9 @@ export function useGameTurnFlow({
     effects.setShotTraces(result.shotTraces);
     effects.setChainTraces(result.chainTraces);
     effects.scheduleTimeout(effects.clearCombatEffects, result.effectDuration);
+    if (result.attackColumns.length > 0) {
+      playAttackSe();
+    }
 
     setEnemies(result.nextEnemies);
     setLives(result.nextLives);
@@ -178,7 +226,7 @@ export function useGameTurnFlow({
         pushLog(`🔄 新ターン！残り${movesPerTurn}手`);
       }, retaliationResult.hadRetaliation ? 260 : 80);
     }, result.effectDuration);
-  }, [addRoleMetrics, effects, flagTamper, movesPerTurn, pushLog, pushLogs, setBoard, setEnemies, setLives, setMovesLeft, setPhase, setScore]);
+  }, [addRoleMetrics, effects, flagTamper, movesPerTurn, playAttackSe, pushLog, pushLogs, setBoard, setEnemies, setLives, setMovesLeft, setPhase, setScore]);
 
   const handleSlide = useCallback((direction) => {
     if (phase !== GAME_PHASES.PLAYER) {
