@@ -28,6 +28,11 @@ export const ENEMY_BALANCE = {
     minBonus: 1,
     turns: 1,
   },
+  wave: {
+    startWave: 6,
+    spawnChance: 0.13,
+    healAmount: 1,
+  },
   splitter: {
     startWave: 3,
     spawnChance: 0.16,
@@ -48,6 +53,7 @@ export const SCORE_RULES = {
   fastKillMultiplier: 3,
   healerKillMultiplier: 3,
   poisonKillMultiplier: 3,
+  waveKillMultiplier: 3,
   splitterKillMultiplier: 4,
   splitChildKillMultiplier: 1,
   bossKillMultiplier: 5,
@@ -119,6 +125,7 @@ export const WAVE_FEATURES = {
   fastEnemiesStartWave: ENEMY_BALANCE.fast.startWave,
   healerEnemiesStartWave: ENEMY_BALANCE.healer.startWave,
   poisonEnemiesStartWave: ENEMY_BALANCE.poison.startWave,
+  waveEnemiesStartWave: ENEMY_BALANCE.wave.startWave,
   splitterEnemiesStartWave: ENEMY_BALANCE.splitter.startWave,
   armoredEnemiesStartWave: ENEMY_BALANCE.armor.startWave,
 };
@@ -128,6 +135,7 @@ export const ENEMY_TYPES = {
   FAST: "fast",
   HEALER: "healer",
   POISON: "poison",
+  WAVE: "wave",
   SPLITTER: "splitter",
   SPLIT_CHILD: "split_child",
   BOSS: "boss",
@@ -164,6 +172,14 @@ export const ENEMY_TYPE_DEFS = {
     armorFlatBonus: 0,
     speed: 1.05,
     rewardMultiplier: SCORE_RULES.poisonKillMultiplier,
+    isBoss: false,
+  },
+  [ENEMY_TYPES.WAVE]: {
+    hpMultiplier: 1.05,
+    armorMultiplier: 1,
+    armorFlatBonus: 0,
+    speed: 0.9,
+    rewardMultiplier: SCORE_RULES.waveKillMultiplier,
     isBoss: false,
   },
   [ENEMY_TYPES.SPLITTER]: {
@@ -218,6 +234,10 @@ export function isPoisonUnlocked(waveNumber) {
   return waveNumber >= WAVE_FEATURES.poisonEnemiesStartWave;
 }
 
+export function isWaveUnlocked(waveNumber) {
+  return waveNumber >= WAVE_FEATURES.waveEnemiesStartWave;
+}
+
 export function isSplitterUnlocked(waveNumber) {
   return waveNumber >= WAVE_FEATURES.splitterEnemiesStartWave;
 }
@@ -237,6 +257,10 @@ export function getEnemyType({ waveNumber, isLastEnemyInWave }) {
 
   if (isPoisonUnlocked(waveNumber) && Math.random() < ENEMY_BALANCE.poison.spawnChance) {
     return ENEMY_TYPES.POISON;
+  }
+
+  if (isWaveUnlocked(waveNumber) && Math.random() < ENEMY_BALANCE.wave.spawnChance) {
+    return ENEMY_TYPES.WAVE;
   }
 
   if (isFastUnlocked(waveNumber) && Math.random() < ENEMY_BALANCE.fast.spawnChance) {

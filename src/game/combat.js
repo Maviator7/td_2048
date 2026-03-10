@@ -192,6 +192,26 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
       if (target.type === ENEMY_TYPES.POISON) {
         poisonedLaneHits.add(lane);
       }
+      // 波動敵 - 被弾時に隣接敵をヒール
+      if (target.type === ENEMY_TYPES.WAVE && target.hp > 0) {
+        const laneEnemyList = targets;
+        const targetIdx = laneTargetIndexes[lane];
+        const adjacentIndices = [targetIdx - 1, targetIdx + 1];
+        adjacentIndices.forEach((adjIdx) => {
+          if (adjIdx >= 0 && adjIdx < laneEnemyList.length) {
+            const adj = laneEnemyList[adjIdx];
+            if (adj.hp > 0 && adj.hp < adj.maxHp) {
+              const heal = ENEMY_BALANCE.wave.healAmount;
+              adj.hp = Math.min(adj.maxHp, adj.hp + heal);
+              if (damageBursts.length < MAX_VISUAL_EFFECTS * 2) {
+                damageBursts.push(buildDamageBurst(adj, lane, 0, heal, delayMs + 80, effectIndex, true));
+                effectIndex += 1;
+              }
+            }
+          }
+        });
+        logMessages.push(`〰️ レーン${LANE_NAMES[lane]}の波動敵が周囲を強化！`);
+      }
 
       if (tileRole === TILE_ROLES.SUPPRESSOR) {
         target.slowTurns = Math.max(target.slowTurns ?? 0, 1);
@@ -265,11 +285,13 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
         ? "⚡高速敵"
         : enemy.type === ENEMY_TYPES.POISON
           ? "☠️毒敵"
-        : enemy.type === ENEMY_TYPES.SPLITTER
-          ? "🧬分裂敵"
-          : enemy.type === ENEMY_TYPES.SPLIT_CHILD
-            ? "✳️分裂子"
-            : "✅";
+          : enemy.type === ENEMY_TYPES.WAVE
+            ? "〰️波動敵"
+            : enemy.type === ENEMY_TYPES.SPLITTER
+              ? "🧬分裂敵"
+              : enemy.type === ENEMY_TYPES.SPLIT_CHILD
+                ? "✳️分裂子"
+                : "✅";
     logMessages.push(`${enemyLabel}撃破！+${reward}pts`);
 
     if (enemy.type === ENEMY_TYPES.SPLITTER) {

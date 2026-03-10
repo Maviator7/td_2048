@@ -27,6 +27,11 @@ const CODEX_ENTRIES = [
     description: "攻撃が当たったレーンに次ターン追加ダメージを付与。",
   },
   {
+    type: ENEMY_TYPES.WAVE,
+    name: "波動敵",
+    description: "被弾するたびに隣接する味方敵を1回復・強化する。集中攻撃か拡散攻撃かの選択を迫る。",
+  },
+  {
     type: ENEMY_TYPES.SPLITTER,
     name: "分裂敵",
     description: "撃破時に小型敵3体へ分裂する。",
@@ -93,6 +98,17 @@ function createFigureStyle(type) {
       border: "2px solid #a7f3d0",
       boxShadow: "0 0 10px rgba(16,185,129,0.45)",
       clipPath: "polygon(50% 0%, 78% 8%, 100% 35%, 92% 62%, 70% 92%, 50% 100%, 30% 92%, 8% 62%, 0% 35%, 22% 8%)",
+    };
+  }
+
+  if (type === ENEMY_TYPES.WAVE) {
+    return {
+      ...base,
+      borderRadius: 6,
+      background: "linear-gradient(145deg, #bae6fd 0%, #38bdf8 50%, #0284c7 100%)",
+      border: "2px solid #7dd3fc",
+      boxShadow: "0 0 10px rgba(56,189,248,0.45)",
+      clipPath: "polygon(0% 35%, 15% 15%, 30% 35%, 50% 5%, 70% 35%, 85% 15%, 100% 35%, 100% 65%, 85% 85%, 70% 65%, 50% 95%, 30% 65%, 15% 85%, 0% 65%)",
     };
   }
 

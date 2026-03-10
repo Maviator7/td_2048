@@ -81,10 +81,11 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
   const isFast = enemy.type === "fast";
   const isHealer = enemy.type === "healer";
   const isPoison = enemy.type === "poison";
+  const isWave = enemy.type === "wave";
   const isSplitter = enemy.type === "splitter";
   const isSplitChild = enemy.type === "split_child";
   const isSlowed = (enemy.slowTurns ?? 0) > 0;
-  const size = enemy.isBoss ? 36 : isSplitter ? 33 : isPoison ? 32 : isHealer ? 32 : isFast ? 28 : isSplitChild ? 21 : 30;
+  const size = enemy.isBoss ? 36 : isSplitter ? 33 : isPoison ? 32 : isHealer ? 32 : isWave ? 30 : isFast ? 28 : isSplitChild ? 21 : 30;
 
   return (
     <div
@@ -93,7 +94,7 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
         top: `${top}%`,
         left: "50%",
         transform: `translateX(calc(-50% + ${xOffset}px))`,
-        width: enemy.isBoss ? 42 : isSplitter ? 40 : isPoison ? 38 : isFast ? 38 : isSplitChild ? 30 : 34,
+        width: enemy.isBoss ? 42 : isSplitter ? 40 : isPoison ? 38 : isWave ? 36 : isFast ? 38 : isSplitChild ? 30 : 34,
         transition: "top 0.35s ease",
       }}
     >
@@ -137,6 +138,20 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
           }}
         >
           💖
+        </div>
+      )}
+      {isWave && (
+        <div
+          style={{
+            position: "absolute",
+            top: -11,
+            left: "50%",
+            transform: "translateX(-50%)",
+            fontSize: 10,
+            zIndex: 8,
+          }}
+        >
+          〰️
         </div>
       )}
       {isSplitter && (
@@ -193,24 +208,28 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
               ? "polygon(35% 0%, 65% 0%, 65% 35%, 100% 35%, 100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0% 65%, 0% 35%, 35% 35%)"
               : isPoison
                 ? "polygon(50% 0%, 78% 8%, 100% 35%, 92% 62%, 70% 92%, 50% 100%, 30% 92%, 8% 62%, 0% 35%, 22% 8%)"
-                : isSplitter
-                  ? "polygon(50% 0%, 96% 28%, 82% 100%, 18% 100%, 4% 28%)"
-                  : isSplitChild
-                    ? "polygon(25% 8%, 75% 8%, 100% 50%, 75% 92%, 25% 92%, 0% 50%)"
-                    : "none",
+                : isWave
+                  ? "polygon(0% 35%, 15% 15%, 30% 35%, 50% 5%, 70% 35%, 85% 15%, 100% 35%, 100% 65%, 85% 85%, 70% 65%, 50% 95%, 30% 65%, 15% 85%, 0% 65%)"
+                  : isSplitter
+                    ? "polygon(50% 0%, 96% 28%, 82% 100%, 18% 100%, 4% 28%)"
+                    : isSplitChild
+                      ? "polygon(25% 8%, 75% 8%, 100% 50%, 75% 92%, 25% 92%, 0% 50%)"
+                      : "none",
           background: enemy.isBoss
             ? "radial-gradient(circle at 30% 30%, #b37feb 0%, #8e44ad 45%, #4a235a 100%)"
             : isHealer
               ? "linear-gradient(145deg, #fbcfe8 0%, #f472b6 55%, #db2777 100%)"
               : isPoison
                 ? "linear-gradient(145deg, #6ee7b7 0%, #10b981 55%, #047857 100%)"
-                : isSplitter
-                  ? "linear-gradient(145deg, #f7b267 0%, #f79d65 45%, #b85616 100%)"
-                  : isFast
-                    ? "linear-gradient(145deg, #22d3ee 0%, #0ea5b7 55%, #0b6170 100%)"
-                    : isSplitChild
-                      ? "linear-gradient(145deg, #ffe28a 0%, #ffd166 58%, #d09a20 100%)"
-                      : laneColor,
+                : isWave
+                  ? "linear-gradient(145deg, #bae6fd 0%, #38bdf8 50%, #0284c7 100%)"
+                  : isSplitter
+                    ? "linear-gradient(145deg, #f7b267 0%, #f79d65 45%, #b85616 100%)"
+                    : isFast
+                      ? "linear-gradient(145deg, #22d3ee 0%, #0ea5b7 55%, #0b6170 100%)"
+                      : isSplitChild
+                        ? "linear-gradient(145deg, #ffe28a 0%, #ffd166 58%, #d09a20 100%)"
+                        : laneColor,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -224,13 +243,15 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
               ? "2px solid #fdf2f8"
               : isPoison
                 ? "2px solid #a7f3d0"
-                : isSplitter
-                  ? "2px solid #ffd39a"
-                  : isFast
-                    ? "2px solid #7ce7ff"
-                    : isSplitChild
-                      ? "1px solid #fff0bf"
-                      : "2px solid transparent",
+                : isWave
+                  ? "2px solid #7dd3fc"
+                  : isSplitter
+                    ? "2px solid #ffd39a"
+                    : isFast
+                      ? "2px solid #7ce7ff"
+                      : isSplitChild
+                        ? "1px solid #fff0bf"
+                        : "2px solid transparent",
           opacity: isHit ? 0.82 : 1,
           animationDelay: isHit ? `${hitEffect.delayMs}ms` : undefined,
         }}
@@ -264,6 +285,7 @@ function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces, chai
   const queuedFastFlags = Array(COLS).fill(false);
   const queuedHealerFlags = Array(COLS).fill(false);
   const queuedPoisonFlags = Array(COLS).fill(false);
+  const queuedWaveFlags = Array(COLS).fill(false);
   const queuedSplitterFlags = Array(COLS).fill(false);
   const queuedSplitChildFlags = Array(COLS).fill(false);
   const hitEffectByEnemyId = new Map();
@@ -287,6 +309,9 @@ function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces, chai
       }
       if (enemy.type === "poison") {
         queuedPoisonFlags[enemy.lane] = true;
+      }
+      if (enemy.type === "wave") {
+        queuedWaveFlags[enemy.lane] = true;
       }
       if (enemy.type === "splitter") {
         queuedSplitterFlags[enemy.lane] = true;
@@ -326,6 +351,7 @@ function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces, chai
     queuedFastFlags,
     queuedHealerFlags,
     queuedPoisonFlags,
+    queuedWaveFlags,
     queuedSplitterFlags,
     queuedSplitChildFlags,
     hitEffectByEnemyId,
@@ -348,6 +374,7 @@ function EnemyLane({
   hasQueuedFast,
   hasQueuedHealer,
   hasQueuedPoison,
+  hasQueuedWave,
   hasQueuedSplitter,
   hasQueuedSplitChild,
   hitEffectByEnemyId,
@@ -495,6 +522,7 @@ function EnemyLane({
           {hasQueuedHealer ? " 💖" : ""}
           {hasQueuedFast ? " ⚡" : ""}
           {hasQueuedPoison ? " ☠️" : ""}
+          {hasQueuedWave ? " 〰️" : ""}
           {hasQueuedSplitter ? " 🧬" : ""}
           {hasQueuedSplitChild ? " ✳️" : ""}
         </div>
@@ -555,6 +583,7 @@ export const EnemyLanes = memo(function EnemyLanes({
           hasQueuedFast={laneRenderData.queuedFastFlags[laneIndex]}
           hasQueuedHealer={laneRenderData.queuedHealerFlags[laneIndex]}
           hasQueuedPoison={laneRenderData.queuedPoisonFlags[laneIndex]}
+          hasQueuedWave={laneRenderData.queuedWaveFlags[laneIndex]}
           hasQueuedSplitter={laneRenderData.queuedSplitterFlags[laneIndex]}
           hasQueuedSplitChild={laneRenderData.queuedSplitChildFlags[laneIndex]}
           hitEffectByEnemyId={laneRenderData.hitEffectByEnemyId}

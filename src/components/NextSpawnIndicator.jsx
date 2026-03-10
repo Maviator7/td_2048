@@ -8,6 +8,7 @@ export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEn
   const isFastNext = nextSpawnEnemy?.type === "fast";
   const isHealerNext = nextSpawnEnemy?.type === "healer";
   const isPoisonNext = nextSpawnEnemy?.type === "poison";
+  const isWaveNext = nextSpawnEnemy?.type === "wave";
   const isSplitterNext = nextSpawnEnemy?.type === "splitter";
   const isSplitChildNext = nextSpawnEnemy?.type === "split_child";
 
@@ -49,39 +50,45 @@ export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEn
       ? "#f472b6"
       : isPoisonNext
         ? "#34d399"
-      : isSplitterNext
-        ? "#ff9f43"
-        : isFastNext
-          ? "#3ddcff"
-          : isSplitChildNext
-            ? "#ffd166"
-            : nextLaneColor;
+        : isWaveNext
+          ? "#38bdf8"
+          : isSplitterNext
+            ? "#ff9f43"
+            : isFastNext
+              ? "#3ddcff"
+              : isSplitChildNext
+                ? "#ffd166"
+                : nextLaneColor;
   const panelLabel = isBossNext
     ? "次の出現 (BOSS)"
     : isHealerNext
       ? "次の出現 (HEAL)"
       : isPoisonNext
         ? "次の出現 (POISON)"
-      : isSplitterNext
-        ? "次の出現 (SPLIT)"
-        : isFastNext
-          ? "次の出現 (FAST)"
-          : isSplitChildNext
-            ? "次の出現 (MINI)"
-            : "次の出現列";
+        : isWaveNext
+          ? "次の出現 (WAVE)"
+          : isSplitterNext
+            ? "次の出現 (SPLIT)"
+            : isFastNext
+              ? "次の出現 (FAST)"
+              : isSplitChildNext
+                ? "次の出現 (MINI)"
+                : "次の出現列";
   const panelTypeTag = isBossNext
     ? "👑BOSS"
     : isHealerNext
       ? "💖HEAL"
       : isPoisonNext
         ? "POISON"
-      : isSplitterNext
-        ? "🧬SPLIT"
-        : isFastNext
-          ? "⚡FAST"
-          : isSplitChildNext
-            ? "✳️MINI"
-            : "";
+        : isWaveNext
+          ? "〰️WAVE"
+          : isSplitterNext
+            ? "🧬SPLIT"
+            : isFastNext
+              ? "⚡FAST"
+              : isSplitChildNext
+                ? "✳️MINI"
+                : "";
 
   return (
     <div
@@ -99,11 +106,13 @@ export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEn
             ? "linear-gradient(135deg, rgba(157, 23, 77, 0.62), rgba(13, 17, 23, 0.95))"
             : isPoisonNext
               ? "linear-gradient(135deg, rgba(6, 95, 70, 0.66), rgba(13, 17, 23, 0.95))"
-            : isSplitterNext
-              ? "linear-gradient(135deg, rgba(120, 64, 18, 0.68), rgba(13, 17, 23, 0.95))"
-              : isFastNext
-                ? "linear-gradient(135deg, rgba(15, 83, 108, 0.62), rgba(13, 17, 23, 0.95))"
-                : "#0d1117",
+              : isWaveNext
+                ? "linear-gradient(135deg, rgba(3, 105, 161, 0.66), rgba(13, 17, 23, 0.95))"
+                : isSplitterNext
+                  ? "linear-gradient(135deg, rgba(120, 64, 18, 0.68), rgba(13, 17, 23, 0.95))"
+                  : isFastNext
+                    ? "linear-gradient(135deg, rgba(15, 83, 108, 0.62), rgba(13, 17, 23, 0.95))"
+                    : "#0d1117",
         border: nextSpawnEnemy ? `1px solid ${typeAccentColor}` : "1px solid #1e2a3a",
         borderRadius: 10,
         ...(nextSpawnEnemy ? { "--next-glow-color": typeAccentColor } : {}),
