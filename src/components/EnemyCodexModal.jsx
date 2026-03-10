@@ -17,6 +17,11 @@ const CODEX_ENTRIES = [
     description: "通常より早く DEFENSE LINE に接近する。",
   },
   {
+    type: ENEMY_TYPES.HEALER,
+    name: "回復敵",
+    description: "ターンの終了時に他の敵のHPを回復させる。",
+  },
+  {
     type: ENEMY_TYPES.SPLITTER,
     name: "分裂敵",
     description: "撃破時に小型敵3体へ分裂する。",
@@ -61,6 +66,17 @@ function createFigureStyle(type) {
       background: "linear-gradient(145deg, #22d3ee 0%, #0ea5b7 55%, #0b6170 100%)",
       border: "2px solid #7ce7ff",
       boxShadow: "0 0 10px rgba(34,211,238,0.4)",
+    };
+  }
+
+  if (type === ENEMY_TYPES.HEALER) {
+    return {
+      ...base,
+      borderRadius: 4,
+      background: "linear-gradient(145deg, #fbcfe8 0%, #f472b6 55%, #db2777 100%)",
+      border: "2px solid #fdf2f8",
+      boxShadow: "0 0 10px rgba(244,114,182,0.4)",
+      clipPath: "polygon(35% 0%, 65% 0%, 65% 35%, 100% 35%, 100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0% 65%, 0% 35%, 35% 35%)",
     };
   }
 
