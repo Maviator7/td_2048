@@ -39,6 +39,7 @@ export default function MergeTowerDefense() {
   const [screen, setScreen] = useState(APP_SCREENS.TITLE);
   const [debugStartEnabled, setDebugStartEnabled] = useState(false);
   const [rankingName, setRankingName] = useState(loadStoredRankingName);
+  const [shouldPromptRankingNameModal, setShouldPromptRankingNameModal] = useState(() => !hasStoredRankingName());
   const game = useGameState();
   const [saveMeta, setSaveMeta] = useState(() => game.getSaveMeta());
   const rankings = useRankings({
@@ -109,6 +110,7 @@ export default function MergeTowerDefense() {
 
     const storedName = storeRankingName(sanitizedName);
     setRankingName(storedName);
+    setShouldPromptRankingNameModal(false);
     rankings.updateLatestRankingName(storedName);
     return { ok: true, value: storedName, error: null };
   }, [rankings]);
@@ -195,7 +197,7 @@ export default function MergeTowerDefense() {
       rankings={rankings.rankings}
       latestEntryId={rankings.latestRankingEntryId}
       rankingName={rankingName}
-      shouldPromptNameModal={!hasStoredRankingName()}
+      shouldPromptNameModal={shouldPromptRankingNameModal}
       onSubmitRankingName={handleChangeRankingName}
       onStart={() => startGame({ debug: false })}
       onBackToTitle={backToTitle}
