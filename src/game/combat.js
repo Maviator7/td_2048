@@ -7,6 +7,7 @@ import {
   LANE_NAMES,
 } from "./constants";
 import {
+  ENEMY_BALANCE,
   ENEMY_TYPES,
   ROLE_BONUSES,
   TILE_ROLES,
@@ -28,13 +29,14 @@ function buildHitEffect(enemy, lane, row, delayMs, effectIndex) {
   };
 }
 
-function buildDamageBurst(enemy, lane, row, damage, delayMs, effectIndex) {
+function buildDamageBurst(enemy, lane, row, damage, delayMs, effectIndex, isHeal = false) {
   return {
     key: `burst-${enemy.id}-${lane}-${row}-${effectIndex}`,
     targetId: enemy.id,
     lane,
     top: Math.min(1, enemy.step / ENEMY_MAX_STEPS) * 72,
     damage,
+    isHeal,
     fontSize: Math.min(24, 14 + Math.floor(Math.log2(Math.max(damage, 1))) * 2),
     delayMs,
   };
@@ -258,7 +260,7 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
           ? "🧬分裂敵"
           : enemy.type === ENEMY_TYPES.SPLIT_CHILD
             ? "✳️分裂子"
-        : "✅";
+            : "✅";
     logMessages.push(`${enemyLabel}撃破！+${reward}pts`);
 
     if (enemy.type === ENEMY_TYPES.SPLITTER) {
@@ -278,6 +280,43 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
     logMessages.push(`⚠️ ${breachedEnemies.length}体突破！-${breachedEnemies.length}ライフ`);
   }
   nextEnemies = nextEnemies.filter((enemy) => enemy.step < ENEMY_MAX_STEPS);
+
+  const activeHealers = nextEnemies.filter(
+    (enemy) => enemy.type === ENEMY_TYPES.HEALER && enemy.step > 0 && !newlyDeployedIds.has(enemy.id)
+  );
+
+  if (activeHealers.length > 0) {
+    let anyHealed = false;
+    activeHealers.forEach((healer) => {
+      let healerDidHeal = false;
+      nextEnemies.forEach((target) => {
+        if (target.id !== healer.id && target.step > 0 && target.hp < target.maxHp) {
+          const healAmount = Math.max(1, Math.floor(target.maxHp * ENEMY_BALANCE.healer.healRatio));
+          const maxHealPossible = target.maxHp - target.hp;
+          const actualHeal = Math.min(healAmount, maxHealPossible);
+
+          if (actualHeal > 0) {
+            target.hp += actualHeal;
+            healerDidHeal = true;
+            anyHealed = true;
+            if (damageBursts.length < MAX_VISUAL_EFFECTS * 2) {
+              damageBursts.push(
+                buildDamageBurst(target, target.lane, 0, actualHeal, effectIndex * SHOT_ANIMATION_STAGGER, effectIndex, true)
+              );
+              effectIndex += 1;
+            }
+          }
+        }
+      });
+      if (healerDidHeal) {
+        logMessages.push(`➕ レーン${LANE_NAMES[healer.lane]}の回復敵が周囲を修復！`);
+      }
+    });
+
+    if (anyHealed) {
+      effectIndex += 4;
+    }
+  }
 
   const remainingLaneThreats = Array(COLS).fill(null);
   for (let lane = 0; lane < COLS; lane += 1) {
