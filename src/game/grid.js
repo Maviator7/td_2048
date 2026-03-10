@@ -186,24 +186,19 @@ export function addRandomTile(grid, tileDamage, tileRoles) {
   return { grid: nextGrid, tileDamage: nextDamage, tileRoles: nextRoles };
 }
 
-export function canMove(grid) {
-  for (let rowIndex = 0; rowIndex < ROWS; rowIndex += 1) {
-    for (let colIndex = 0; colIndex < COLS; colIndex += 1) {
-      if (!grid[rowIndex][colIndex]) {
-        return true;
-      }
-
-      if (colIndex + 1 < COLS && grid[rowIndex][colIndex] === grid[rowIndex][colIndex + 1]) {
-        return true;
-      }
-
-      if (rowIndex + 1 < ROWS && grid[rowIndex][colIndex] === grid[rowIndex + 1][colIndex]) {
-        return true;
-      }
-    }
+export function canMove(grid, tileDamage = null, tileRoles = null) {
+  if (!Array.isArray(grid) || grid.length === 0) {
+    return false;
   }
 
-  return false;
+  const nextTileDamage = Array.isArray(tileDamage) ? tileDamage : createEmptyDamageGrid();
+  const nextTileRoles = Array.isArray(tileRoles) ? tileRoles : createEmptyRoleGrid();
+  const directions = ["left", "right", "up", "down"];
+
+  return directions.some((direction) => {
+    const result = slideGrid(grid, nextTileDamage, nextTileRoles, direction);
+    return result.moved;
+  });
 }
 
 export function getEffectiveTileValue(value, damage) {

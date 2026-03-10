@@ -326,7 +326,7 @@ export function useGameTurnFlow({
       direction,
     });
     if (!moved) {
-      if (!canMove(grid)) {
+      if (!canMove(grid, tileDamage, tileRoles)) {
         setPhase(GAME_PHASES.GAMEOVER);
         pushLog("💀 グリッド満杯！ゲームオーバー！");
       }
@@ -357,7 +357,7 @@ export function useGameTurnFlow({
       effects.scheduleTimeout(() => effects.setMergeHL([]), 400);
     }
 
-    if (!canMove(nextTurnGrid)) {
+    if (!canMove(nextTurnGrid, nextTurnTileDamage, nextTurnTileRoles)) {
       setPhase(GAME_PHASES.GAMEOVER);
       pushLog("💀 グリッド満杯！ゲームオーバー！");
       return;
