@@ -28,7 +28,9 @@ function getMaxCombatScoreGain(enemies) {
   return enemies.reduce((sum, enemy) => sum + getEnemyReward(enemy), 0);
 }
 
-const AUTO_NEXT_WAVE_DELAY_MS = 2500;
+const WAVE_TRANSITION_WAIT_MS = 2000;
+const WAVE_TRANSITION_ANIMATION_MS = 1400;
+const AUTO_NEXT_WAVE_DELAY_MS = WAVE_TRANSITION_WAIT_MS + WAVE_TRANSITION_ANIMATION_MS;
 
 export function useGameTurnFlow({
   effects,

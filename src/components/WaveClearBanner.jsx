@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 
-const WAVE_TRANSITION_TOTAL_DELAY_MS = 2500;
-const WAVE_TRANSITION_ANIMATION_MS = 2000;
+const WAVE_TRANSITION_WAIT_MS = 2000;
+const WAVE_TRANSITION_ANIMATION_MS = 1400;
+const WAVE_TRANSITION_TOTAL_DELAY_MS = WAVE_TRANSITION_WAIT_MS + WAVE_TRANSITION_ANIMATION_MS;
 
 export function WaveClearBanner({ wave }) {
   const [isEngaging, setIsEngaging] = useState(false);
@@ -10,7 +11,7 @@ export function WaveClearBanner({ wave }) {
     setIsEngaging(false);
     const engageTimer = window.setTimeout(() => {
       setIsEngaging(true);
-    }, WAVE_TRANSITION_TOTAL_DELAY_MS - WAVE_TRANSITION_ANIMATION_MS);
+    }, WAVE_TRANSITION_WAIT_MS);
 
     return () => window.clearTimeout(engageTimer);
   }, [wave]);
@@ -19,6 +20,7 @@ export function WaveClearBanner({ wave }) {
     <div
       className={`waveclear-top-cta wave-clear-panel ${isEngaging ? "wave-clear-engaging" : ""}`}
       key={`wave-clear-${wave}`}
+      style={{ "--wave-transition-animation-ms": `${WAVE_TRANSITION_ANIMATION_MS}ms` }}
     >
       {isEngaging && <div className="wave-engage-flash" aria-hidden="true" />}
       {isEngaging && (
@@ -44,7 +46,7 @@ export function WaveClearBanner({ wave }) {
         🎉 Wave {wave} クリア！
       </div>
       <div style={{ fontSize: 12, color: "#d5e9da", marginTop: 3, marginBottom: 8 }}>
-        {isEngaging ? `▶ 進軍中... (Wave ${wave + 1})` : `2.5秒後に Wave ${wave + 1} へ進みます...`}
+        {isEngaging ? `▶ 進軍中... (Wave ${wave + 1})` : `2.0秒後に進軍演出が始まります...`}
       </div>
     </div>
   );

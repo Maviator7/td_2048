@@ -186,7 +186,7 @@ body {
 }
 
 .wave-clear-engaging {
-  animation: wave-clear-engage-shift 840ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: wave-clear-engage-shift var(--wave-transition-animation-ms, 840ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .wave-engage-flash {
@@ -196,7 +196,7 @@ body {
   pointer-events: none;
   background:
     radial-gradient(circle at 50% 52%, rgba(134, 239, 172, 0.28), rgba(74, 222, 128, 0.1) 42%, transparent 72%);
-  animation: wave-engage-flash 840ms ease-out forwards;
+  animation: wave-engage-flash var(--wave-transition-animation-ms, 840ms) ease-out forwards;
 }
 
 .wave-engage-overlay {
@@ -207,7 +207,7 @@ body {
   background:
     radial-gradient(circle at 50% 58%, rgba(74, 222, 128, 0.2), rgba(74, 222, 128, 0.05) 32%, transparent 64%),
     linear-gradient(180deg, rgba(11, 15, 26, 0.1), rgba(11, 15, 26, 0.5));
-  animation: wave-engage-overlay-fade 840ms ease-out forwards;
+  animation: wave-engage-overlay-fade var(--wave-transition-animation-ms, 840ms) ease-out forwards;
 }
 
 .wave-engage-streaks {
@@ -222,7 +222,7 @@ body {
       rgba(167, 243, 208, 0) 18px
     );
   transform: translateX(-12%);
-  animation: wave-engage-streak-flow 840ms ease-out forwards;
+  animation: wave-engage-streak-flow var(--wave-transition-animation-ms, 840ms) ease-out forwards;
 }
 
 .wave-engage-label {
@@ -235,7 +235,7 @@ body {
   font-weight: 900;
   letter-spacing: 2px;
   text-shadow: 0 0 18px rgba(74, 222, 128, 0.52);
-  animation: wave-engage-label-pop 840ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: wave-engage-label-pop var(--wave-transition-animation-ms, 840ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .wave-next-btn:disabled {
