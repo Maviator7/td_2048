@@ -115,6 +115,7 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
   let effectIndex = 0;
 
   const attackColumns = [];
+  const poisonedLaneHits = new Set();
   const damageByLane = {};
   const hitEffects = [];
   const damageBursts = [];
@@ -188,6 +189,9 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
       }
       effectIndex += 1;
       target.hp -= damage;
+      if (target.type === ENEMY_TYPES.POISON) {
+        poisonedLaneHits.add(lane);
+      }
 
       if (tileRole === TILE_ROLES.SUPPRESSOR) {
         target.slowTurns = Math.max(target.slowTurns ?? 0, 1);
@@ -215,6 +219,9 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
           combatDebugByLane[lane].chains += 1;
           combatDebugByLane[lane].damage += chainedDamage;
           chainedTarget.hp -= chainedDamage;
+          if (chainedTarget.type === ENEMY_TYPES.POISON) {
+            poisonedLaneHits.add(lane);
+          }
           damageByLane[lane] = (damageByLane[lane] ?? 0) + chainedDamage;
           if (tileRole) {
             roleDamageByRole[tileRole] = (roleDamageByRole[tileRole] ?? 0) + chainedDamage;
@@ -256,6 +263,8 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
       ? "💥ボス"
       : enemy.type === ENEMY_TYPES.FAST
         ? "⚡高速敵"
+        : enemy.type === ENEMY_TYPES.POISON
+          ? "☠️毒敵"
         : enemy.type === ENEMY_TYPES.SPLITTER
           ? "🧬分裂敵"
           : enemy.type === ENEMY_TYPES.SPLIT_CHILD
@@ -348,6 +357,7 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
     combatDebugByLane,
     logMessages,
     remainingLaneThreats,
+    poisonedLanes: Array.from(poisonedLaneHits),
     effectDuration: Math.max(650, shotOrder * SHOT_ANIMATION_STAGGER + 420),
   };
 }

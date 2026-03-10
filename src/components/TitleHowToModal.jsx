@@ -106,6 +106,7 @@ export function TitleHowToModal({ isOpen, onClose }) {
         <ul style={{ margin: "0 0 10px 18px", padding: 0, color: "#cbd5e1", fontSize: 13, lineHeight: 1.6 }}>
           <li>通常敵: 基本タイプ。</li>
           <li>⚡ 高速敵: 通常より速く DEFENSE LINE に接近。</li>
+          <li>POISON 毒敵: 当たったレーンに次ターン追加ダメージ。</li>
           <li>🧬 分裂敵: 撃破すると小型敵 3 体に分裂。</li>
           <li>👑 ボス: 各 Wave の最後に必ず出現。体力・装甲が高め。</li>
         </ul>

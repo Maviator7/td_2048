@@ -1,4 +1,5 @@
 import { TILE_ROLE_ORDER } from "../../game/config";
+import { COLS } from "../../game/constants";
 import { addRandomTile, createEmptyDamageGrid, createEmptyGrid, createEmptyRoleGrid } from "../../game/grid";
 
 export function createInitialGrid() {
@@ -13,6 +14,10 @@ export function createRoleMetricsState() {
   return Object.fromEntries(
     TILE_ROLE_ORDER.map((roleKey) => [roleKey, { dealt: 0, taken: 0, repair: 0 }]),
   );
+}
+
+export function createEmptyLaneStatus() {
+  return Array.from({ length: COLS }, () => 0);
 }
 
 export function buildRoleMetricDeltaFromAmountMap(amountMap, metricKey) {

@@ -19,6 +19,7 @@ const SNAPSHOT_KEYS = new Set([
   "movesLeft",
   "log",
   "roleMetrics",
+  "lanePoisonTurns",
 ]);
 const BOARD_STATE_KEYS = new Set(["grid", "tileDamage", "tileRoles"]);
 const ROLE_METRIC_KEYS = new Set(["dealt", "taken", "repair"]);
@@ -59,6 +60,9 @@ function cloneSnapshot(snapshot) {
     movesPerTurn: snapshot.movesPerTurn,
     movesLeft: snapshot.movesLeft,
     log: [...snapshot.log],
+    lanePoisonTurns: Array.isArray(snapshot.lanePoisonTurns)
+      ? [...snapshot.lanePoisonTurns]
+      : Array.from({ length: COLS }, () => 0),
     roleMetrics: Object.fromEntries(
       TILE_ROLE_ORDER.map((roleKey) => [roleKey, { ...snapshot.roleMetrics[roleKey] }]),
     ),
@@ -259,6 +263,15 @@ function validateSnapshot(snapshot) {
 
   if (!isInteger(snapshot.movesLeft) || snapshot.movesLeft < 0 || snapshot.movesLeft > snapshot.movesPerTurn) {
     return false;
+  }
+
+  if (snapshot.lanePoisonTurns !== undefined) {
+    if (!Array.isArray(snapshot.lanePoisonTurns) || snapshot.lanePoisonTurns.length !== COLS) {
+      return false;
+    }
+    if (!snapshot.lanePoisonTurns.every((value) => isNonNegativeInteger(value) && value <= 9)) {
+      return false;
+    }
   }
 
   if (!Array.isArray(snapshot.log) || snapshot.log.length === 0 || snapshot.log.length > 8) {

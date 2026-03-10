@@ -11,6 +11,7 @@ import {
   buildRoleMetricDeltaFromAmountMap,
   buildRoleMetricDeltaFromCells,
   createInitialGrid,
+  createEmptyLaneStatus,
   createRoleMetricsState,
 } from "./stateHelpers";
 import { resolveCombatPhase, resolveRetaliationPhase, resolveSlideStep } from "./turnFlowHelpers";
@@ -91,6 +92,7 @@ export function useGameTurnFlow({
     tileDamage,
     tileRoles,
     wave,
+    lanePoisonTurns,
   } = state;
   const {
     setBoard,
@@ -104,6 +106,7 @@ export function useGameTurnFlow({
     setScore,
     setTampered,
     setWave,
+    setLanePoisonTurns,
   } = setters;
   const {
     addRoleMetrics,
@@ -184,7 +187,7 @@ export function useGameTurnFlow({
     pushLog(`🚫 不正なゲーム状態を検知: ${reason}`);
   }, [pushLog, setPhase, setTampered]);
 
-  const resolveTurn = useCallback((baseGrid, currentTileDamage, currentTileRoles, currentEnemies, currentLives, currentWave) => {
+  const resolveTurn = useCallback((baseGrid, currentTileDamage, currentTileRoles, currentEnemies, currentLives, currentWave, currentLanePoisonTurns) => {
     const result = resolveCombatPhase({
       grid: baseGrid,
       tileDamage: currentTileDamage,
@@ -222,6 +225,7 @@ export function useGameTurnFlow({
     setScore((currentScore) => currentScore + result.scoreGained);
     addRoleMetrics(buildRoleMetricDeltaFromAmountMap(result.roleDamageByRole, "dealt"));
     pushLogs(result.logMessages);
+    const nextPoisonedLanes = result.poisonedLanes ?? [];
 
     if (result.nextLives <= 0) {
       setPhase(GAME_PHASES.GAMEOVER);
@@ -260,6 +264,7 @@ export function useGameTurnFlow({
         tileDamage: currentTileDamage,
         tileRoles: currentTileRoles,
         remainingLaneThreats: result.remainingLaneThreats,
+        lanePoisonTurns: currentLanePoisonTurns,
       });
 
       addRoleMetrics(buildRoleMetricDeltaFromAmountMap(retaliationResult.roleTakenByRole, "taken"));
@@ -280,12 +285,23 @@ export function useGameTurnFlow({
       }
 
       effects.scheduleTimeout(() => {
+        const basePoisonTurns = Array.isArray(currentLanePoisonTurns) && currentLanePoisonTurns.length
+          ? currentLanePoisonTurns
+          : createEmptyLaneStatus();
+        const nextLanePoisonTurns = basePoisonTurns.map((turns) => Math.max(0, turns - 1));
+        nextPoisonedLanes.forEach((lane) => {
+          if (!Number.isInteger(lane) || lane < 0 || lane >= nextLanePoisonTurns.length) {
+            return;
+          }
+          nextLanePoisonTurns[lane] = Math.max(nextLanePoisonTurns[lane], 1);
+        });
+        setLanePoisonTurns(nextLanePoisonTurns);
         setMovesLeft(movesPerTurn);
         setPhase(GAME_PHASES.PLAYER);
         pushLog(`🔄 新ターン！残り${movesPerTurn}手`);
       }, retaliationResult.hadRetaliation ? 260 : 80);
     }, result.effectDuration);
-  }, [addRoleMetrics, effects, flagTamper, movesPerTurn, playAttackSe, playWaveClearSe, pushLog, pushLogs, setBoard, setEnemies, setLives, setMovesLeft, setPhase, setScore]);
+  }, [addRoleMetrics, effects, flagTamper, movesPerTurn, playAttackSe, playWaveClearSe, pushLog, pushLogs, setBoard, setEnemies, setLanePoisonTurns, setLives, setMovesLeft, setPhase, setScore]);
 
   const handleSlide = useCallback((direction) => {
     if (phase !== GAME_PHASES.PLAYER) {
@@ -351,12 +367,12 @@ export function useGameTurnFlow({
     if (nextMovesLeft <= 0) {
       pushLog("⚔️ 手数終了 → 攻撃！");
       setPhase(GAME_PHASES.RESOLVING);
-      effects.scheduleTimeout(() => resolveTurn(nextTurnGrid, nextTurnTileDamage, nextTurnTileRoles, enemies, lives, wave), 200);
+      effects.scheduleTimeout(() => resolveTurn(nextTurnGrid, nextTurnTileDamage, nextTurnTileRoles, enemies, lives, wave, lanePoisonTurns), 200);
       return;
     }
 
     pushLog(`残り${nextMovesLeft}手`);
-  }, [addRoleMetrics, effects, enemies, flagTamper, grid, lives, movesLeft, phase, playMoveSe, pushLog, resolveTurn, setBoard, setMovesLeft, setPhase, setScore, tileDamage, tileRoles, wave]);
+  }, [addRoleMetrics, effects, enemies, flagTamper, grid, lanePoisonTurns, lives, movesLeft, phase, playMoveSe, pushLog, resolveTurn, setBoard, setMovesLeft, setPhase, setScore, tileDamage, tileRoles, wave]);
 
   const nextWave = useCallback(() => {
     const nextWaveNumber = wave + 1;
@@ -379,6 +395,7 @@ export function useGameTurnFlow({
     setScore(0);
     setMovesPerTurn(MOVES_PER_TURN);
     setMovesLeft(MOVES_PER_TURN);
+    setLanePoisonTurns(createEmptyLaneStatus());
     setPhase(GAME_PHASES.PLAYER);
     setTampered(false);
     setLog([INITIAL_LOG]);

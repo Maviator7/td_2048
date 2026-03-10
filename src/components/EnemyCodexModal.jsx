@@ -22,6 +22,11 @@ const CODEX_ENTRIES = [
     description: "ターンの終了時に他の敵のHPを回復させる。",
   },
   {
+    type: ENEMY_TYPES.POISON,
+    name: "毒敵",
+    description: "攻撃が当たったレーンに次ターン追加ダメージを付与。",
+  },
+  {
     type: ENEMY_TYPES.SPLITTER,
     name: "分裂敵",
     description: "撃破時に小型敵3体へ分裂する。",
@@ -77,6 +82,17 @@ function createFigureStyle(type) {
       border: "2px solid #fdf2f8",
       boxShadow: "0 0 10px rgba(244,114,182,0.4)",
       clipPath: "polygon(35% 0%, 65% 0%, 65% 35%, 100% 35%, 100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0% 65%, 0% 35%, 35% 35%)",
+    };
+  }
+
+  if (type === ENEMY_TYPES.POISON) {
+    return {
+      ...base,
+      borderRadius: 6,
+      background: "linear-gradient(145deg, #6ee7b7 0%, #10b981 55%, #047857 100%)",
+      border: "2px solid #a7f3d0",
+      boxShadow: "0 0 10px rgba(16,185,129,0.45)",
+      clipPath: "polygon(50% 0%, 78% 8%, 100% 35%, 92% 62%, 70% 92%, 50% 100%, 30% 92%, 8% 62%, 0% 35%, 22% 8%)",
     };
   }
 

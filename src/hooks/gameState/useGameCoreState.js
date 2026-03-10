@@ -3,7 +3,7 @@ import { useCallback, useState } from "react";
 import { INIT_LIVES, INITIAL_LOG, MOVES_PER_TURN } from "../../game/constants";
 import { GAME_PHASES } from "../../game/config";
 import { spawnWave } from "../../game/enemies";
-import { createInitialGrid, createRoleMetricsState } from "./stateHelpers";
+import { createEmptyLaneStatus, createInitialGrid, createRoleMetricsState } from "./stateHelpers";
 
 export function useGameCoreState() {
   const [boardState, setBoardState] = useState(createInitialGrid);
@@ -16,6 +16,7 @@ export function useGameCoreState() {
   const [movesLeft, setMovesLeft] = useState(MOVES_PER_TURN);
   const [log, setLog] = useState([INITIAL_LOG]);
   const [roleMetrics, setRoleMetrics] = useState(createRoleMetricsState);
+  const [lanePoisonTurns, setLanePoisonTurns] = useState(createEmptyLaneStatus);
   const [tampered, setTampered] = useState(false);
 
   const pushLog = useCallback((message) => {
@@ -65,6 +66,7 @@ export function useGameCoreState() {
       movesLeft,
       log,
       roleMetrics,
+      lanePoisonTurns,
       tampered,
     },
     setters: {
@@ -78,6 +80,7 @@ export function useGameCoreState() {
       setMovesLeft,
       setLog,
       setRoleMetrics,
+      setLanePoisonTurns,
       setTampered,
       setBoard,
     },

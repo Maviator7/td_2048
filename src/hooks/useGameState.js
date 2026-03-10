@@ -6,6 +6,7 @@ import { useGameDerivedState } from "./gameState/useGameDerivedState";
 import { useGameInput } from "./gameState/useGameInput";
 import { useGameTurnFlow } from "./gameState/useGameTurnFlow";
 import { useGameCoreState } from "./gameState/useGameCoreState";
+import { createEmptyLaneStatus } from "./gameState/stateHelpers";
 import { GAME_PHASES } from "../game/config";
 import { resetEnemyIds, syncEnemyIdCounter } from "../game/enemies";
 import { saveRepository } from "../game/saveRepository";
@@ -26,6 +27,7 @@ export function useGameState() {
     movesLeft,
     log,
     roleMetrics,
+    lanePoisonTurns,
     tampered,
   } = state;
   const { grid, tileDamage, tileRoles } = boardState;
@@ -99,10 +101,11 @@ export function useGameState() {
     movesPerTurn,
     movesLeft,
     log: [...log],
+    lanePoisonTurns: [...lanePoisonTurns],
     roleMetrics: Object.fromEntries(
       Object.entries(roleMetrics).map(([roleKey, metrics]) => [roleKey, { ...metrics }]),
     ),
-  }), [enemies, grid, lives, log, movesLeft, movesPerTurn, phase, roleMetrics, score, tileDamage, tileRoles, wave]);
+  }), [enemies, grid, lanePoisonTurns, lives, log, movesLeft, movesPerTurn, phase, roleMetrics, score, tileDamage, tileRoles, wave]);
 
   useEffect(() => {
     if (prevMovesLeftRef.current === null) {
@@ -188,6 +191,7 @@ export function useGameState() {
     setters.setPhase(nextPhase);
     setters.setMovesPerTurn(snapshot.movesPerTurn);
     setters.setMovesLeft(nextMovesLeft);
+    setters.setLanePoisonTurns(snapshot.lanePoisonTurns ?? createEmptyLaneStatus());
     setters.setTampered(false);
     setters.setLog(nextLog);
     setters.setRoleMetrics(snapshot.roleMetrics);
@@ -240,6 +244,7 @@ export function useGameState() {
     colPower,
     tileRoles,
     roleMetrics,
+    lanePoisonTurns,
     tampered,
     nextSpawnEnemy,
     handleTouchStart,

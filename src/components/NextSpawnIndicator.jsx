@@ -7,6 +7,7 @@ export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEn
   const isBossNext = Boolean(nextSpawnEnemy?.isBoss);
   const isFastNext = nextSpawnEnemy?.type === "fast";
   const isHealerNext = nextSpawnEnemy?.type === "healer";
+  const isPoisonNext = nextSpawnEnemy?.type === "poison";
   const isSplitterNext = nextSpawnEnemy?.type === "splitter";
   const isSplitChildNext = nextSpawnEnemy?.type === "split_child";
 
@@ -46,6 +47,8 @@ export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEn
     ? "#f1c40f"
     : isHealerNext
       ? "#f472b6"
+      : isPoisonNext
+        ? "#34d399"
       : isSplitterNext
         ? "#ff9f43"
         : isFastNext
@@ -57,6 +60,8 @@ export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEn
     ? "次の出現 (BOSS)"
     : isHealerNext
       ? "次の出現 (HEAL)"
+      : isPoisonNext
+        ? "次の出現 (POISON)"
       : isSplitterNext
         ? "次の出現 (SPLIT)"
         : isFastNext
@@ -68,6 +73,8 @@ export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEn
     ? "👑BOSS"
     : isHealerNext
       ? "💖HEAL"
+      : isPoisonNext
+        ? "POISON"
       : isSplitterNext
         ? "🧬SPLIT"
         : isFastNext
@@ -90,6 +97,8 @@ export const NextSpawnIndicator = memo(function NextSpawnIndicator({ nextSpawnEn
           ? "linear-gradient(135deg, rgba(76, 44, 121, 0.7), rgba(13, 17, 23, 0.95))"
           : isHealerNext
             ? "linear-gradient(135deg, rgba(157, 23, 77, 0.62), rgba(13, 17, 23, 0.95))"
+            : isPoisonNext
+              ? "linear-gradient(135deg, rgba(6, 95, 70, 0.66), rgba(13, 17, 23, 0.95))"
             : isSplitterNext
               ? "linear-gradient(135deg, rgba(120, 64, 18, 0.68), rgba(13, 17, 23, 0.95))"
               : isFastNext

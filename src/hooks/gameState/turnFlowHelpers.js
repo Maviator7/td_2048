@@ -41,12 +41,13 @@ export function resolveSlideStep({ grid, tileDamage, tileRoles, direction }) {
   };
 }
 
-export function resolveRetaliationPhase({ grid, tileDamage, tileRoles, remainingLaneThreats }) {
+export function resolveRetaliationPhase({ grid, tileDamage, tileRoles, remainingLaneThreats, lanePoisonTurns }) {
   const retaliationResult = resolveRetaliationTurn(
     grid,
     tileDamage,
     tileRoles,
     remainingLaneThreats,
+    lanePoisonTurns,
   );
   const engineerRepairResult = applyEngineerTurnRepair(
     retaliationResult.nextGrid,
