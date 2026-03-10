@@ -23,6 +23,8 @@ export function GameBoardSection({
   isDebugMode,
   isDebugPanelOpen,
   onToggleDebugPanel,
+  showCombatDebugOverlay,
+  onToggleCombatDebugOverlay,
   debugBoostTarget,
   onOpenRoleModal,
   onAnyTileClick,
@@ -42,6 +44,7 @@ export function GameBoardSection({
     damageBursts,
     shotTraces,
     chainTraces,
+    combatDebugByLane,
     retaliationCols,
     retaliationHits,
     repairHighlights,
@@ -80,6 +83,9 @@ export function GameBoardSection({
               onSetMovesLeft={debug.setMovesLeft}
               onSetPhase={debug.setPhase}
               onBoostTile={debug.boostTile}
+              onSpawnTile={debug.spawnTile}
+              showCombatOverlay={showCombatDebugOverlay}
+              onToggleCombatOverlay={onToggleCombatDebugOverlay}
               onKillAllEnemies={debug.killAllEnemies}
               onRespawnWaveEnemies={debug.respawnWaveEnemies}
               onNextWave={nextWave}
@@ -107,6 +113,8 @@ export function GameBoardSection({
         damageBursts={damageBursts}
         shotTraces={shotTraces}
         chainTraces={chainTraces}
+        combatDebugByLane={combatDebugByLane}
+        showCombatOverlay={showCombatDebugOverlay}
         retaliationCols={retaliationCols}
         laneHeight={laneHeight}
         laneColors={LANE_COLORS}

@@ -314,6 +314,8 @@ function EnemyLane({
   laneBursts,
   laneTraces,
   laneChains,
+  showCombatOverlay,
+  combatDebug,
 }) {
   const isAttacking = atkCols.includes(laneIndex);
   const isCounterAttacking = retaliationCols.includes(laneIndex);
@@ -379,6 +381,33 @@ function EnemyLane({
       )}
       {laneTraces.map((trace) => <ShotTrace key={trace.key} trace={trace} />)}
       {laneChains.map((chainTrace) => <ChainTrace key={chainTrace.key} trace={chainTrace} />)}
+      {showCombatOverlay && combatDebug && (
+        <div
+          style={{
+            position: "absolute",
+            top: 4,
+            left: 4,
+            zIndex: 9,
+            background: "rgba(2, 6, 23, 0.84)",
+            border: "1px solid rgba(148, 163, 184, 0.42)",
+            borderRadius: 7,
+            padding: "3px 5px",
+            color: "#cbd5e1",
+            fontSize: 9,
+            lineHeight: 1.25,
+            fontWeight: 700,
+            pointerEvents: "none",
+            textAlign: "left",
+            minWidth: 64,
+          }}
+        >
+          <div>TGT {combatDebug.targetsAtStart}</div>
+          <div>SHOT {combatDebug.shots}</div>
+          <div>HIT {combatDebug.hits} / BLK {combatDebug.blocked}</div>
+          <div>CHAIN {combatDebug.chains}</div>
+          <div>DMG {combatDebug.damage}</div>
+        </div>
+      )}
       {damageByLane[laneIndex] && (
         <div
           style={{
@@ -460,6 +489,8 @@ export const EnemyLanes = memo(function EnemyLanes({
   damageBursts,
   shotTraces,
   chainTraces,
+  combatDebugByLane,
+  showCombatOverlay = false,
   laneHeight,
   laneColors,
 }) {
@@ -486,6 +517,8 @@ export const EnemyLanes = memo(function EnemyLanes({
           laneBursts={laneRenderData.burstsByLane[laneIndex]}
           laneTraces={laneRenderData.tracesByLane[laneIndex]}
           laneChains={laneRenderData.chainsByLane[laneIndex]}
+          showCombatOverlay={showCombatOverlay}
+          combatDebug={combatDebugByLane?.[laneIndex] ?? null}
         />
       ))}
     </div>

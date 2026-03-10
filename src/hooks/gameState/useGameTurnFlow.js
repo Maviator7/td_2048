@@ -27,7 +27,7 @@ function getMaxCombatScoreGain(enemies) {
   return enemies.reduce((sum, enemy) => sum + getEnemyReward(enemy), 0);
 }
 
-const AUTO_NEXT_WAVE_DELAY_MS = 3840;
+const AUTO_NEXT_WAVE_DELAY_MS = 2700;
 
 export function useGameTurnFlow({
   effects,
@@ -211,6 +211,7 @@ export function useGameTurnFlow({
     effects.setDamageBursts(result.damageBursts);
     effects.setShotTraces(result.shotTraces);
     effects.setChainTraces(result.chainTraces);
+    effects.setCombatDebugByLane(result.combatDebugByLane ?? []);
     effects.scheduleTimeout(effects.clearCombatEffects, result.effectDuration);
     if (result.attackColumns.length > 0) {
       playAttackSe();

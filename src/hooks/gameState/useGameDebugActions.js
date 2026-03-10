@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 
 import { GAME_PHASES } from "../../game/config";
+import { COLS, ROWS } from "../../game/constants";
 import { spawnWave } from "../../game/enemies";
 
 export function useGameDebugActions({
@@ -23,6 +24,57 @@ export function useGameDebugActions({
   wave,
   lives,
 }) {
+  const spawnTileDebug = useCallback((rawLevel, useRandomLevel = false) => {
+    let spawned = null;
+    let generatedValue = 0;
+
+    setBoardState((currentState) => {
+      const emptyCells = [];
+      for (let rowIndex = 0; rowIndex < ROWS; rowIndex += 1) {
+        for (let colIndex = 0; colIndex < COLS; colIndex += 1) {
+          if (!currentState.grid[rowIndex][colIndex]) {
+            emptyCells.push([rowIndex, colIndex]);
+          }
+        }
+      }
+
+      if (!emptyCells.length) {
+        return currentState;
+      }
+
+      const [spawnRow, spawnCol] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+      const requestedLevel = Number.isFinite(Number(rawLevel))
+        ? Math.max(1, Math.min(16, Math.floor(Number(rawLevel))))
+        : 1;
+      const level = useRandomLevel
+        ? Math.floor(Math.random() * 8) + 1
+        : requestedLevel;
+      generatedValue = 2 ** level;
+
+      const nextGrid = currentState.grid.map((row) => [...row]);
+      const nextTileDamage = currentState.tileDamage.map((row) => [...row]);
+      const nextTileRoles = currentState.tileRoles.map((row) => [...row]);
+      nextGrid[spawnRow][spawnCol] = generatedValue;
+      nextTileDamage[spawnRow][spawnCol] = 0;
+      nextTileRoles[spawnRow][spawnCol] = null;
+      spawned = { row: spawnRow, col: spawnCol, level };
+
+      return {
+        grid: nextGrid,
+        tileDamage: nextTileDamage,
+        tileRoles: nextTileRoles,
+      };
+    });
+
+    if (!spawned) {
+      pushLog("🧪 DEBUG: 空きマスがないためタイル生成できません");
+      return;
+    }
+
+    const modeLabel = useRandomLevel ? "ランダム" : "指定";
+    pushLog(`🧪 DEBUG: ${modeLabel}Lv${spawned.level}タイルを生成 (${spawned.row},${spawned.col}) -> ${generatedValue}`);
+  }, [pushLog, setBoardState]);
+
   const setWaveDebug = useCallback((rawWaveNumber) => {
     const nextWaveNumber = Number.isFinite(Number(rawWaveNumber))
       ? Math.max(1, Math.floor(Number(rawWaveNumber)))
@@ -147,6 +199,7 @@ export function useGameDebugActions({
     setMovesLeft: setMovesLeftDebug,
     setPhase: setPhaseDebug,
     boostTile: boostTileDebug,
+    spawnTile: spawnTileDebug,
     killAllEnemies: killAllEnemiesDebug,
     respawnWaveEnemies: respawnWaveEnemiesDebug,
   };

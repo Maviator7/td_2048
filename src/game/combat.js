@@ -120,10 +120,19 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
   const chainTraces = [];
   const roleDamageByRole = {};
   const logMessages = [];
+  const combatDebugByLane = Array.from({ length: COLS }, () => ({
+    targetsAtStart: 0,
+    shots: 0,
+    blocked: 0,
+    hits: 0,
+    chains: 0,
+    damage: 0,
+  }));
 
   for (let lane = 0; lane < COLS; lane += 1) {
     let laneDidAttack = false;
     const targets = laneTargets[lane];
+    combatDebugByLane[lane].targetsAtStart = targets.length;
 
     for (let row = 0; row < ROWS; row += 1) {
       const basePower = grid[row][lane];
@@ -147,8 +156,10 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
       const target = targets[laneTargetIndexes[lane]];
       const delayMs = shotOrder * SHOT_ANIMATION_STAGGER;
       shotOrder += 1;
+      combatDebugByLane[lane].shots += 1;
 
       if (shotPower <= target.armor) {
+        combatDebugByLane[lane].blocked += 1;
         if (shotTraces.length < MAX_VISUAL_EFFECTS) {
           shotTraces.push(buildShotTrace(target, lane, row, delayMs, true, effectIndex));
         }
@@ -158,6 +169,8 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
       }
 
       const damage = shotPower - target.armor;
+      combatDebugByLane[lane].hits += 1;
+      combatDebugByLane[lane].damage += damage;
       damageByLane[lane] = (damageByLane[lane] ?? 0) + damage;
       if (tileRole) {
         roleDamageByRole[tileRole] = (roleDamageByRole[tileRole] ?? 0) + damage;
@@ -197,6 +210,8 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
           }
 
           const chainedDamage = chainedBaseDamage - chainedTarget.armor;
+          combatDebugByLane[lane].chains += 1;
+          combatDebugByLane[lane].damage += chainedDamage;
           chainedTarget.hp -= chainedDamage;
           damageByLane[lane] = (damageByLane[lane] ?? 0) + chainedDamage;
           if (tileRole) {
@@ -291,6 +306,7 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
     shotTraces,
     chainTraces,
     roleDamageByRole,
+    combatDebugByLane,
     logMessages,
     remainingLaneThreats,
     effectDuration: Math.max(650, shotOrder * SHOT_ANIMATION_STAGGER + 420),

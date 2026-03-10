@@ -30,6 +30,7 @@ function resolveScreenTransitionPreset(fromScreen, toScreen) {
 
 export default function MergeTowerDefense() {
   const [screen, setScreen] = useState(APP_SCREENS.TITLE);
+  const [debugStartEnabled, setDebugStartEnabled] = useState(false);
   const game = useGameState();
   const [saveMeta, setSaveMeta] = useState(() => game.getSaveMeta());
   const rankings = useRankings({
@@ -50,10 +51,11 @@ export default function MergeTowerDefense() {
     setSaveMeta(game.getSaveMeta());
   }, [game]);
 
-  const startGame = () => {
+  const startGame = ({ debug = false } = {}) => {
     bgm.unlockAudio();
     rankings.prepareForNewRun();
     game.restart();
+    setDebugStartEnabled(Boolean(debug));
     refreshSaveMeta();
     setScreen(APP_SCREENS.GAME);
   };
@@ -67,12 +69,14 @@ export default function MergeTowerDefense() {
     }
 
     rankings.prepareForNewRun();
+    setDebugStartEnabled(false);
     setScreen(APP_SCREENS.GAME);
     return true;
   };
 
   const backToTitle = () => {
     rankings.dismissLatestRankingHighlight();
+    setDebugStartEnabled(false);
     refreshSaveMeta();
     setScreen(APP_SCREENS.TITLE);
   };
@@ -145,7 +149,8 @@ export default function MergeTowerDefense() {
 
   const screenContent = renderedScreen === APP_SCREENS.TITLE ? (
     <TitleScreen
-      onStart={startGame}
+      onStart={() => startGame({ debug: false })}
+      onStartDebug={() => startGame({ debug: true })}
       onContinue={continueGame}
       canContinue={saveMeta.exists}
       continueMeta={saveMeta.summary}
@@ -165,12 +170,13 @@ export default function MergeTowerDefense() {
     <RankingScreen
       rankings={rankings.rankings}
       latestEntryId={rankings.latestRankingEntryId}
-      onStart={startGame}
+      onStart={() => startGame({ debug: false })}
       onBackToTitle={backToTitle}
     />
   ) : (
     <GameScreen
       game={game}
+      debugStartEnabled={debugStartEnabled}
       onSaveMetaUpdated={refreshSaveMeta}
       onBackToTitle={backToTitle}
       onOpenRanking={openRankingFromGameOver}

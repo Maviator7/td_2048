@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-const WAVE_TRANSITION_TOTAL_DELAY_MS = 3840;
-const WAVE_TRANSITION_ANIMATION_MS = 840;
+const WAVE_TRANSITION_TOTAL_DELAY_MS = 2700;
+const WAVE_TRANSITION_ANIMATION_MS = 1500;
 
 export function WaveClearBanner({ wave }) {
   const [isEngaging, setIsEngaging] = useState(false);
@@ -44,7 +44,7 @@ export function WaveClearBanner({ wave }) {
         🎉 Wave {wave} クリア！
       </div>
       <div style={{ fontSize: 12, color: "#d5e9da", marginTop: 3, marginBottom: 8 }}>
-        {isEngaging ? `▶ 進軍中... (Wave ${wave + 1})` : `3秒後に Wave ${wave + 1} へ進みます...`}
+        {isEngaging ? `▶ 進軍中... (Wave ${wave + 1})` : `2.7秒後に Wave ${wave + 1} へ進みます...`}
       </div>
     </div>
   );

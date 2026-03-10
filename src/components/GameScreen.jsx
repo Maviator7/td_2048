@@ -34,7 +34,7 @@ function loadDiscoveredEnemyTypes() {
   }
 }
 
-export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanking, bgm }) {
+export function GameScreen({ game, debugStartEnabled = false, onSaveMetaUpdated, onBackToTitle, onOpenRanking, bgm }) {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [contentScale, setContentScale] = useState({ x: 1, y: 1 });
   const [contentSize, setContentSize] = useState({ width: 0, height: 0 });
@@ -44,8 +44,9 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanki
   const [isEnemyCodexOpen, setIsEnemyCodexOpen] = useState(false);
   const [saveMeta, setSaveMeta] = useState(() => game.getSaveMeta());
   const initialDiscoveredEnemyTypes = useMemo(() => loadDiscoveredEnemyTypes(), []);
-  const isDebugMode = import.meta.env.VITE_ENABLE_DEBUG_PANEL === "true";
+  const isDebugMode = debugStartEnabled || import.meta.env.VITE_ENABLE_DEBUG_PANEL === "true";
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(() => isDebugMode);
+  const [showCombatDebugOverlay, setShowCombatDebugOverlay] = useState(false);
   const [debugBoostTarget, setDebugBoostTarget] = useState({ row: 0, col: 0 });
   const [isLifeLossActive, setIsLifeLossActive] = useState(false);
   const [lifeLossAmount, setLifeLossAmount] = useState(0);
@@ -288,6 +289,8 @@ export function GameScreen({ game, onSaveMetaUpdated, onBackToTitle, onOpenRanki
               isDebugMode={isDebugMode}
               isDebugPanelOpen={isDebugPanelOpen}
               onToggleDebugPanel={() => setIsDebugPanelOpen((current) => !current)}
+              showCombatDebugOverlay={showCombatDebugOverlay}
+              onToggleCombatDebugOverlay={setShowCombatDebugOverlay}
               debugBoostTarget={debugBoostTarget}
               onOpenRoleModal={openRoleModal}
               onAnyTileClick={handleTileClick}

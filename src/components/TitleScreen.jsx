@@ -5,6 +5,7 @@ import { centeredFullscreenLayout, createPanelSurface, createPrimaryButtonStyle 
 
 export function TitleScreen({
   onStart,
+  onStartDebug,
   onContinue,
   canContinue,
   continueMeta,
@@ -52,6 +53,21 @@ export function TitleScreen({
         >
           ▶ ゲームスタート
         </button>
+        {import.meta.env.DEV && (
+          <button
+            type="button"
+            onClick={onStartDebug}
+            style={createPrimaryButtonStyle({
+              marginTop: 8,
+              border: "1px solid #3b0764",
+              background: "linear-gradient(90deg,#4c1d95 0%,#6d28d9 100%)",
+              color: "#ede9fe",
+              padding: "11px 10px",
+            })}
+          >
+            🧪 デバッグスタート
+          </button>
+        )}
         <button
           type="button"
           onClick={() => {

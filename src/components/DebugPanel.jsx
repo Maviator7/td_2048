@@ -62,6 +62,9 @@ export const DebugPanel = memo(function DebugPanel({
   onSetMovesLeft,
   onSetPhase,
   onBoostTile,
+  onSpawnTile,
+  showCombatOverlay,
+  onToggleCombatOverlay,
   onKillAllEnemies,
   onRespawnWaveEnemies,
   onNextWave,
@@ -73,6 +76,7 @@ export const DebugPanel = memo(function DebugPanel({
   const [phaseInput, setPhaseInput] = useState(phase);
   const [boostRowInput, setBoostRowInput] = useState("0");
   const [boostColInput, setBoostColInput] = useState("0");
+  const [spawnLevelInput, setSpawnLevelInput] = useState("1");
 
   useEffect(() => {
     setWaveInput(String(wave));
@@ -197,6 +201,39 @@ export const DebugPanel = memo(function DebugPanel({
             タイル強化
           </button>
         </div>
+      </div>
+
+      <div style={{ marginTop: 8, ...sectionStyle() }}>
+        <div style={labelStyle()}>Spawn Tile (Level)</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 8 }}>
+          <input
+            type="number"
+            min="1"
+            max="16"
+            value={spawnLevelInput}
+            onChange={(event) => setSpawnLevelInput(event.target.value)}
+            style={inputStyle()}
+            placeholder="level (1-16)"
+          />
+          <button type="button" style={buttonStyle()} onClick={() => onSpawnTile(spawnLevelInput, false)}>
+            指定生成
+          </button>
+          <button type="button" style={buttonStyle()} onClick={() => onSpawnTile(spawnLevelInput, true)}>
+            ランダム
+          </button>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 8, ...sectionStyle() }}>
+        <div style={labelStyle()}>Combat Overlay</div>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#e2e8f0", fontSize: 12, fontWeight: 700 }}>
+          <input
+            type="checkbox"
+            checked={showCombatOverlay}
+            onChange={(event) => onToggleCombatOverlay?.(event.target.checked)}
+          />
+          戦闘詳細オーバーレイを表示
+        </label>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 8 }}>

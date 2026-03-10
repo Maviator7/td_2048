@@ -224,6 +224,7 @@ export function useGameState() {
     damageBursts: effects.damageBursts,
     shotTraces: effects.shotTraces,
     chainTraces: effects.chainTraces,
+    combatDebugByLane: effects.combatDebugByLane,
     retaliationCols: effects.retaliationCols,
     retaliationHits: effects.retaliationHits,
     repairHighlights: effects.repairHighlights,

@@ -8,6 +8,7 @@ export function useScheduledGameEffects() {
   const [damageBursts, setDamageBursts] = useState([]);
   const [shotTraces, setShotTraces] = useState([]);
   const [chainTraces, setChainTraces] = useState([]);
+  const [combatDebugByLane, setCombatDebugByLane] = useState([]);
   const [retaliationCols, setRetaliationCols] = useState([]);
   const [retaliationHits, setRetaliationHits] = useState([]);
   const [repairHighlights, setRepairHighlights] = useState([]);
@@ -35,6 +36,7 @@ export function useScheduledGameEffects() {
     setDamageBursts([]);
     setShotTraces([]);
     setChainTraces([]);
+    setCombatDebugByLane([]);
   }, []);
 
   const clearRetaliationEffects = useCallback(() => {
@@ -55,6 +57,7 @@ export function useScheduledGameEffects() {
     damageBursts,
     shotTraces,
     chainTraces,
+    combatDebugByLane,
     retaliationCols,
     retaliationHits,
     repairHighlights,
@@ -65,6 +68,7 @@ export function useScheduledGameEffects() {
     setDamageBursts,
     setShotTraces,
     setChainTraces,
+    setCombatDebugByLane,
     setRetaliationCols,
     setRetaliationHits,
     setRepairHighlights,
