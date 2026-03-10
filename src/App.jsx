@@ -11,6 +11,7 @@ import { useBgmController } from "./hooks/useBgmController";
 import {
   hasStoredRankingName,
   loadStoredRankingName,
+  sanitizeRankingName,
   storeRankingName,
   validateRankingName,
 } from "./game/playerProfile";
@@ -100,12 +101,13 @@ export default function MergeTowerDefense() {
   };
 
   const handleChangeRankingName = useCallback((rawName) => {
-    const result = validateRankingName(rawName);
+    const sanitizedName = sanitizeRankingName(rawName);
+    const result = validateRankingName(sanitizedName);
     if (!result.ok) {
       return result;
     }
 
-    const storedName = storeRankingName(result.value);
+    const storedName = storeRankingName(sanitizedName);
     setRankingName(storedName);
     rankings.updateLatestRankingName(storedName);
     return { ok: true, value: storedName, error: null };
