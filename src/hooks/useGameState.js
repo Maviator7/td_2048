@@ -140,6 +140,14 @@ export function useGameState() {
   }, [createSnapshot, phase, tampered]);
 
   useEffect(() => {
+    if (phase !== GAME_PHASES.GAMEOVER) {
+      return;
+    }
+
+    saveRepository.clear();
+  }, [phase]);
+
+  useEffect(() => {
     if (tampered) {
       return;
     }
