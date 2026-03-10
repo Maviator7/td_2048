@@ -1,3 +1,5 @@
+import { DEFAULT_RANKING_NAME, validateRankingName } from "./playerProfile";
+
 const STORAGE_KEY = "merge-fortress-2048:local-rankings:v1";
 const LEGACY_STORAGE_KEYS = [
   "merge-fortress-2048:local-rankings",
@@ -31,12 +33,14 @@ function normalizeRankingEntry(entry) {
   const wave = Number.isFinite(Number(entry.wave)) ? Math.max(1, Math.floor(Number(entry.wave))) : null;
   const playedAt = typeof entry.playedAt === "string" ? entry.playedAt : null;
   const id = typeof entry.id === "string" ? entry.id : null;
+  const validatedName = validateRankingName(entry?.name);
+  const name = validatedName.ok ? validatedName.value : DEFAULT_RANKING_NAME;
 
   if (score === null || wave === null || !playedAt || !id) {
     return null;
   }
 
-  return { id, score, wave, playedAt };
+  return { id, name, score, wave, playedAt };
 }
 
 function readRankingsFromStorage(storageKey) {
@@ -156,9 +160,11 @@ export function clearLatestRankingEntry() {
   });
 }
 
-export function saveRankingEntry({ score, wave }) {
+export function saveRankingEntry({ score, wave, name }) {
+  const validatedName = validateRankingName(name);
   const entry = {
     id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name: validatedName.ok ? validatedName.value : DEFAULT_RANKING_NAME,
     score: Math.max(0, Math.floor(Number(score) || 0)),
     wave: Math.max(1, Math.floor(Number(wave) || 1)),
     playedAt: new Date().toISOString(),
@@ -174,10 +180,32 @@ export function saveRankingEntry({ score, wave }) {
   return { entry, rankings };
 }
 
+export function updateLatestRankingEntryName(name) {
+  const latestEntryId = rankingSnapshot.latestEntryId;
+  if (!latestEntryId) {
+    return { updated: false, rankings: rankingSnapshot.rankings };
+  }
+
+  const validatedName = validateRankingName(name);
+  if (!validatedName.ok) {
+    return { updated: false, rankings: rankingSnapshot.rankings };
+  }
+
+  const rankings = rankingSnapshot.rankings.map((entry) => (
+    entry.id === latestEntryId
+      ? { ...entry, name: validatedName.value }
+      : entry
+  ));
+  writeRankingsToStorage(rankings);
+  emitRankingSnapshot({ rankings, latestEntryId: rankingSnapshot.latestEntryId });
+  return { updated: true, rankings };
+}
+
 export const rankingRepository = {
   subscribe: subscribeRankings,
   getSnapshot: getRankingSnapshot,
   refresh: refreshRankingSnapshot,
   clearLatestEntry: clearLatestRankingEntry,
   saveEntry: saveRankingEntry,
+  updateLatestEntryName: updateLatestRankingEntryName,
 };

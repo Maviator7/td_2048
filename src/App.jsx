@@ -8,6 +8,12 @@ import { useGameState } from "./hooks/useGameState";
 import { useRankings } from "./hooks/useRankings";
 import { ENEMY_TYPES, GAME_PHASES } from "./game/config";
 import { useBgmController } from "./hooks/useBgmController";
+import {
+  hasStoredRankingName,
+  loadStoredRankingName,
+  storeRankingName,
+  validateRankingName,
+} from "./game/playerProfile";
 
 const SCREEN_EXIT_DURATION_MS = 150;
 const SCREEN_ENTER_FRAME_DELAY_MS = 20;
@@ -31,12 +37,14 @@ function resolveScreenTransitionPreset(fromScreen, toScreen) {
 export default function MergeTowerDefense() {
   const [screen, setScreen] = useState(APP_SCREENS.TITLE);
   const [debugStartEnabled, setDebugStartEnabled] = useState(false);
+  const [rankingName, setRankingName] = useState(loadStoredRankingName);
   const game = useGameState();
   const [saveMeta, setSaveMeta] = useState(() => game.getSaveMeta());
   const rankings = useRankings({
     phase: game.phase,
     score: game.score,
     wave: game.wave,
+    playerName: rankingName,
     isRankable: !game.tampered,
   });
   const [renderedScreen, setRenderedScreen] = useState(APP_SCREENS.TITLE);
@@ -90,6 +98,18 @@ export default function MergeTowerDefense() {
     rankings.refreshRankings();
     setScreen(APP_SCREENS.RANKING);
   };
+
+  const handleChangeRankingName = useCallback((rawName) => {
+    const result = validateRankingName(rawName);
+    if (!result.ok) {
+      return result;
+    }
+
+    const storedName = storeRankingName(result.value);
+    setRankingName(storedName);
+    rankings.updateLatestRankingName(storedName);
+    return { ok: true, value: storedName, error: null };
+  }, [rankings]);
 
   const activeScreen = screen;
 
@@ -165,11 +185,16 @@ export default function MergeTowerDefense() {
       onChangeBgmVolume={(nextValue) => bgm.setBgmVolume(nextValue)}
       onChangeSeVolume={(nextValue) => bgm.setSeVolume(nextValue)}
       onUnlockAudio={bgm.unlockAudio}
+      rankingName={rankingName}
+      onChangeRankingName={handleChangeRankingName}
     />
   ) : renderedScreen === APP_SCREENS.RANKING ? (
     <RankingScreen
       rankings={rankings.rankings}
       latestEntryId={rankings.latestRankingEntryId}
+      rankingName={rankingName}
+      shouldPromptNameModal={!hasStoredRankingName()}
+      onSubmitRankingName={handleChangeRankingName}
       onStart={() => startGame({ debug: false })}
       onBackToTitle={backToTitle}
     />

@@ -20,6 +20,8 @@ export function TitleScreen({
   onChangeBgmVolume,
   onChangeSeVolume,
   onUnlockAudio,
+  rankingName,
+  onChangeRankingName,
 }) {
   const [isHowToOpen, setIsHowToOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -160,6 +162,8 @@ export function TitleScreen({
         onChangeBgmVolume={onChangeBgmVolume}
         onChangeSeVolume={onChangeSeVolume}
         onUnlockAudio={onUnlockAudio}
+        rankingName={rankingName}
+        onChangeRankingName={onChangeRankingName}
       />
       <TitleHowToModal isOpen={isHowToOpen} onClose={() => setIsHowToOpen(false)} />
     </div>

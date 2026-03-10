@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { createModalSurface, createPrimaryButtonStyle } from "./ui/styles";
 import { useModalTransition } from "../hooks/useModalTransition";
@@ -15,11 +15,16 @@ export function TitleSettingsModal({
   onChangeBgmVolume,
   onChangeSeVolume,
   onUnlockAudio,
+  rankingName,
+  onChangeRankingName,
 }) {
   const dialogRef = useRef(null);
   const titleId = useId();
   const descriptionId = useId();
   const { isRendered, phase } = useModalTransition(isOpen);
+  const [nameDraftOverride, setNameDraftOverride] = useState(null);
+  const [nameError, setNameError] = useState("");
+  const nameDraft = nameDraftOverride ?? (rankingName ?? "");
 
   useEffect(() => {
     if (!isOpen) {
@@ -46,6 +51,17 @@ export function TitleSettingsModal({
   if (!isRendered) {
     return null;
   }
+
+  const handleSaveRankingName = () => {
+    const result = onChangeRankingName?.(nameDraft);
+    if (!result?.ok) {
+      setNameError(result?.error ?? "名前の保存に失敗しました。");
+      return;
+    }
+
+    setNameDraftOverride(null);
+    setNameError("");
+  };
 
   return (
     <div
@@ -98,6 +114,59 @@ export function TitleSettingsModal({
         </div>
         <div id={descriptionId} style={{ fontSize: 13, color: "#94a3b8", marginBottom: 10 }}>
           マスター、BGM、SEの音量を調整できます。
+        </div>
+
+        <div style={{ border: "1px solid #334155", borderRadius: 10, padding: "9px 10px", background: "rgba(15,23,42,0.74)", marginBottom: 8 }}>
+          <div style={{ fontSize: 13, color: "#cbd5e1", fontWeight: 700, marginBottom: 7 }}>ランキング登録名</div>
+          <input
+            type="text"
+            value={nameDraft}
+            onChange={(event) => {
+              setNameDraftOverride(event.target.value);
+              if (nameError) {
+                setNameError("");
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                handleSaveRankingName();
+              }
+            }}
+            maxLength={32}
+            placeholder="名前を入力"
+            style={{
+              width: "100%",
+              borderRadius: 8,
+              border: `1px solid ${nameError ? "#ef4444" : "#475569"}`,
+              background: "#020617",
+              color: "#e2e8f0",
+              fontSize: 13,
+              padding: "7px 9px",
+              boxSizing: "border-box",
+            }}
+          />
+          <div style={{ marginTop: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+            <div style={{ fontSize: 11, color: nameError ? "#fca5a5" : "#94a3b8" }}>
+              {nameError || "1〜12文字で入力できます。"}
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveRankingName}
+              style={{
+                border: "1px solid #475569",
+                borderRadius: 8,
+                padding: "5px 8px",
+                background: "#0f172a",
+                color: "#e2e8f0",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              名前を保存
+            </button>
+          </div>
         </div>
 
         <div style={{ border: "1px solid #334155", borderRadius: 10, padding: "9px 10px", background: "rgba(15,23,42,0.74)", marginBottom: 8 }}>
