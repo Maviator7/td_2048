@@ -89,12 +89,6 @@ export function TitleHowToModal({ isOpen, onClose }) {
     };
   }, [isOpen, onClose]);
 
-  useEffect(() => {
-    if (isOpen) {
-      setActiveTabKey(GUIDE_TABS[0].key);
-    }
-  }, [isOpen]);
-
   if (!isRendered) {
     return null;
   }

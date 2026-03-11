@@ -303,7 +303,7 @@ export function useGameTurnFlow({
         pushLog(`🔄 新ターン！残り${movesPerTurn}手`);
       }, retaliationResult.hadRetaliation ? 260 : 80);
     }, result.effectDuration);
-  }, [addRoleMetrics, effects, flagTamper, movesPerTurn, playAttackSe, playWaveClearSe, pushLog, pushLogs, setBoard, setEnemies, setLanePoisonTurns, setLives, setMovesLeft, setPhase, setScore]);
+  }, [addRoleMetrics, effects, flagTamper, movesPerTurn, playAttackSe, playWaveClearSe, pushLog, pushLogs, setBoard, setEnemies, setLanePoisonTurns, setLives, setMovesLeft, setPhase, setScore, setWave]);
 
   const handleSlide = useCallback((direction) => {
     if (phase !== GAME_PHASES.PLAYER) {
@@ -406,7 +406,7 @@ export function useGameTurnFlow({
     effects.clearRetaliationEffects();
     effects.clearRepairEffects();
     effects.setMergeHL([]);
-  }, [effects, setBoard, setEnemies, setLives, setLog, setMovesLeft, setMovesPerTurn, setPhase, setRoleMetrics, setScore, setTampered, setWave]);
+  }, [effects, setBoard, setEnemies, setLanePoisonTurns, setLives, setLog, setMovesLeft, setMovesPerTurn, setPhase, setRoleMetrics, setScore, setTampered, setWave]);
 
   return {
     handleSlide,

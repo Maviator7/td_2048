@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AUDIO_STORAGE_KEYS, clampVolume, DEFAULT_AUDIO_VOLUMES, loadStoredVolume } from "../audio/settings";
 

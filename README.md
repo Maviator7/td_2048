@@ -48,6 +48,40 @@ Lint:
 npm run lint
 ```
 
+Test:
+
+```bash
+npm test
+```
+
+## デプロイ時セキュリティ設定
+
+- `public/_headers` を追加済み（Cloudflare Pagesで有効）
+
+設定済みヘッダー:
+
+- `Content-Security-Policy`
+- `X-Content-Type-Options: nosniff`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Strict-Transport-Security`
+- `Permissions-Policy`
+
+## 3rd Party スクリプト方針
+
+- 現在、`Cloudflare Web Analytics` を使用
+- 将来外部スクリプトを導入する場合は、バージョン固定 + `integrity`（SRI）+ `crossorigin="anonymous"` を必須にしてください
+
+## CI
+
+- GitHub Actions を追加済み: `.github/workflows/ci.yml`
+- `npm ci` → `npm run lint` → `npm test` → `npm run build` を `push` / `pull_request` で実行
+
+## Cloudflare Pages デプロイ
+
+- Build command: `npm run build`
+- Build output directory: `dist`
+- セキュリティヘッダーは `public/_headers` がそのまま適用されます
+
 ## デバッグパネル
 
 デバッグパネルはデフォルトで無効です。ローカル開発でも自動では表示されません。

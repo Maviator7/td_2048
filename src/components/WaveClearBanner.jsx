@@ -8,7 +8,6 @@ export function WaveClearBanner({ wave }) {
   const [isEngaging, setIsEngaging] = useState(false);
 
   useEffect(() => {
-    setIsEngaging(false);
     const engageTimer = window.setTimeout(() => {
       setIsEngaging(true);
     }, WAVE_TRANSITION_WAIT_MS);
