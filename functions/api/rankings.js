@@ -162,6 +162,20 @@ function normalizeRankingRow(row) {
   };
 }
 
+function resolveServerErrorMessage(error, fallbackMessage) {
+  const rawMessage = typeof error?.message === "string" ? error.message : "";
+  const normalized = rawMessage.toLowerCase();
+
+  if (normalized.includes("no such table") && normalized.includes("rankings")) {
+    return "ランキングDBの初期化が未完了です。D1 マイグレーションを確認してください。";
+  }
+  if (normalized.includes("cannot read properties") && normalized.includes("prepare")) {
+    return "DB バインディング(DB) が見つかりません。Pages の D1 設定を確認してください。";
+  }
+
+  return fallbackMessage;
+}
+
 async function fetchRankings(db, limit = MAX_RANKING_ENTRIES) {
   const limited = Math.min(Math.max(limit, 1), MAX_RANKING_ENTRIES);
   const result = await db.prepare(
@@ -177,10 +191,19 @@ export async function onRequestGet(context) {
     return jsonResponse({ error: "許可されていないオリジンです。" }, 403);
   }
 
-  const url = new URL(context.request.url);
-  const limit = parsePositiveInt(url.searchParams.get("limit"), MAX_RANKING_ENTRIES);
-  const rankings = await fetchRankings(context.env.DB, limit);
-  return jsonResponse({ rankings }, 200, cors.headers);
+  try {
+    const url = new URL(context.request.url);
+    const limit = parsePositiveInt(url.searchParams.get("limit"), MAX_RANKING_ENTRIES);
+    const rankings = await fetchRankings(context.env.DB, limit);
+    return jsonResponse({ rankings }, 200, cors.headers);
+  } catch (error) {
+    console.error("[online-rankings] failed to fetch rankings", error);
+    return jsonResponse(
+      { error: resolveServerErrorMessage(error, "ランキングデータの取得に失敗しました。") },
+      500,
+      cors.headers,
+    );
+  }
 }
 
 export async function onRequestPost(context) {
@@ -232,23 +255,32 @@ export async function onRequestPost(context) {
     return jsonResponse({ error: "Wave が不正です。" }, 400, cors.headers);
   }
 
-  const id = crypto.randomUUID();
-  const playedAt = new Date().toISOString();
+  try {
+    const id = crypto.randomUUID();
+    const playedAt = new Date().toISOString();
 
-  await context.env.DB.prepare(
-    "INSERT INTO rankings (id, player_name, score, wave, played_at) VALUES (?, ?, ?, ?, ?)",
-  ).bind(id, nameResult.value, score, wave, playedAt).run();
+    await context.env.DB.prepare(
+      "INSERT INTO rankings (id, player_name, score, wave, played_at) VALUES (?, ?, ?, ?, ?)",
+    ).bind(id, nameResult.value, score, wave, playedAt).run();
 
-  const entry = {
-    id,
-    name: nameResult.value,
-    score,
-    wave,
-    playedAt,
-  };
-  const rankings = await fetchRankings(context.env.DB, MAX_RANKING_ENTRIES);
+    const entry = {
+      id,
+      name: nameResult.value,
+      score,
+      wave,
+      playedAt,
+    };
+    const rankings = await fetchRankings(context.env.DB, MAX_RANKING_ENTRIES);
 
-  return jsonResponse({ entry, rankings }, 201, cors.headers);
+    return jsonResponse({ entry, rankings }, 201, cors.headers);
+  } catch (error) {
+    console.error("[online-rankings] failed to save ranking", error);
+    return jsonResponse(
+      { error: resolveServerErrorMessage(error, "ランキングデータの保存に失敗しました。") },
+      500,
+      cors.headers,
+    );
+  }
 }
 
 export async function onRequestOptions(context) {

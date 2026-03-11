@@ -91,6 +91,20 @@ function normalizeRankingRow(row) {
   };
 }
 
+function resolveServerErrorMessage(error, fallbackMessage) {
+  const rawMessage = typeof error?.message === "string" ? error.message : "";
+  const normalized = rawMessage.toLowerCase();
+
+  if (normalized.includes("no such table") && normalized.includes("rankings")) {
+    return "ランキングDBの初期化が未完了です。D1 マイグレーションを確認してください。";
+  }
+  if (normalized.includes("cannot read properties") && normalized.includes("prepare")) {
+    return "DB バインディング(DB) が見つかりません。Pages の D1 設定を確認してください。";
+  }
+
+  return fallbackMessage;
+}
+
 export async function onRequestPatch(context) {
   const cors = buildCorsHeaders(context);
   if (!cors.allowed) {
@@ -114,27 +128,36 @@ export async function onRequestPatch(context) {
     return jsonResponse({ error: nameResult.error }, 400, cors.headers);
   }
 
-  const update = await context.env.DB.prepare(
-    "UPDATE rankings SET player_name = ? WHERE id = ?",
-  ).bind(nameResult.value, id).run();
+  try {
+    const update = await context.env.DB.prepare(
+      "UPDATE rankings SET player_name = ? WHERE id = ?",
+    ).bind(nameResult.value, id).run();
 
-  if (!update.success) {
-    return jsonResponse({ error: "更新に失敗しました。" }, 500, cors.headers);
+    if (!update.success) {
+      return jsonResponse({ error: "更新に失敗しました。" }, 500, cors.headers);
+    }
+    if (update.meta?.changes === 0) {
+      return jsonResponse({ error: "対象が見つかりません。" }, 404, cors.headers);
+    }
+
+    const result = await context.env.DB.prepare(
+      "SELECT id, player_name, score, wave, played_at FROM rankings WHERE id = ? LIMIT 1",
+    ).bind(id).first();
+
+    if (!result) {
+      return jsonResponse({ error: "対象が見つかりません。" }, 404, cors.headers);
+    }
+
+    const entry = normalizeRankingRow(result);
+    return jsonResponse({ entry }, 200, cors.headers);
+  } catch (error) {
+    console.error("[online-rankings] failed to update ranking name", error);
+    return jsonResponse(
+      { error: resolveServerErrorMessage(error, "ランキング名の更新に失敗しました。") },
+      500,
+      cors.headers,
+    );
   }
-  if (update.meta?.changes === 0) {
-    return jsonResponse({ error: "対象が見つかりません。" }, 404, cors.headers);
-  }
-
-  const result = await context.env.DB.prepare(
-    "SELECT id, player_name, score, wave, played_at FROM rankings WHERE id = ? LIMIT 1",
-  ).bind(id).first();
-
-  if (!result) {
-    return jsonResponse({ error: "対象が見つかりません。" }, 404, cors.headers);
-  }
-
-  const entry = normalizeRankingRow(result);
-  return jsonResponse({ entry }, 200, cors.headers);
 }
 
 export async function onRequestOptions(context) {

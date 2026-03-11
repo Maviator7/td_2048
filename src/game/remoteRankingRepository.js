@@ -1,6 +1,7 @@
 import { DEFAULT_RANKING_NAME, validateRankingName } from "./playerProfile";
 
 const MAX_RANKING_ENTRIES = 20;
+const ERROR_LOG_COOLDOWN_MS = 30_000;
 const listeners = new Set();
 const env = import.meta.env ?? {};
 const API_BASE = env.VITE_RANKINGS_API_BASE || "/api";
@@ -12,6 +13,10 @@ let rankingSnapshot = {
 };
 let refreshPromise = null;
 let didInitialRefresh = false;
+let lastRefreshErrorLog = {
+  key: "",
+  at: 0,
+};
 
 function emitRankingSnapshot(nextSnapshot) {
   rankingSnapshot = nextSnapshot;
@@ -37,6 +42,40 @@ function normalizeRankingEntry(entry) {
   return { id, name, score, wave, playedAt };
 }
 
+async function parseErrorBody(response) {
+  try {
+    const data = await response.json();
+    if (typeof data?.error === "string" && data.error.trim()) {
+      return data.error.trim();
+    }
+  } catch {
+    // Ignore non-JSON body.
+  }
+  return "";
+}
+
+function createRefreshErrorMessage(status, detailMessage = "") {
+  if (status >= 500) {
+    return "オンラインランキングサーバーでエラーが発生しています。時間をおいて再試行してください。";
+  }
+  if (status === 429) {
+    return "ランキング取得が混み合っています。少し時間をおいて再試行してください。";
+  }
+  return detailMessage || "オンラインランキングの取得に失敗しました。";
+}
+
+function shouldLogRefreshError(status, detailMessage) {
+  const now = Date.now();
+  const key = `${status}:${detailMessage}`;
+  const isSameError = lastRefreshErrorLog.key === key;
+  const isWithinCooldown = now - lastRefreshErrorLog.at < ERROR_LOG_COOLDOWN_MS;
+  if (isSameError && isWithinCooldown) {
+    return false;
+  }
+  lastRefreshErrorLog = { key, at: now };
+  return true;
+}
+
 async function fetchRankings() {
   const response = await fetch(`${API_BASE}/rankings?limit=${MAX_RANKING_ENTRIES}`, {
     method: "GET",
@@ -46,7 +85,11 @@ async function fetchRankings() {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to load rankings (${response.status})`);
+    const detailMessage = await parseErrorBody(response);
+    const error = new Error(detailMessage || `Failed to load rankings (${response.status})`);
+    error.status = response.status;
+    error.userMessage = createRefreshErrorMessage(response.status, detailMessage);
+    throw error;
   }
 
   const data = await response.json();
@@ -65,11 +108,17 @@ async function refreshRankingSnapshot() {
         });
       })
       .catch((error) => {
-        console.error("[online-rankings] failed to refresh rankings", error);
+        const status = Number.isFinite(Number(error?.status)) ? Number(error.status) : 0;
+        const detailMessage = typeof error?.message === "string" ? error.message : "";
+        if (shouldLogRefreshError(status, detailMessage)) {
+          console.error("[online-rankings] failed to refresh rankings", error);
+        }
         emitRankingSnapshot({
           rankings: rankingSnapshot.rankings,
           latestEntryId: rankingSnapshot.latestEntryId,
-          errorMessage: "オンラインランキングの取得に失敗しました。",
+          errorMessage: typeof error?.userMessage === "string" && error.userMessage
+            ? error.userMessage
+            : "オンラインランキングの取得に失敗しました。",
         });
       })
       .finally(() => {
