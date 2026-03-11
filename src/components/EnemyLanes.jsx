@@ -83,9 +83,10 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
   const isPoison = enemy.type === "poison";
   const isWave = enemy.type === "wave";
   const isSplitter = enemy.type === "splitter";
+  const isSniper = enemy.type === "sniper";
   const isSplitChild = enemy.type === "split_child";
   const isSlowed = (enemy.slowTurns ?? 0) > 0;
-  const size = enemy.isBoss ? 36 : isSplitter ? 33 : isPoison ? 32 : isHealer ? 32 : isWave ? 30 : isFast ? 28 : isSplitChild ? 21 : 30;
+  const size = enemy.isBoss ? 36 : isSplitter ? 33 : isPoison ? 32 : isHealer ? 32 : isWave ? 30 : isSniper ? 30 : isFast ? 28 : isSplitChild ? 21 : 30;
 
   return (
     <div
@@ -94,7 +95,7 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
         top: `${top}%`,
         left: "50%",
         transform: `translateX(calc(-50% + ${xOffset}px))`,
-        width: enemy.isBoss ? 42 : isSplitter ? 40 : isPoison ? 38 : isWave ? 36 : isFast ? 38 : isSplitChild ? 30 : 34,
+        width: enemy.isBoss ? 42 : isSplitter ? 40 : isPoison ? 38 : isWave ? 36 : isSniper ? 36 : isFast ? 38 : isSplitChild ? 30 : 34,
         transition: "top 0.35s ease",
       }}
     >
@@ -182,6 +183,20 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
           ✳️
         </div>
       )}
+      {isSniper && (
+        <div
+          style={{
+            position: "absolute",
+            top: -10,
+            left: "50%",
+            transform: "translateX(-50%)",
+            fontSize: 10,
+            zIndex: 8,
+          }}
+        >
+          🎯
+        </div>
+      )}
       {isSlowed && (
         <div
           style={{
@@ -196,7 +211,7 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
         </div>
       )}
       <div
-        className={`${isHit ? "enemy-hit-flash " : ""}${isFast ? "fast-enemy-core " : ""}${isHealer ? "healer-enemy-core " : ""}${isPoison ? "poison-enemy-core " : ""}${isSplitter ? "splitter-enemy-core " : ""}${isSplitChild ? "split-child-enemy-core" : ""}`.trim()}
+        className={`${isHit ? "enemy-hit-flash " : ""}${isFast ? "fast-enemy-core " : ""}${isHealer ? "healer-enemy-core " : ""}${isPoison ? "poison-enemy-core " : ""}${isSplitter ? "splitter-enemy-core " : ""}${isSniper ? "sniper-enemy-core " : ""}${isSplitChild ? "split-child-enemy-core" : ""}`.trim()}
         style={{
           width: size,
           height: size,
@@ -212,7 +227,9 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
                   ? "polygon(0% 35%, 15% 15%, 30% 35%, 50% 5%, 70% 35%, 85% 15%, 100% 35%, 100% 65%, 85% 85%, 70% 65%, 50% 95%, 30% 65%, 15% 85%, 0% 65%)"
                   : isSplitter
                     ? "polygon(50% 0%, 96% 28%, 82% 100%, 18% 100%, 4% 28%)"
-                    : isSplitChild
+                    : isSniper
+                      ? "polygon(50% 0%, 100% 100%, 0% 100%)"
+                      : isSplitChild
                       ? "polygon(25% 8%, 75% 8%, 100% 50%, 75% 92%, 25% 92%, 0% 50%)"
                       : "none",
           background: enemy.isBoss
@@ -223,8 +240,10 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
                 ? "linear-gradient(145deg, #6ee7b7 0%, #10b981 55%, #047857 100%)"
                 : isWave
                   ? "linear-gradient(145deg, #bae6fd 0%, #38bdf8 50%, #0284c7 100%)"
-                  : isSplitter
-                    ? "linear-gradient(145deg, #f7b267 0%, #f79d65 45%, #b85616 100%)"
+                : isSplitter
+                  ? "linear-gradient(145deg, #f7b267 0%, #f79d65 45%, #b85616 100%)"
+                  : isSniper
+                    ? "linear-gradient(145deg, #fca5a5 0%, #ef4444 52%, #7f1d1d 100%)"
                     : isFast
                       ? "linear-gradient(145deg, #22d3ee 0%, #0ea5b7 55%, #0b6170 100%)"
                       : isSplitChild
@@ -245,8 +264,10 @@ function LaneEnemy({ enemy, laneColor, hitEffect }) {
                 ? "2px solid #a7f3d0"
                 : isWave
                   ? "2px solid #7dd3fc"
-                  : isSplitter
-                    ? "2px solid #ffd39a"
+                : isSplitter
+                  ? "2px solid #ffd39a"
+                  : isSniper
+                    ? "2px solid #fecaca"
                     : isFast
                       ? "2px solid #7ce7ff"
                       : isSplitChild
@@ -287,6 +308,7 @@ function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces, chai
   const queuedPoisonFlags = Array(COLS).fill(false);
   const queuedWaveFlags = Array(COLS).fill(false);
   const queuedSplitterFlags = Array(COLS).fill(false);
+  const queuedSniperFlags = Array(COLS).fill(false);
   const queuedSplitChildFlags = Array(COLS).fill(false);
   const hitEffectByEnemyId = new Map();
   const burstsByLane = Array.from({ length: COLS }, () => []);
@@ -315,6 +337,9 @@ function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces, chai
       }
       if (enemy.type === "splitter") {
         queuedSplitterFlags[enemy.lane] = true;
+      }
+      if (enemy.type === "sniper") {
+        queuedSniperFlags[enemy.lane] = true;
       }
       if (enemy.type === "split_child") {
         queuedSplitChildFlags[enemy.lane] = true;
@@ -353,6 +378,7 @@ function buildLaneRenderData(enemies, hitEffects, damageBursts, shotTraces, chai
     queuedPoisonFlags,
     queuedWaveFlags,
     queuedSplitterFlags,
+    queuedSniperFlags,
     queuedSplitChildFlags,
     hitEffectByEnemyId,
     burstsByLane,
@@ -376,6 +402,7 @@ function EnemyLane({
   hasQueuedPoison,
   hasQueuedWave,
   hasQueuedSplitter,
+  hasQueuedSniper,
   hasQueuedSplitChild,
   hitEffectByEnemyId,
   laneBursts,
@@ -524,6 +551,7 @@ function EnemyLane({
           {hasQueuedPoison ? " ☠️" : ""}
           {hasQueuedWave ? " 〰️" : ""}
           {hasQueuedSplitter ? " 🧬" : ""}
+          {hasQueuedSniper ? " 🎯" : ""}
           {hasQueuedSplitChild ? " ✳️" : ""}
         </div>
       )}
@@ -585,6 +613,7 @@ export const EnemyLanes = memo(function EnemyLanes({
           hasQueuedPoison={laneRenderData.queuedPoisonFlags[laneIndex]}
           hasQueuedWave={laneRenderData.queuedWaveFlags[laneIndex]}
           hasQueuedSplitter={laneRenderData.queuedSplitterFlags[laneIndex]}
+          hasQueuedSniper={laneRenderData.queuedSniperFlags[laneIndex]}
           hasQueuedSplitChild={laneRenderData.queuedSplitChildFlags[laneIndex]}
           hitEffectByEnemyId={laneRenderData.hitEffectByEnemyId}
           laneBursts={laneRenderData.burstsByLane[laneIndex]}

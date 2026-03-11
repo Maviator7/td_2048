@@ -87,6 +87,7 @@ vi.mock("./gameState/useGameCoreState", () => ({
       movesPerTurn: 3,
       movesLeft: 3,
       log: ["test"],
+      lanePoisonTurns: [0, 0, 0, 0],
       roleMetrics: Object.fromEntries(
         TILE_ROLE_ORDER.map((roleKey) => [roleKey, { dealt: 0, taken: 0, repair: 0 }]),
       ),

@@ -40,6 +40,10 @@ export const ENEMY_BALANCE = {
     childHpRatio: 0.34,
     childSpeed: 1.25,
   },
+  sniper: {
+    startWave: 5,
+    spawnChance: 0.12,
+  },
   armor: {
     startWave: 4,
     growthOffset: 2,
@@ -55,6 +59,7 @@ export const SCORE_RULES = {
   poisonKillMultiplier: 3,
   waveKillMultiplier: 3,
   splitterKillMultiplier: 4,
+  sniperKillMultiplier: 4,
   splitChildKillMultiplier: 1,
   bossKillMultiplier: 5,
 };
@@ -127,6 +132,7 @@ export const WAVE_FEATURES = {
   poisonEnemiesStartWave: ENEMY_BALANCE.poison.startWave,
   waveEnemiesStartWave: ENEMY_BALANCE.wave.startWave,
   splitterEnemiesStartWave: ENEMY_BALANCE.splitter.startWave,
+  sniperEnemiesStartWave: ENEMY_BALANCE.sniper.startWave,
   armoredEnemiesStartWave: ENEMY_BALANCE.armor.startWave,
 };
 
@@ -137,6 +143,7 @@ export const ENEMY_TYPES = {
   POISON: "poison",
   WAVE: "wave",
   SPLITTER: "splitter",
+  SNIPER: "sniper",
   SPLIT_CHILD: "split_child",
   BOSS: "boss",
 };
@@ -188,6 +195,14 @@ export const ENEMY_TYPE_DEFS = {
     armorFlatBonus: 0,
     speed: 1,
     rewardMultiplier: SCORE_RULES.splitterKillMultiplier,
+    isBoss: false,
+  },
+  [ENEMY_TYPES.SNIPER]: {
+    hpMultiplier: 0.92,
+    armorMultiplier: 1,
+    armorFlatBonus: 0,
+    speed: 1.08,
+    rewardMultiplier: SCORE_RULES.sniperKillMultiplier,
     isBoss: false,
   },
   [ENEMY_TYPES.SPLIT_CHILD]: {
@@ -242,6 +257,10 @@ export function isSplitterUnlocked(waveNumber) {
   return waveNumber >= WAVE_FEATURES.splitterEnemiesStartWave;
 }
 
+export function isSniperUnlocked(waveNumber) {
+  return waveNumber >= WAVE_FEATURES.sniperEnemiesStartWave;
+}
+
 export function getEnemyType({ waveNumber, isLastEnemyInWave }) {
   if (isLastEnemyInWave) {
     return ENEMY_TYPES.BOSS;
@@ -257,6 +276,10 @@ export function getEnemyType({ waveNumber, isLastEnemyInWave }) {
 
   if (isPoisonUnlocked(waveNumber) && Math.random() < ENEMY_BALANCE.poison.spawnChance) {
     return ENEMY_TYPES.POISON;
+  }
+
+  if (isSniperUnlocked(waveNumber) && Math.random() < ENEMY_BALANCE.sniper.spawnChance) {
+    return ENEMY_TYPES.SNIPER;
   }
 
   if (isWaveUnlocked(waveNumber) && Math.random() < ENEMY_BALANCE.wave.spawnChance) {
@@ -376,6 +399,9 @@ export function getWaveStartMessage(waveNumber) {
   }
   if (isSplitterUnlocked(waveNumber)) {
     suffixes.push("分裂敵が出現！");
+  }
+  if (isSniperUnlocked(waveNumber)) {
+    suffixes.push("狙撃敵に警戒！");
   }
   if (isArmorUnlocked(waveNumber)) {
     suffixes.push("装甲敵が登場！");

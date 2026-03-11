@@ -37,6 +37,11 @@ const CODEX_ENTRIES = [
     description: "撃破時に小型敵3体へ分裂する。",
   },
   {
+    type: ENEMY_TYPES.SNIPER,
+    name: "狙撃敵",
+    description: "反撃時に全タイル中の最大値タイルを優先して狙撃する。B/Cレーンで出現しやすい。",
+  },
+  {
     type: ENEMY_TYPES.SPLIT_CHILD,
     name: "分裂子",
     description: "分裂敵から発生する小型タイプ。",
@@ -120,6 +125,17 @@ function createFigureStyle(type) {
       background: "linear-gradient(145deg, #f7b267 0%, #f79d65 45%, #b85616 100%)",
       border: "2px solid #ffd39a",
       boxShadow: "0 0 10px rgba(247,178,103,0.38)",
+    };
+  }
+
+  if (type === ENEMY_TYPES.SNIPER) {
+    return {
+      ...base,
+      borderRadius: 6,
+      background: "linear-gradient(145deg, #fca5a5 0%, #ef4444 52%, #7f1d1d 100%)",
+      border: "2px solid #fecaca",
+      boxShadow: "0 0 10px rgba(239,68,68,0.45)",
+      clipPath: "polygon(50% 0%, 100% 100%, 0% 100%)",
     };
   }
 

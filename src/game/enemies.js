@@ -36,12 +36,32 @@ function createEnemy(lane, waveNumber, isLastEnemyInWave) {
   };
 }
 
+function getSpawnLaneForType(type) {
+  if (type !== ENEMY_TYPES.SNIPER) {
+    return Math.floor(Math.random() * COLS);
+  }
+
+  // B/Cレーン（index 1/2）に寄せる重み付け
+  const roll = Math.random();
+  if (roll < 0.12) {
+    return 0;
+  }
+  if (roll < 0.5) {
+    return 1;
+  }
+  if (roll < 0.88) {
+    return 2;
+  }
+  return 3;
+}
+
 export function spawnWave(waveNumber) {
   const enemyCount = getWaveEnemyCount(waveNumber);
 
   return Array.from({ length: enemyCount }, (_, index) => {
     const isLastEnemyInWave = index === enemyCount - 1;
-    const enemy = createEnemy(Math.floor(Math.random() * COLS), waveNumber, isLastEnemyInWave);
+    const enemy = createEnemy(0, waveNumber, isLastEnemyInWave);
+    enemy.lane = getSpawnLaneForType(enemy.type);
     enemy.step = getEnemySpawnOffset(index);
     return enemy;
   });

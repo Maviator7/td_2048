@@ -1,5 +1,74 @@
-import { applyLaneDamage } from "../../game/grid";
-import { ENEMY_BALANCE } from "../../game/config";
+import { applyLaneDamage, getEffectiveTileValue } from "../../game/grid";
+import { ENEMY_BALANCE, ENEMY_TYPES, FORMATION_BONUSES, TILE_ROLES } from "../../game/config";
+
+function findSniperTarget(grid, tileDamage) {
+  let best = null;
+
+  for (let row = 0; row < grid.length; row += 1) {
+    for (let col = 0; col < grid[row].length; col += 1) {
+      const baseValue = grid[row][col];
+      if (!baseValue) {
+        continue;
+      }
+
+      const effectiveValue = getEffectiveTileValue(baseValue, tileDamage[row][col]);
+      if (effectiveValue <= 0) {
+        continue;
+      }
+
+      if (!best) {
+        best = { row, col, baseValue, effectiveValue };
+        continue;
+      }
+
+      if (
+        baseValue > best.baseValue
+        || (baseValue === best.baseValue && effectiveValue > best.effectiveValue)
+      ) {
+        best = { row, col, baseValue, effectiveValue };
+      }
+    }
+  }
+
+  return best;
+}
+
+function applySniperDamage(grid, tileDamage, tileRoles, damageAmount) {
+  if (damageAmount <= 0) {
+    return { grid, tileDamage, tileRoles, damageTaken: 0, affectedCells: [] };
+  }
+
+  const target = findSniperTarget(grid, tileDamage);
+  if (!target) {
+    return { grid, tileDamage, tileRoles, damageTaken: 0, affectedCells: [] };
+  }
+
+  const { row, col, baseValue, effectiveValue } = target;
+  const nextDamage = tileDamage.map((damageRow) => [...damageRow]);
+  const absorbedDamage = Math.min(effectiveValue, damageAmount);
+  const tileRole = tileRoles[row][col];
+  const appliedDamage = tileRole === TILE_ROLES.ENGINEER
+    ? Math.max(1, Math.round(absorbedDamage * FORMATION_BONUSES.engineerDamageTakenMultiplier))
+    : absorbedDamage;
+  nextDamage[row][col] = Math.min(baseValue, nextDamage[row][col] + appliedDamage);
+
+  return {
+    grid,
+    tileDamage: nextDamage,
+    tileRoles,
+    damageTaken: appliedDamage,
+    affectedCells: [
+      {
+        key: `${row}-${col}`,
+        row,
+        col,
+        damage: appliedDamage,
+        role: tileRole ?? null,
+      },
+    ],
+    target,
+  };
+}
 
 export function resolveRetaliationTurn(baseGrid, currentTileDamage, currentTileRoles, laneThreats, lanePoisonTurns = []) {
   let nextGrid = baseGrid;
@@ -24,7 +93,10 @@ export function resolveRetaliationTurn(baseGrid, currentTileDamage, currentTileR
       )
       : 0;
     const totalDamage = laneThreat.damage + bonusDamage;
-    const laneDamageResult = applyLaneDamage(nextGrid, nextTileDamage, nextTileRoles, lane, totalDamage);
+    const isSniperAttack = laneThreat.attackerType === ENEMY_TYPES.SNIPER;
+    const laneDamageResult = isSniperAttack
+      ? applySniperDamage(nextGrid, nextTileDamage, nextTileRoles, totalDamage)
+      : applyLaneDamage(nextGrid, nextTileDamage, nextTileRoles, lane, totalDamage);
     nextGrid = laneDamageResult.grid;
     nextTileDamage = laneDamageResult.tileDamage;
 
@@ -40,7 +112,14 @@ export function resolveRetaliationTurn(baseGrid, currentTileDamage, currentTileR
       }
       roleTakenByRole[cell.role] = (roleTakenByRole[cell.role] ?? 0) + cell.damage;
     });
-    retaliationLogs.push(`💥 レーン${laneThreat.laneName}: 反撃${laneDamageResult.damageTaken}`);
+    if (isSniperAttack) {
+      const targetLabel = laneDamageResult.target
+        ? ` → Lv.${Math.log2(laneDamageResult.target.baseValue)}(R${laneDamageResult.target.row + 1}C${laneDamageResult.target.col + 1})`
+        : "";
+      retaliationLogs.push(`🎯 レーン${laneThreat.laneName}: 狙撃${laneDamageResult.damageTaken}${targetLabel}`);
+    } else {
+      retaliationLogs.push(`💥 レーン${laneThreat.laneName}: 反撃${laneDamageResult.damageTaken}`);
+    }
     if (bonusDamage > 0) {
       retaliationLogs.push(`☠️ レーン${laneThreat.laneName}: 毒で追加ダメージ${bonusDamage}`);
     }

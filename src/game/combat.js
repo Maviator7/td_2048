@@ -283,8 +283,10 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
       ? "💥ボス"
       : enemy.type === ENEMY_TYPES.FAST
         ? "⚡高速敵"
-        : enemy.type === ENEMY_TYPES.POISON
+      : enemy.type === ENEMY_TYPES.POISON
           ? "☠️毒敵"
+          : enemy.type === ENEMY_TYPES.SNIPER
+            ? "🎯狙撃敵"
           : enemy.type === ENEMY_TYPES.WAVE
             ? "〰️波動敵"
             : enemy.type === ENEMY_TYPES.SPLITTER
@@ -359,6 +361,7 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
       remainingLaneThreats[lane] = {
         lane,
         laneName: LANE_NAMES[lane],
+        attackerType: laneEnemies[0].type,
         damage: laneEnemies[0].hp,
       };
     }

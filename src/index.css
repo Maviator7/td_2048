@@ -354,6 +354,10 @@ button:focus-visible {
   animation: splitter-enemy-core-pulse 1.35s ease-in-out infinite;
 }
 
+.sniper-enemy-core {
+  animation: sniper-enemy-core-pulse 1.2s ease-in-out infinite;
+}
+
 .split-child-enemy-core {
   animation: split-child-enemy-core-pulse 1.05s ease-in-out infinite;
 }
@@ -721,6 +725,15 @@ button:focus-visible {
   }
 }
 
+@keyframes sniper-enemy-core-pulse {
+  0%, 100% {
+    filter: saturate(1) brightness(1);
+  }
+  50% {
+    filter: saturate(1.18) brightness(1.14);
+  }
+}
+
 @keyframes split-child-enemy-core-pulse {
   0%, 100% {
     transform: scale(1);
@@ -853,6 +866,7 @@ button:focus-visible {
   .enemy-hit-flash,
   .fast-enemy-core,
   .splitter-enemy-core,
+  .sniper-enemy-core,
   .split-child-enemy-core,
   .retaliation-lane-flash,
   .tile-retaliation-flash,
