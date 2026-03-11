@@ -17,7 +17,7 @@ describe("rankingRepository", () => {
       { id: "better", score: 180, wave: 5, playedAt: "2026-03-02T00:00:00.000Z", name: "BBB" },
     ]));
 
-    const { getRankingSnapshot } = await import("./rankingRepository.js");
+    const { getRankingSnapshot } = await import("./localRankingRepository.js");
 
     expect(getRankingSnapshot().rankings.map((entry) => entry.id)).toEqual(["better", "older"]);
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY))).toHaveLength(2);
@@ -34,7 +34,7 @@ describe("rankingRepository", () => {
       { id: "seed-2", score: 40, wave: 2, playedAt: "2026-02-28T00:00:00.000Z", name: "S2" },
     ]));
 
-    const { clearLatestRankingEntry, getRankingSnapshot, saveRankingEntry } = await import("./rankingRepository.js");
+    const { clearLatestRankingEntry, getRankingSnapshot, saveRankingEntry } = await import("./localRankingRepository.js");
 
     const { entry } = saveRankingEntry({ score: 120, wave: 6, name: "Alice" });
     const snapshot = getRankingSnapshot();
@@ -56,7 +56,7 @@ describe("rankingRepository", () => {
       getRankingSnapshot,
       saveRankingEntry,
       updateLatestRankingEntryName,
-    } = await import("./rankingRepository.js");
+    } = await import("./localRankingRepository.js");
 
     const { entry } = saveRankingEntry({ score: 220, wave: 8, name: "Before" });
     const updateResult = updateLatestRankingEntryName("After");

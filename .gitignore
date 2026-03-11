@@ -13,6 +13,8 @@
 .env.*.local
 .vscode/
 .idea/
+# Cloudflare Wrangler
+.wrangler/
 # build artifacts
 dist/
 build/

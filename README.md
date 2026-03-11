@@ -29,6 +29,28 @@
 
 旧キー `merge-fortress-2048:local-rankings` を持っている場合は、初回読み込み時に新キーへ移行します。
 
+## オンラインランキング（Cloudflare Pages + D1）
+
+オンラインランキングを有効にする場合は、Cloudflare Pages Functions と D1 を使います。
+
+1. D1 作成とマイグレーション
+
+```bash
+wrangler d1 create merge-fortress-2048
+wrangler d1 migrations apply merge-fortress-2048 --local
+```
+
+`wrangler.toml` の `database_id` を作成結果で更新してください。
+
+2. デプロイ時の環境変数
+
+フロント側にオンラインランキングを使わせるには、以下を設定します。
+
+- `VITE_ONLINE_RANKINGS=true`
+- `VITE_RANKINGS_API_BASE`（省略時は `/api`）
+
+Cloudflare Pages の環境変数に設定してください。
+
 ## 開発
 
 ```bash

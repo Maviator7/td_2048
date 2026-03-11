@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 
 import { GAME_PHASES } from "../game/config";
-import { rankingRepository } from "../game/rankingRepository";
+import { localRankingRepository } from "../game/rankingRepository";
 
 export function useRankings({ phase, score, wave, playerName, isRankable = true }) {
   const rankingState = useSyncExternalStore(
-    rankingRepository.subscribe,
-    rankingRepository.getSnapshot,
-    rankingRepository.getSnapshot,
+    localRankingRepository.subscribe,
+    localRankingRepository.getSnapshot,
+    localRankingRepository.getSnapshot,
   );
   const didPersistCurrentRunRef = useRef(false);
 
@@ -16,25 +16,25 @@ export function useRankings({ phase, score, wave, playerName, isRankable = true 
       return;
     }
 
-    rankingRepository.saveEntry({ score, wave, name: playerName });
+    localRankingRepository.saveEntry({ score, wave, name: playerName });
     didPersistCurrentRunRef.current = true;
   }, [isRankable, phase, playerName, score, wave]);
 
   const refreshRankings = useCallback(() => {
-    rankingRepository.refresh();
+    localRankingRepository.refresh();
   }, []);
 
   const prepareForNewRun = useCallback(() => {
     didPersistCurrentRunRef.current = false;
-    rankingRepository.clearLatestEntry();
+    localRankingRepository.clearLatestEntry();
   }, []);
 
   const dismissLatestRankingHighlight = useCallback(() => {
-    rankingRepository.clearLatestEntry();
+    localRankingRepository.clearLatestEntry();
   }, []);
 
   const updateLatestRankingName = useCallback((nextName) => {
-    return rankingRepository.updateLatestEntryName(nextName);
+    return localRankingRepository.updateLatestEntryName(nextName);
   }, []);
 
   return {

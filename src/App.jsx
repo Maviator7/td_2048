@@ -6,6 +6,7 @@ import { TitleScreen } from "./components/TitleScreen";
 import { RankingScreen } from "./components/RankingScreen";
 import { useGameState } from "./hooks/useGameState";
 import { useRankings } from "./hooks/useRankings";
+import { useOnlineRankings } from "./hooks/useOnlineRankings";
 import { ENEMY_TYPES, GAME_PHASES } from "./game/config";
 import { useBgmController } from "./hooks/useBgmController";
 import {
@@ -49,6 +50,13 @@ export default function MergeTowerDefense() {
     playerName: rankingName,
     isRankable: !game.tampered,
   });
+  const onlineRankings = useOnlineRankings({
+    phase: game.phase,
+    score: game.score,
+    wave: game.wave,
+    playerName: rankingName,
+    isRankable: !game.tampered,
+  });
   const [renderedScreen, setRenderedScreen] = useState(APP_SCREENS.TITLE);
   const [screenPhase, setScreenPhase] = useState("entered");
   const [screenTransitionPreset, setScreenTransitionPreset] = useState("neutral");
@@ -64,6 +72,7 @@ export default function MergeTowerDefense() {
   const startGame = ({ debug = false } = {}) => {
     bgm.unlockAudio();
     rankings.prepareForNewRun();
+    onlineRankings.prepareForNewRun();
     game.restart();
     setDebugStartEnabled(Boolean(debug));
     refreshSaveMeta();
@@ -79,6 +88,7 @@ export default function MergeTowerDefense() {
     }
 
     rankings.prepareForNewRun();
+    onlineRankings.prepareForNewRun();
     setDebugStartEnabled(false);
     setScreen(APP_SCREENS.GAME);
     return true;
@@ -86,6 +96,7 @@ export default function MergeTowerDefense() {
 
   const backToTitle = () => {
     rankings.dismissLatestRankingHighlight();
+    onlineRankings.dismissLatestRankingHighlight();
     setDebugStartEnabled(false);
     refreshSaveMeta();
     setScreen(APP_SCREENS.TITLE);
@@ -93,11 +104,13 @@ export default function MergeTowerDefense() {
 
   const openRanking = () => {
     rankings.refreshRankings();
+    onlineRankings.refreshRankings();
     setScreen(APP_SCREENS.RANKING);
   };
 
   const openRankingFromGameOver = () => {
     rankings.refreshRankings();
+    onlineRankings.refreshRankings();
     setScreen(APP_SCREENS.RANKING);
   };
 
@@ -112,8 +125,9 @@ export default function MergeTowerDefense() {
     setRankingName(storedName);
     setShouldPromptRankingNameModal(false);
     rankings.updateLatestRankingName(storedName);
+    onlineRankings.updateLatestRankingName(storedName);
     return { ok: true, value: storedName, error: null };
-  }, [rankings]);
+  }, [onlineRankings, rankings]);
 
   const activeScreen = screen;
 
@@ -196,6 +210,9 @@ export default function MergeTowerDefense() {
     <RankingScreen
       rankings={rankings.rankings}
       latestEntryId={rankings.latestRankingEntryId}
+      onlineRankings={onlineRankings.rankings}
+      onlineLatestEntryId={onlineRankings.latestRankingEntryId}
+      onlineEnabled={onlineRankings.isEnabled}
       rankingName={rankingName}
       shouldPromptNameModal={shouldPromptRankingNameModal}
       onSubmitRankingName={handleChangeRankingName}

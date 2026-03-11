@@ -122,6 +122,9 @@ function RankingNameModal({ isOpen, initialValue, onSubmit }) {
 export function RankingScreen({
   rankings,
   latestEntryId,
+  onlineRankings = [],
+  onlineLatestEntryId,
+  onlineEnabled = false,
   rankingName,
   shouldPromptNameModal = false,
   onSubmitRankingName,
@@ -129,6 +132,10 @@ export function RankingScreen({
   onBackToTitle,
 }) {
   const [isNameModalOpen, setIsNameModalOpen] = useState(shouldPromptNameModal);
+  const [viewMode, setViewMode] = useState(onlineEnabled ? "online" : "local");
+
+  const activeRankings = viewMode === "online" ? onlineRankings : rankings;
+  const activeLatestEntryId = viewMode === "online" ? onlineLatestEntryId : latestEntryId;
 
   const handleSubmitRankingName = (rawName) => {
     const result = onSubmitRankingName?.(rawName);
@@ -147,14 +154,49 @@ export function RankingScreen({
       />
       <div style={createPanelSurface({ maxWidth: 520, background: "rgba(8,15,27,0.9)", border: "1px solid rgba(148,163,184,0.2)", borderRadius: 18, boxShadow: "0 26px 60px rgba(0,0,0,0.38)" })}>
         <div style={{ textAlign: "center", marginBottom: 16 }}>
-          <div style={{ fontSize: 13, letterSpacing: 2, color: "#60a5fa", marginBottom: 6 }}>LOCAL SCORE BOARD</div>
+          <div style={{ fontSize: 13, letterSpacing: 2, color: "#60a5fa", marginBottom: 6 }}>
+            {viewMode === "online" ? "ONLINE SCORE BOARD" : "LOCAL SCORE BOARD"}
+          </div>
           <h1 style={{ margin: 0, fontSize: 28, color: "#f8fafc" }}>ランキング</h1>
-          <div style={{ marginTop: 6, fontSize: 14, color: "#cbd5e1" }}>現状はローカル保存、将来的なオンライン対応を見据えた構成です</div>
+          <div style={{ marginTop: 6, fontSize: 14, color: "#cbd5e1" }}>
+            {viewMode === "online" ? "オンラインランキングの上位スコアを表示します" : "端末内のローカルランキングを表示します"}
+          </div>
+          <div style={{ marginTop: 12, display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => setViewMode("online")}
+              disabled={!onlineEnabled}
+              style={createPrimaryButtonStyle({
+                background: viewMode === "online"
+                  ? "linear-gradient(90deg,#0284c7,#0ea5e9)"
+                  : "linear-gradient(90deg,#334155,#475569)",
+                opacity: onlineEnabled ? 1 : 0.55,
+                cursor: onlineEnabled ? "pointer" : "not-allowed",
+                padding: "8px 14px",
+                fontSize: 13,
+              })}
+            >
+              オンライン
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("local")}
+              style={createPrimaryButtonStyle({
+                background: viewMode === "local"
+                  ? "linear-gradient(90deg,#0284c7,#0ea5e9)"
+                  : "linear-gradient(90deg,#334155,#475569)",
+                padding: "8px 14px",
+                fontSize: 13,
+              })}
+            >
+              ローカル
+            </button>
+          </div>
         </div>
 
         <ol style={{ display: "grid", gap: 10, marginBottom: 16, listStyle: "none", padding: 0, margin: "0 0 16px" }}>
-          {rankings.length > 0 ? rankings.map((entry, index) => {
-            const isLatest = latestEntryId === entry.id;
+          {activeRankings.length > 0 ? activeRankings.map((entry, index) => {
+            const isLatest = activeLatestEntryId === entry.id;
 
             return (
               <li

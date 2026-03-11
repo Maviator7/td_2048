@@ -1,0 +1,10 @@
+name = "merge-fortress-2048"
+compatibility_date = "2026-03-11"
+
+[vars]
+# VITE_ONLINE_RANKINGS=true を設定した上でデプロイしてください
+
+[[d1_databases]]
+binding = "DB"
+database_name = "merge-fortress-2048"
+database_id = "f836b671-fc1e-4cfc-9f54-392a9fb32db1"

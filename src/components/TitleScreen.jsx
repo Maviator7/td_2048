@@ -41,7 +41,7 @@ export function TitleScreen({
         <h1 style={{margin:"0 0 6px",fontSize:30,color:"#f1c40f",textShadow:"0 0 14px rgba(241,196,15,0.55)"}}>🗼 MERGE FORTRESS 2048</h1>
         <div style={{fontSize:14,color:"#cbd5e1",marginBottom:14}}>砲塔を合体して、押し寄せる敵を迎え撃て</div>
         <div style={{marginBottom:14,padding:"10px 12px",borderRadius:12,background:"linear-gradient(135deg,rgba(30,41,59,0.95),rgba(15,23,42,0.9))",border:"1px solid #334155"}}>
-          <div style={{fontSize:12,color:"#94a3b8"}}>LOCAL BEST SCORE</div>
+          <div style={{fontSize:12,color:"#94a3b8"}}>BEST SCORE</div>
           <div style={{fontSize:24,fontWeight:900,color:"#22c55e",lineHeight:1.1}}>{topScore !== null ? topScore.toLocaleString() : "--"}</div>
         </div>
 
