@@ -8,6 +8,7 @@ const API_BASE = env.VITE_RANKINGS_API_BASE || "/api";
 let rankingSnapshot = {
   rankings: [],
   latestEntryId: null,
+  errorMessage: "",
 };
 let refreshPromise = null;
 let didInitialRefresh = false;
@@ -60,10 +61,16 @@ async function refreshRankingSnapshot() {
         emitRankingSnapshot({
           rankings,
           latestEntryId: rankingSnapshot.latestEntryId,
+          errorMessage: "",
         });
       })
-      .catch(() => {
-        // Ignore refresh failures; keep current snapshot.
+      .catch((error) => {
+        console.error("[online-rankings] failed to refresh rankings", error);
+        emitRankingSnapshot({
+          rankings: rankingSnapshot.rankings,
+          latestEntryId: rankingSnapshot.latestEntryId,
+          errorMessage: "オンラインランキングの取得に失敗しました。",
+        });
       })
       .finally(() => {
         refreshPromise = null;
@@ -92,6 +99,7 @@ export function clearLatestRankingEntry() {
   emitRankingSnapshot({
     rankings: rankingSnapshot.rankings,
     latestEntryId: null,
+    errorMessage: rankingSnapshot.errorMessage,
   });
 }
 
@@ -127,12 +135,18 @@ export async function saveRankingEntry({ score, wave, name }) {
       emitRankingSnapshot({
         rankings,
         latestEntryId: entry.id,
+        errorMessage: "",
       });
     }
 
     return { entry, rankings };
-  } catch {
-    // Ignore failures and keep local snapshot.
+  } catch (error) {
+    console.error("[online-rankings] failed to save ranking", error);
+    emitRankingSnapshot({
+      rankings: rankingSnapshot.rankings,
+      latestEntryId: rankingSnapshot.latestEntryId,
+      errorMessage: "オンラインランキングへの送信に失敗しました。",
+    });
     return { entry: null, rankings: rankingSnapshot.rankings };
   }
 }
@@ -171,11 +185,17 @@ export async function updateLatestRankingEntryName(name) {
       emitRankingSnapshot({
         rankings,
         latestEntryId: rankingSnapshot.latestEntryId,
+        errorMessage: "",
       });
       return { updated: true, rankings };
     }
-  } catch {
-    // Ignore update failures.
+  } catch (error) {
+    console.error("[online-rankings] failed to update ranking name", error);
+    emitRankingSnapshot({
+      rankings: rankingSnapshot.rankings,
+      latestEntryId: rankingSnapshot.latestEntryId,
+      errorMessage: "オンラインランキング名の更新に失敗しました。",
+    });
   }
 
   return { updated: false, rankings: rankingSnapshot.rankings };

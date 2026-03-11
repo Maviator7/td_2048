@@ -1,13 +1,55 @@
 const MAX_NAME_LENGTH = 12;
+const ALLOWED_CORS_HEADERS = "Content-Type, Accept";
+const ALLOWED_CORS_METHODS = "PATCH, OPTIONS";
 
-function jsonResponse(body, status = 200) {
+function jsonResponse(body, status = 200, headers = {}) {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
+      ...headers,
     },
   });
+}
+
+function noContentResponse(status = 204, headers = {}) {
+  return new Response(null, { status, headers });
+}
+
+function parseAllowedOrigins(rawValue) {
+  if (typeof rawValue !== "string" || rawValue.trim().length === 0) {
+    return [];
+  }
+
+  return rawValue
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+function buildCorsHeaders(context) {
+  const request = context.request;
+  const origin = request.headers.get("Origin");
+  if (!origin) {
+    return { allowed: true, headers: {} };
+  }
+
+  const sameOrigin = new URL(request.url).origin;
+  const allowedOrigins = new Set([sameOrigin, ...parseAllowedOrigins(context.env.ALLOWED_ORIGINS)]);
+  if (!allowedOrigins.has(origin)) {
+    return { allowed: false, headers: {} };
+  }
+
+  return {
+    allowed: true,
+    headers: {
+      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Headers": ALLOWED_CORS_HEADERS,
+      "Access-Control-Allow-Methods": ALLOWED_CORS_METHODS,
+      "Vary": "Origin",
+    },
+  };
 }
 
 function sanitizeName(rawName) {
@@ -50,9 +92,14 @@ function normalizeRankingRow(row) {
 }
 
 export async function onRequestPatch(context) {
+  const cors = buildCorsHeaders(context);
+  if (!cors.allowed) {
+    return jsonResponse({ error: "許可されていないオリジンです。" }, 403);
+  }
+
   const id = context.params?.id;
   if (!id) {
-    return jsonResponse({ error: "ID が不正です。" }, 400);
+    return jsonResponse({ error: "ID が不正です。" }, 400, cors.headers);
   }
 
   let payload = null;
@@ -64,7 +111,7 @@ export async function onRequestPatch(context) {
 
   const nameResult = validateName(payload?.name);
   if (!nameResult.ok) {
-    return jsonResponse({ error: nameResult.error }, 400);
+    return jsonResponse({ error: nameResult.error }, 400, cors.headers);
   }
 
   const update = await context.env.DB.prepare(
@@ -72,10 +119,10 @@ export async function onRequestPatch(context) {
   ).bind(nameResult.value, id).run();
 
   if (!update.success) {
-    return jsonResponse({ error: "更新に失敗しました。" }, 500);
+    return jsonResponse({ error: "更新に失敗しました。" }, 500, cors.headers);
   }
   if (update.meta?.changes === 0) {
-    return jsonResponse({ error: "対象が見つかりません。" }, 404);
+    return jsonResponse({ error: "対象が見つかりません。" }, 404, cors.headers);
   }
 
   const result = await context.env.DB.prepare(
@@ -83,9 +130,17 @@ export async function onRequestPatch(context) {
   ).bind(id).first();
 
   if (!result) {
-    return jsonResponse({ error: "対象が見つかりません。" }, 404);
+    return jsonResponse({ error: "対象が見つかりません。" }, 404, cors.headers);
   }
 
   const entry = normalizeRankingRow(result);
-  return jsonResponse({ entry });
+  return jsonResponse({ entry }, 200, cors.headers);
+}
+
+export async function onRequestOptions(context) {
+  const cors = buildCorsHeaders(context);
+  if (!cors.allowed) {
+    return jsonResponse({ error: "許可されていないオリジンです。" }, 403);
+  }
+  return noContentResponse(204, cors.headers);
 }

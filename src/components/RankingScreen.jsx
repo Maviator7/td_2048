@@ -124,6 +124,7 @@ export function RankingScreen({
   latestEntryId,
   onlineRankings = [],
   onlineLatestEntryId,
+  onlineErrorMessage = "",
   onlineEnabled = false,
   rankingName,
   shouldPromptNameModal = false,
@@ -193,6 +194,22 @@ export function RankingScreen({
             </button>
           </div>
         </div>
+        {viewMode === "online" && onlineErrorMessage ? (
+          <div
+            role="status"
+            style={{
+              marginBottom: 12,
+              borderRadius: 10,
+              border: "1px solid rgba(239,68,68,0.45)",
+              background: "rgba(127,29,29,0.38)",
+              color: "#fecaca",
+              padding: "8px 10px",
+              fontSize: 13,
+            }}
+          >
+            {onlineErrorMessage}
+          </div>
+        ) : null}
 
         <ol style={{ display: "grid", gap: 10, marginBottom: 16, listStyle: "none", padding: 0, margin: "0 0 16px" }}>
           {activeRankings.length > 0 ? activeRankings.map((entry, index) => {

@@ -212,6 +212,7 @@ export default function MergeTowerDefense() {
       latestEntryId={rankings.latestRankingEntryId}
       onlineRankings={onlineRankings.rankings}
       onlineLatestEntryId={onlineRankings.latestRankingEntryId}
+      onlineErrorMessage={onlineRankings.errorMessage}
       onlineEnabled={onlineRankings.isEnabled}
       rankingName={rankingName}
       shouldPromptNameModal={shouldPromptRankingNameModal}

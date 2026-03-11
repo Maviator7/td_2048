@@ -9,6 +9,7 @@ const onlineEnabled = env.VITE_ONLINE_RANKINGS === "true" || env.VITE_RANKINGS_M
 const emptySnapshot = {
   rankings: [],
   latestEntryId: null,
+  errorMessage: "",
 };
 
 export function useOnlineRankings({ phase, score, wave, playerName, isRankable = true } = {}) {
@@ -63,6 +64,7 @@ export function useOnlineRankings({ phase, score, wave, playerName, isRankable =
   return {
     rankings: rankingState.rankings,
     latestRankingEntryId: rankingState.latestEntryId,
+    errorMessage: rankingState.errorMessage ?? "",
     topScore: rankingState.rankings[0]?.score ?? null,
     refreshRankings,
     prepareForNewRun,

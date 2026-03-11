@@ -3,6 +3,10 @@ compatibility_date = "2026-03-11"
 
 [vars]
 # VITE_ONLINE_RANKINGS=true を設定した上でデプロイしてください
+# 別オリジンから ranking API を叩く場合のみ:
+# ALLOWED_ORIGINS="https://your-game.pages.dev,https://app.example.com"
+# 任意: 送信レート制限の指紋ハッシュに使うシークレット
+# RATE_LIMIT_SALT="change-this-to-a-random-string"
 
 [[d1_databases]]
 binding = "DB"

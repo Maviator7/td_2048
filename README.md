@@ -38,6 +38,7 @@
 ```bash
 wrangler d1 create merge-fortress-2048
 wrangler d1 migrations apply merge-fortress-2048 --local
+wrangler d1 migrations apply merge-fortress-2048 --remote
 ```
 
 `wrangler.toml` の `database_id` を作成結果で更新してください。
@@ -48,6 +49,13 @@ wrangler d1 migrations apply merge-fortress-2048 --local
 
 - `VITE_ONLINE_RANKINGS=true`
 - `VITE_RANKINGS_API_BASE`（省略時は `/api`）
+
+Functions 側で別オリジンからのアクセスを許可する場合は、Pages/Workers 環境変数に `ALLOWED_ORIGINS` を設定してください（カンマ区切り）。
+
+- 例: `ALLOWED_ORIGINS=https://your-game.pages.dev,https://app.example.com`
+- `RATE_LIMIT_SALT`（任意。送信レート制限の指紋ハッシュに使うシークレット文字列）
+
+`VITE_RANKINGS_API_BASE` を別オリジンにする場合は、`public/_headers` の `Content-Security-Policy` 内 `connect-src` にそのオリジンを明示追加してください（ワイルドカード運用は非推奨）。
 
 Cloudflare Pages の環境変数に設定してください。
 
