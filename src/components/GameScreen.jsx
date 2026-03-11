@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { GAME_PHASES, canSelectRoleByTileValue } from "../game/config";
+import { loadDiscoveredEnemyTypes, saveDiscoveredEnemyTypes } from "../game/enemyCodexRepository";
 import { GameBoardSection } from "./GameBoardSection";
 import { EnemyCodexModal } from "./EnemyCodexModal";
 import { GameHeader } from "./GameHeader";
@@ -12,27 +13,8 @@ import {
   gameScreenShellStyle,
 } from "./ui/styles";
 
-const ENEMY_CODEX_STORAGE_KEY = "mf2048_enemy_codex_seen_v1";
 const MIN_CONTENT_SCALE_X = 0.72;
 const MIN_CONTENT_SCALE_Y = 0.72;
-
-function loadDiscoveredEnemyTypes() {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  try {
-    const raw = window.localStorage.getItem(ENEMY_CODEX_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((entry) => typeof entry === "string") : [];
-  } catch {
-    return [];
-  }
-}
 
 export function GameScreen({ game, debugStartEnabled = false, onSaveMetaUpdated, onBackToTitle, onOpenRanking, bgm }) {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
@@ -174,11 +156,7 @@ export function GameScreen({ game, debugStartEnabled = false, onSaveMetaUpdated,
   }, [enemies, initialDiscoveredEnemyTypes]);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(ENEMY_CODEX_STORAGE_KEY, JSON.stringify(discoveredEnemyTypes));
-    } catch {
-      // Ignore storage failures and keep runtime state.
-    }
+    saveDiscoveredEnemyTypes(discoveredEnemyTypes);
   }, [discoveredEnemyTypes]);
 
   const isDesktop = viewportWidth >= 768;

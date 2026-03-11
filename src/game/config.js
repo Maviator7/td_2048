@@ -395,13 +395,13 @@ export function isArmorUnlocked(waveNumber) {
 export function getWaveStartMessage(waveNumber) {
   const suffixes = ["最後にボス出現！"];
   if (isFastUnlocked(waveNumber)) {
-    suffixes.push("高速敵に注意！");
+    suffixes.push("疾駆兵に注意！");
   }
   if (isSplitterUnlocked(waveNumber)) {
-    suffixes.push("分裂敵が出現！");
+    suffixes.push("増殖核が出現！");
   }
   if (isSniperUnlocked(waveNumber)) {
-    suffixes.push("狙撃敵に警戒！");
+    suffixes.push("狙撃兵に警戒！");
   }
   if (isArmorUnlocked(waveNumber)) {
     suffixes.push("装甲敵が登場！");

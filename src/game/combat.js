@@ -280,20 +280,20 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
     const reward = getEnemyReward(enemy);
     scoreGained += reward;
     const enemyLabel = enemy.isBoss
-      ? "💥ボス"
+      ? "💥侵攻司令"
       : enemy.type === ENEMY_TYPES.FAST
-        ? "⚡高速敵"
+        ? "⚡疾駆兵"
       : enemy.type === ENEMY_TYPES.POISON
-          ? "☠️毒敵"
+          ? "☠️腐蝕兵"
           : enemy.type === ENEMY_TYPES.SNIPER
-            ? "🎯狙撃敵"
+            ? "🎯狙撃兵"
           : enemy.type === ENEMY_TYPES.WAVE
-            ? "〰️波動敵"
+            ? "〰️共鳴兵"
             : enemy.type === ENEMY_TYPES.SPLITTER
-              ? "🧬分裂敵"
+              ? "🧬増殖核"
               : enemy.type === ENEMY_TYPES.SPLIT_CHILD
-                ? "✳️分裂子"
-                : "✅";
+                ? "✳️増殖片"
+                : "✅先兵";
     logMessages.push(`${enemyLabel}撃破！+${reward}pts`);
 
     if (enemy.type === ENEMY_TYPES.SPLITTER) {
@@ -342,7 +342,7 @@ export function resolveCombatTurn({ grid, tileRoles, enemies, lives }) {
         }
       });
       if (healerDidHeal) {
-        logMessages.push(`➕ レーン${LANE_NAMES[healer.lane]}の回復敵が周囲を修復！`);
+      logMessages.push(`➕ レーン${LANE_NAMES[healer.lane]}の祈祷兵が周囲を修復！`);
       }
     });
 

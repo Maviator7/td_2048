@@ -8,48 +8,48 @@ import { useModalTransition } from "../hooks/useModalTransition";
 const CODEX_ENTRIES = [
   {
     type: ENEMY_TYPES.NORMAL,
-    name: "通常敵",
-    description: "基本タイプ。標準速度で前進する。",
+    name: "先兵",
+    description: "侵攻軍の基本兵。標準速度で防衛線へ迫る。",
   },
   {
     type: ENEMY_TYPES.FAST,
-    name: "高速敵",
-    description: "通常より早く DEFENSE LINE に接近する。",
+    name: "疾駆兵",
+    description: "高速機動で防衛線へ突進する前衛ユニット。",
   },
   {
     type: ENEMY_TYPES.HEALER,
-    name: "回復敵",
-    description: "ターンの終了時に他の敵のHPを回復させる。",
+    name: "祈祷兵",
+    description: "ターン終了時に周囲の敵を修復する支援ユニット。",
   },
   {
     type: ENEMY_TYPES.POISON,
-    name: "毒敵",
-    description: "攻撃が当たったレーンに次ターン追加ダメージを付与。",
+    name: "腐蝕兵",
+    description: "被弾したレーンに毒を残し、次ターンの被害を増幅する。",
   },
   {
     type: ENEMY_TYPES.WAVE,
-    name: "波動敵",
-    description: "被弾するたびに隣接する味方敵を1回復・強化する。集中攻撃か拡散攻撃かの選択を迫る。",
+    name: "共鳴兵",
+    description: "被弾時に隣接敵を1修復する共鳴反応を起こす。",
   },
   {
     type: ENEMY_TYPES.SPLITTER,
-    name: "分裂敵",
-    description: "撃破時に小型敵3体へ分裂する。",
+    name: "増殖核",
+    description: "撃破時に小型個体3体へ分裂する自己増殖ユニット。",
   },
   {
     type: ENEMY_TYPES.SNIPER,
-    name: "狙撃敵",
-    description: "反撃時に全タイル中の最大値タイルを優先して狙撃する。B/Cレーンで出現しやすい。",
+    name: "狙撃兵",
+    description: "反撃時に全タイル中の最大値タイルを優先狙撃する。B/Cレーンに現れやすい。",
   },
   {
     type: ENEMY_TYPES.SPLIT_CHILD,
-    name: "分裂子",
-    description: "分裂敵から発生する小型タイプ。",
+    name: "増殖片",
+    description: "増殖核から発生する小型個体。",
   },
   {
     type: ENEMY_TYPES.BOSS,
-    name: "ボス",
-    description: "各Wave最後に出現。耐久と装甲が高い。",
+    name: "侵攻司令",
+    description: "各Wave最終局面で出現する高耐久・高装甲の指揮個体。",
   },
 ];
 

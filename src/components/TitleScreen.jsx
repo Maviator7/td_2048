@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { loadDiscoveredEnemyTypes } from "../game/enemyCodexRepository";
+import { EnemyCodexModal } from "./EnemyCodexModal";
 import { TitleHowToModal } from "./TitleHowToModal";
 import { TitleSettingsModal } from "./TitleSettingsModal";
 import { centeredFullscreenLayout, createPanelSurface, createPrimaryButtonStyle } from "./ui/styles";
@@ -25,8 +27,10 @@ export function TitleScreen({
 }) {
   const [isHowToOpen, setIsHowToOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isEnemyCodexOpen, setIsEnemyCodexOpen] = useState(false);
   const [continueMessage, setContinueMessage] = useState("");
-  const isPauseModalOpen = isHowToOpen || isSettingsOpen;
+  const discoveredEnemyTypes = useMemo(() => loadDiscoveredEnemyTypes(), []);
+  const isPauseModalOpen = isHowToOpen || isSettingsOpen || isEnemyCodexOpen;
 
   return (
     <div style={{ ...centeredFullscreenLayout, background:"linear-gradient(145deg,#0b1020 0%,#1a1a2e 50%,#0f172a 100%)" }}>
@@ -133,6 +137,23 @@ export function TitleScreen({
         </button>
         <button
           type="button"
+          onClick={() => setIsEnemyCodexOpen(true)}
+          style={createPrimaryButtonStyle({
+            marginTop: 8,
+            border: "1px solid #334155",
+            borderRadius: 10,
+            padding: "10px",
+            background: "#111827",
+            color: "#d1d5db",
+            fontSize: 14,
+            fontWeight: 700,
+            boxShadow: "none",
+          })}
+        >
+          📘 敵図鑑
+        </button>
+        <button
+          type="button"
           onClick={() => setIsHowToOpen(true)}
           style={createPrimaryButtonStyle({
             marginTop: 8,
@@ -166,6 +187,11 @@ export function TitleScreen({
         onChangeRankingName={onChangeRankingName}
       />
       <TitleHowToModal isOpen={isHowToOpen} onClose={() => setIsHowToOpen(false)} />
+      <EnemyCodexModal
+        isOpen={isEnemyCodexOpen}
+        discoveredEnemyTypes={discoveredEnemyTypes}
+        onClose={() => setIsEnemyCodexOpen(false)}
+      />
     </div>
   );
 }
