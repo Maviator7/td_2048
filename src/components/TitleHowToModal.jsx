@@ -57,6 +57,7 @@ const GUIDE_TABS = [
     ],
   },
 ];
+const HOWTO_MODAL_HEIGHT = "43vh";
 
 export function TitleHowToModal({ isOpen, onClose }) {
   const dialogRef = useRef(null);
@@ -121,14 +122,19 @@ export function TitleHowToModal({ isOpen, onClose }) {
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
         onClick={(event) => event.stopPropagation()}
-        style={createModalSurface({
-          maxWidth: 620,
-          maxHeight: "86vh",
-          background: "#0f172a",
-          borderRadius: 14,
-          padding: "16px 16px 14px",
-          boxShadow: "0 18px 44px rgba(0,0,0,0.5)",
-        })}
+        style={{
+          ...createModalSurface({
+            maxWidth: 620,
+            maxHeight: HOWTO_MODAL_HEIGHT,
+            background: "#0f172a",
+            borderRadius: 14,
+            padding: "16px 16px 14px",
+            boxShadow: "0 18px 44px rgba(0,0,0,0.5)",
+          }),
+          height: HOWTO_MODAL_HEIGHT,
+          display: "flex",
+          flexDirection: "column",
+        }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div id={titleId} style={{ fontSize: 22, fontWeight: 800, color: "#f8fafc" }}>📘 遊び方</div>
@@ -195,6 +201,8 @@ export function TitleHowToModal({ isOpen, onClose }) {
             border: "1px solid #334155",
             borderRadius: 12,
             padding: "12px 12px 10px",
+            flex: 1,
+            overflowY: "auto",
             marginBottom: 14,
           }}
         >
