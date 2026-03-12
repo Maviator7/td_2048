@@ -1,4 +1,5 @@
 import { DEFAULT_RANKING_NAME, validateRankingName } from "./playerProfile";
+import { captureError } from "../lib/errorTracker";
 
 const MAX_RANKING_ENTRIES = 20;
 const ERROR_LOG_COOLDOWN_MS = 30_000;
@@ -76,8 +77,18 @@ function shouldLogRefreshError(status, detailMessage) {
   return true;
 }
 
-async function fetchRankings() {
-  const response = await fetch(`${API_BASE}/rankings?limit=${MAX_RANKING_ENTRIES}`, {
+function createRankingsUrl({ bustCache = false } = {}) {
+  const params = new URLSearchParams();
+  params.set("limit", String(MAX_RANKING_ENTRIES));
+  if (bustCache) {
+    // Keep ranking refresh instant after write operations when edge cache is enabled.
+    params.set("ts", String(Date.now()));
+  }
+  return `${API_BASE}/rankings?${params.toString()}`;
+}
+
+async function fetchRankings({ bustCache = false } = {}) {
+  const response = await fetch(createRankingsUrl({ bustCache }), {
     method: "GET",
     headers: {
       "Accept": "application/json",
@@ -97,9 +108,9 @@ async function fetchRankings() {
   return rankings.map(normalizeRankingEntry).filter(Boolean);
 }
 
-async function refreshRankingSnapshot() {
+async function refreshRankingSnapshot({ bustCache = false } = {}) {
   if (!refreshPromise) {
-    refreshPromise = fetchRankings()
+    refreshPromise = fetchRankings({ bustCache })
       .then((rankings) => {
         emitRankingSnapshot({
           rankings,
@@ -112,6 +123,10 @@ async function refreshRankingSnapshot() {
         const detailMessage = typeof error?.message === "string" ? error.message : "";
         if (shouldLogRefreshError(status, detailMessage)) {
           console.error("[online-rankings] failed to refresh rankings", error);
+          captureError(error, {
+            tags: { area: "online-rankings", action: "refresh" },
+            extra: { status, detailMessage },
+          });
         }
         emitRankingSnapshot({
           rankings: rankingSnapshot.rankings,
@@ -191,6 +206,10 @@ export async function saveRankingEntry({ score, wave, name }) {
     return { entry, rankings };
   } catch (error) {
     console.error("[online-rankings] failed to save ranking", error);
+    captureError(error, {
+      tags: { area: "online-rankings", action: "save" },
+      extra: { score: payload.score, wave: payload.wave },
+    });
     emitRankingSnapshot({
       rankings: rankingSnapshot.rankings,
       latestEntryId: rankingSnapshot.latestEntryId,
@@ -240,6 +259,10 @@ export async function updateLatestRankingEntryName(name) {
     }
   } catch (error) {
     console.error("[online-rankings] failed to update ranking name", error);
+    captureError(error, {
+      tags: { area: "online-rankings", action: "update-name" },
+      extra: { latestEntryId },
+    });
     emitRankingSnapshot({
       rankings: rankingSnapshot.rankings,
       latestEntryId: rankingSnapshot.latestEntryId,

@@ -49,6 +49,9 @@ wrangler d1 migrations apply merge-fortress-2048 --remote
 
 - `VITE_ONLINE_RANKINGS=true`
 - `VITE_RANKINGS_API_BASE`（省略時は `/api`）
+- `VITE_SENTRY_DSN`（任意。設定するとフロントのエラートラッキングを有効化）
+- `VITE_SENTRY_TRACES_SAMPLE_RATE`（任意。`0`〜`1`、省略時 `0`）
+- `VITE_APP_VERSION`（任意。Sentry の release に付与）
 
 Functions 側で別オリジンからのアクセスを許可する場合は、Pages/Workers 環境変数に `ALLOWED_ORIGINS` を設定してください（カンマ区切り）。
 
@@ -58,6 +61,15 @@ Functions 側で別オリジンからのアクセスを許可する場合は、P
 `VITE_RANKINGS_API_BASE` を別オリジンにする場合は、`public/_headers` の `Content-Security-Policy` 内 `connect-src` にそのオリジンを明示追加してください（ワイルドカード運用は非推奨）。
 
 Cloudflare Pages の環境変数に設定してください。
+
+### ランキング API キャッシュ戦略
+
+`GET /api/rankings` は以下ヘッダーで短期キャッシュします（Functions 実装済み）。
+
+- `Cache-Control: public, max-age=15, s-maxage=15, stale-while-revalidate=30`
+
+これにより、ランキング表示の応答性と D1 負荷のバランスを取ります。
+`POST /api/rankings` と `PATCH /api/rankings/:id` は `no-store` のままです。
 
 ## 開発
 

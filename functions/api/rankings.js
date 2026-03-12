@@ -6,13 +6,16 @@ const ALLOWED_CORS_HEADERS = "Content-Type, Accept";
 const ALLOWED_CORS_METHODS = "GET, POST, OPTIONS";
 const RATE_LIMIT_WINDOW_SECONDS = 300;
 const RATE_LIMIT_MAX_SUBMISSIONS = 10;
+const RANKINGS_CACHE_CONTROL = "public, max-age=15, s-maxage=15, stale-while-revalidate=30";
 
-function jsonResponse(body, status = 200, headers = {}) {
+function jsonResponse(body, status = 200, options = {}) {
+  const headers = options?.headers ?? {};
+  const cacheControl = typeof options?.cacheControl === "string" ? options.cacheControl : "no-store";
   return new Response(JSON.stringify(body), {
     status,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store",
+      "Cache-Control": cacheControl,
       ...headers,
     },
   });
@@ -195,13 +198,20 @@ export async function onRequestGet(context) {
     const url = new URL(context.request.url);
     const limit = parsePositiveInt(url.searchParams.get("limit"), MAX_RANKING_ENTRIES);
     const rankings = await fetchRankings(context.env.DB, limit);
-    return jsonResponse({ rankings }, 200, cors.headers);
+    return jsonResponse(
+      { rankings },
+      200,
+      {
+        headers: cors.headers,
+        cacheControl: RANKINGS_CACHE_CONTROL,
+      },
+    );
   } catch (error) {
     console.error("[online-rankings] failed to fetch rankings", error);
     return jsonResponse(
       { error: resolveServerErrorMessage(error, "ランキングデータの取得に失敗しました。") },
       500,
-      cors.headers,
+      { headers: cors.headers },
     );
   }
 }
@@ -223,7 +233,7 @@ export async function onRequestPost(context) {
         return jsonResponse(
           { error: "送信回数が多すぎます。少し時間をおいて再試行してください。" },
           429,
-          cors.headers,
+          { headers: cors.headers },
         );
       }
     }
@@ -244,15 +254,15 @@ export async function onRequestPost(context) {
   const wave = parsePositiveInt(payload?.wave, null);
 
   if (!nameResult.ok) {
-    return jsonResponse({ error: nameResult.error }, 400, cors.headers);
+    return jsonResponse({ error: nameResult.error }, 400, { headers: cors.headers });
   }
 
   if (score === null || score < 0 || score > MAX_SCORE) {
-    return jsonResponse({ error: "スコアが不正です。" }, 400, cors.headers);
+    return jsonResponse({ error: "スコアが不正です。" }, 400, { headers: cors.headers });
   }
 
   if (wave === null || wave < 1 || wave > MAX_WAVE) {
-    return jsonResponse({ error: "Wave が不正です。" }, 400, cors.headers);
+    return jsonResponse({ error: "Wave が不正です。" }, 400, { headers: cors.headers });
   }
 
   try {
@@ -272,13 +282,13 @@ export async function onRequestPost(context) {
     };
     const rankings = await fetchRankings(context.env.DB, MAX_RANKING_ENTRIES);
 
-    return jsonResponse({ entry, rankings }, 201, cors.headers);
+    return jsonResponse({ entry, rankings }, 201, { headers: cors.headers });
   } catch (error) {
     console.error("[online-rankings] failed to save ranking", error);
     return jsonResponse(
       { error: resolveServerErrorMessage(error, "ランキングデータの保存に失敗しました。") },
       500,
-      cors.headers,
+      { headers: cors.headers },
     );
   }
 }
